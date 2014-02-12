@@ -3,6 +3,7 @@ iSpy Assessment Framework
 
 To build
 --------
+git submodule update
 make clean
 make
 make package

@@ -1872,7 +1872,7 @@ EXPORT int return_true() {
 */
 
 	// Initialize the BF log writing system
-	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.");
+	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
 	NSLog(@"[iSpy] Showtime!");
 	NSLog(@"[iSpy] Initializing logwriter.");
 	bf_init_logwriter();

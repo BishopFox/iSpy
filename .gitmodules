@@ -4,3 +4,6 @@
 [submodule "GRMustache"]
 	path = GRMustache
 	url = https://github.com/groue/GRMustache.git
+[submodule "theos"]
+	path = theos
+	url = https://github.com/DHowett/theos

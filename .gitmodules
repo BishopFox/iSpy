@@ -7,3 +7,6 @@
 [submodule "theos"]
 	path = theos
 	url = https://github.com/DHowett/theos
+[submodule "layout/var/www/iSpy/static/DataTables"]
+	path = layout/var/www/iSpy/static/DataTables
+	url = https://github.com/DataTables/DataTables.git

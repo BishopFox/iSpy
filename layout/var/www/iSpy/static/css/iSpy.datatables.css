@@ -1,10 +1,11 @@
-@import "/static/DataTables-1.9.4/media/css/demo_page.css";
-@import "/static/DataTables-1.9.4/media/css/demo_table.css"; 
-@import "/static/DataTables-1.9.4/media/css/jquery.dataTables.css";
-@import "/static/DataTables-1.9.4/media/css/demo_table_jui.css";
-@import "/static/DataTables-1.9.4/examples/examples_support/themes/smoothness/jquery-ui-1.8.4.custom.css";
-@import "/static/DataTables-1.9.4/docs/media/css/shCore.css";
+@import "/static/DataTables/media/css/demo_page.css";
+@import "/static/DataTables/media/css/demo_table.css"; 
+@import "/static/DataTables/media/css/jquery.dataTables.css";
+@import "/static/DataTables/media/css/demo_table_jui.css";
+@import "/static/jquery-ui-1.10.4.custom/css/smoothness/jquery-ui-1.10.4.custom.min.css";
+@import "/static/DataTables/examples/resources/jqueryui/dataTables.jqueryui.css";
 /*
+@import "/static/DataTables/docs/media/css/shCore.css";
 tbody tr.even:hover, #iSpyDataTable tbody tr.even td.highlighted {
 	background-color: #ECFFff;
 }

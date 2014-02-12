@@ -173,11 +173,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return @"pong\n";
     }];
 
-    [[self http] handleGET:@"/test"
-        with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"test"];
-    }];
-    
     [[self http] handleGET:@"/generalMonitor"
         with:^(HTTPConnection *connection) {
             return [self renderStaticTemplate:@"generalMonitor"];
@@ -193,31 +188,11 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return [self renderStaticTemplate:@"msgSendMonitor"];
     }];
 
-    [[self http] handleGET:@"/gadgets"
-        with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"gadgets"];
-    }];
-
-    [[self http] handleGET:@"/analyze"
-        with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"analyze"];
-    }];
-
     [[self http] handleGET:@"/info"
         with:^(HTTPConnection *connection) {
             return [self renderStaticTemplate:@"info"];
     }];
 
-    [[self http] handleGET:@"/reports"
-        with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"reports"];
-    }];
-
-    [[self http] handleGET:@"/about"
-        with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"about"];
-    }];
-    
     [[self http] handleGET:@"/symbols"
         with:^(HTTPConnection *connection) {
             return [self renderStaticTemplate:@"symbols"];

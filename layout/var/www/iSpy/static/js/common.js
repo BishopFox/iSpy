@@ -263,21 +263,22 @@ function pad(num, size) {
 
 // Disable DataTables' automatic filter - it chews up the CPU on large datasets.
 // Instead we force the user to press enter to submit a search.
-jQuery.fn.dataTableExt.oApi.fnFilterOnReturn = function (oSettings) {
-    var _that = this;
-  
-    this.each(function (i) {
-        $.fn.dataTableExt.iApiIndex = i;
-        var $this = this;
-        var anControl = $('input', _that.fnSettings().aanFeatures.f);
-        anControl.unbind('keyup').bind('keypress', function (e) {
-            if (e.which == 13) {
-                $.fn.dataTableExt.iApiIndex = i;
-                _that.fnFilter(anControl.val());
-            }
-        });
-        return this;
-    });
-    return this;
-};
-
+if(jQuery.fn.dataTableExt) {
+	jQuery.fn.dataTableExt.oApi.fnFilterOnReturn = function (oSettings) {
+	    var _that = this;
+	  
+	    this.each(function (i) {
+	        $.fn.dataTableExt.iApiIndex = i;
+	        var $this = this;
+	        var anControl = $('input', _that.fnSettings().aanFeatures.f);
+	        anControl.unbind('keyup').bind('keypress', function (e) {
+	            if (e.which == 13) {
+	                $.fn.dataTableExt.iApiIndex = i;
+	                _that.fnFilter(anControl.val());
+	            }
+	        });
+	        return this;
+	    });
+	    return this;
+	};
+}

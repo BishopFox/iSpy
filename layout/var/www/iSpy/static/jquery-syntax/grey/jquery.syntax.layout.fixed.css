@@ -1,0 +1,13 @@
+.syntax-container.syntax-theme-grey div.fixed.syntax {
+  background-color: #e3e3e3;
+  border: 1px solid #aaaaaa; }
+  .syntax-container.syntax-theme-grey div.fixed.syntax .numbers-column {
+    color: #979797;
+    background-color: #e3e3e3; }
+  .syntax-container.syntax-theme-grey div.fixed.syntax .code-column {
+    border-left: 1px solid #aaaaaa;
+    background-color: #f0f0f0; }
+    .syntax-container.syntax-theme-grey div.fixed.syntax .code-column .source {
+      color: #333333; }
+    .syntax-container.syntax-theme-grey div.fixed.syntax .code-column .source.alt {
+      background-color: whitesmoke; }

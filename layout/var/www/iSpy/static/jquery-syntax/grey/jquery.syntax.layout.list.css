@@ -1,0 +1,19 @@
+.syntax-container.syntax-theme-grey ol.syntax {
+  background-color: #e3e3e3;
+  border: 1px solid #aaaaaa; }
+  .syntax-container.syntax-theme-grey ol.syntax li {
+    color: #979797; }
+  .syntax-container.syntax-theme-grey ol.syntax li div.source {
+    color: #333333;
+    border-left: 1px solid #aaaaaa;
+    background-color: #f0f0f0; }
+  .syntax-container.syntax-theme-grey ol.syntax li.alt div.source {
+    background-color: whitesmoke; }
+.syntax-container.syntax-theme-grey ul.syntax {
+  background-color: #e3e3e3;
+  border: 1px solid #aaaaaa; }
+  .syntax-container.syntax-theme-grey ul.syntax li div.source {
+    color: #333333;
+    background-color: #f0f0f0; }
+  .syntax-container.syntax-theme-grey ul.syntax li.alt div.source {
+    background-color: whitesmoke; }

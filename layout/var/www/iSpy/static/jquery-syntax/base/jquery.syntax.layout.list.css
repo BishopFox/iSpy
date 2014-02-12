@@ -1,0 +1,37 @@
+.syntax-container.syntax-theme-base ol.syntax {
+  padding: 0 0 0 5em !important;
+  margin: 0 !important; }
+  .syntax-container.syntax-theme-base ol.syntax li {
+    padding: 0 !important;
+    margin: 0 !important;
+    /* CSS2.1 */
+    white-space: pre-wrap;
+    /* Mozilla, since 1999 */
+    white-space: -moz-pre-wrap;
+    /* Opera 7 */
+    white-space: -o-pre-wrap;
+    /* Internet Explorer 5.5+ */
+    word-wrap: break-word;
+    _white-space: pre; }
+  .syntax-container.syntax-theme-base ol.syntax li div.source {
+    margin-left: -0.5em;
+    padding: 0 0.4em 0 !important; }
+.syntax-container.syntax-theme-base ul.syntax {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style-type: none; }
+  .syntax-container.syntax-theme-base ul.syntax li {
+    padding: 0 !important;
+    margin: 0 !important;
+    /* CSS2.1 */
+    white-space: pre-wrap;
+    /* Mozilla, since 1999 */
+    white-space: -moz-pre-wrap;
+    /* Opera 7 */
+    white-space: -o-pre-wrap;
+    /* Internet Explorer 5.5+ */
+    word-wrap: break-word;
+    _white-space: pre; }
+  .syntax-container.syntax-theme-base ul.syntax li div.source {
+    margin: 0 !important;
+    padding: 0 0.4em 0 !important; }

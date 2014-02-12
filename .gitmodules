@@ -1,0 +1,6 @@
+[submodule "OpenSSL-for-iPhone"]
+	path = OpenSSL-for-iPhone
+	url = https://github.com/x2on/OpenSSL-for-iPhone.git
+[submodule "GRMustache"]
+	path = GRMustache
+	url = https://github.com/groue/GRMustache.git

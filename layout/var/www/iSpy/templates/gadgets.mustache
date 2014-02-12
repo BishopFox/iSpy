@@ -1,0 +1,76 @@
+<script>
+	appSelectorState=0;
+</script>	
+		<div class="container-fluid">
+			<div class="row-fluid">
+				<!-- Navigation side-bar -->
+				<div class="span3 bs-docs-sidebar">
+					<ul id="leftNavPane" class="nav nav-list bs-docs-sidenav" style="position:fixed"> <!-- Is "position:fixed" the bootstrappy way of doing things? -->
+						<h2>Gadgets</h2>
+						<li><a href="#filesystemmonitor"><i class="icon-ok-circle"></i> Filesystem Monitor</a></li>
+						<li><a href="#methodtracing"><i class="icon-th-large"></i> Method Tracing</a></li>
+						<li><a href="#redirect"><i class="icon-pencil"></i> TCP/IP Redirect</a></li>
+					</ul>
+				</div>
+			
+				<!-- Main content window -->
+				<div class="span9" data-spy="scroll" data-target="#leftNavPane" data-offset="0" class="scrollspy">
+					<!-- Filesystem Monitor -->				
+					<section id="filesystemmonitor">
+					<form class="form-horizontal">
+						<legend>Filesystem Monitoring</legend>
+						<div class="control-group">
+							<label class="control-label" for="optionsRadios1">
+								On<br/><small><span class="muted">Turns on filesystem monitor.</span></small>
+							</label>
+							<div class="controls">
+								<input type="radio" name="filesystemRadios" id="filesystemOn" value="disabled" checked>
+							</div>
+						</div>
+
+						<div class="control-group">
+							<label class="control-label" for="optionsRadios2">
+								Off<br/><small><span class="muted">Turns off filesystem monitor.</span></small>
+							</label>
+							<div class="controls">
+								<input type="radio" name="filesystemRadios" id="filesystemOff" value="enabled" checked>
+							</div>
+						</div>
+					</form>
+					</section>
+
+
+				</div>
+			</div>
+		</div>
+		<script>
+		$('#leftNavPane').scrollspy();
+		/*
+		$('#button1').on('click', function (e) {
+			$('.btn-primary').attr('disabled','disabled');
+		});
+		*/
+
+		$.getJSON('/api/status', function (data) {
+			$.each(data, function (key, val) {
+				if(key == "filesystem" && val == "on") {
+					$('filesystemOn').attr('selected', 'selected');
+					$('filesystemOff').attr('selected', '');
+				} else if(key == "filesystem" && val == "off") {
+					$('filesystemOff').attr('selected', 'selected');
+					$('filesystemOn').attr('selected', '');
+				}
+			});
+		});
+
+		$('filesystemOn').on('click', function(e) {
+			$.getJSON('/api/filesystem/on');
+		});
+
+		$('filesystemOff').on('click', function(e) {
+			$.getJSON('/api/filesystem/off');
+		});
+		</script>
+		
+	
+

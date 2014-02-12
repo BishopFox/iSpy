@@ -1,0 +1,4 @@
+.syntax-container.syntax-theme-modern div.editor.syntax {
+  border: 1px solid #cccccc;
+  -webkit-box-shadow: inset 0px 2px 3px #969696;
+  min-height: 1em; }

@@ -1,0 +1,109 @@
+<div class="container-fluid">
+	<div class="row-fluid" class="animated fadeIn">
+		<div class="span12">
+			<legend>ASLR</legend>
+			<div id="aslrpane"><b>ASLR Slide: </b></div>
+			<legend>Mach-O Flags</legend>
+			<div id="machpane"><b>Flags value: </b></div>
+		</div>
+	</div>
+	<p/>
+	<div class="row-fluid">
+		<div class="span12">
+			<legend>Symbol Table</legend>
+			<table class="table" width="100%">
+				<thead>
+					<th>Name</th><th>Offset</th><th>Real Address</th><th>N_STAB</th><th>N_PEXT</th><th>N_EXT</th><th>N_PBUD</th><th>N_INDR</th><th>ARM</th>
+				</thead>
+				<tbody id="symbolpane"></tbody>
+			</table>
+			<div id="loading"><img src="/static/images/loading2.gif"> Loading...</div>
+		</div>
+	</div>
+	<!--
+	<div class="row-fluid">
+		<div class="span12" style="visibility: hidden" id="network">
+			<legend>Network Information</legend>
+			<table class="table" id="netpane">
+				<thead>
+					<th>Interface</th><th>IP Address</th>
+				</thead>
+			</table>
+		</div>
+	</div>
+	-->
+</div>
+
+<script src="/static/DataTables-1.9.4/media/js/jquery.dataTables.min.js"></script>
+<script src="/static/DataTables-1.9.4/docs/media/js/shCore.js"></script>
+<script src="/static/DataTables-1.9.4/plugins/ColResize.js"></script>
+
+<!-- From: https://github.com/axemclion/jquery-indexeddb/tree/gh-pages -->
+<script src="/static/js/jquery.indexeddb.min.js"></script>
+
+<!-- Our own shizzle -->
+<script src="/static/js/iSpy.db.js"></script>
+
+<link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
+<!--<link href="/static/google-code-prettify/sunburst.css" rel="stylesheet" type="text/css" />-->
+<script src="/static/google-code-prettify/prettify.js"></script>
+<script>
+	var aslr = 0;
+	var offset = 0;
+	var aslrOffset = 0;
+
+	$.getJSON("/api/aslr", function(data) {
+		$.each(data, function(key, val) {
+			if(key =="ASLR") {
+				aslr = parseInt(val, 10);
+				$("#aslrpane").append("<span id='aslrValue'>0x" + aslr.toString(16) + "</span>");
+				if(aslr == 0)
+					$("#aslrValue").addClass("text-error");
+			}
+		});
+	});
+
+	$.getJSON("/api/machFlags", function(data) {
+		$.each(data, function(key, val) {
+			if(key =="flags") {
+				flags = parseInt(val, 10);
+				$("#machpane").append("0x" + pad(flags.toString(16), 8));
+			}
+		});
+	});
+
+	$.getJSON("/api/symbols", function(data) {
+		$.each(data, function(key, val) {
+			if(typeof(val) === "object" && key == "symbols") {
+				arrData = val;
+				$.each(arrData, function(symName, symData) {
+					items = [];
+					$.each(symData, function(item, value) {
+						items[item] = value;
+					});
+					var foo = "<tr><td>" + symName + "</td>";
+					offset = parseInt(items['offset'], 10);
+					aslrOffset = aslr + offset;
+					if(offset > 0) {
+						foo += "<td>0x" + offset.toString(16) + "</td>";
+						foo += "<td>0x" + aslrOffset.toString(16) + "</td>";
+					} else {
+						foo += "<td></td><td></td>";
+					}
+					foo += (items['n_stab']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += (items['n_pext']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += (items['n_ext']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += (items['n_pbud']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += (items['n_indr']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += (items['n_arm']==1)?'<td><i class="icon-check"></i></td>':'<td></td>';
+					foo += "</tr>\n";
+					$("#symbolpane").append(foo);
+				});
+			}
+		});
+		$('#loading').css("visibility", "hidden");
+	});
+	
+
+</script>
+

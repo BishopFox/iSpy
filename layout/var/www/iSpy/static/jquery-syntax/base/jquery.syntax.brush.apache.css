@@ -1,0 +1,6 @@
+.syntax-theme-base .syntax .apache .tag {
+  color: #0000cc; }
+.syntax-theme-base .syntax .apache .tag-name {
+  color: blue; }
+.syntax-theme-base .syntax .apache .tag-name {
+  font-weight: bold; }

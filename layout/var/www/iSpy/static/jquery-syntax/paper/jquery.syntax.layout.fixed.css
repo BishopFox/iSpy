@@ -1,0 +1,12 @@
+.syntax-container.syntax-theme-paper div.fixed.syntax {
+  background: url("noise.png");
+  border: 1px solid #dddddd;
+  padding: 2px !important;
+  margin: 0 !important;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05); }
+  .syntax-container.syntax-theme-paper div.fixed.syntax .numbers-column {
+    padding: 6pt;
+    background-color: rgba(0, 0, 0, 0.05); }
+  .syntax-container.syntax-theme-paper div.fixed.syntax .code-column {
+    padding: 6pt;
+    overflow: auto; }

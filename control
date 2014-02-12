@@ -1,0 +1,9 @@
+Package: com.bishopfox.iSpy
+Name: iSpy
+Depends: mobilesubstrate, preferenceloader
+Version: 0.0.2
+Architecture: iphoneos-arm
+Description: The iSpy application assessment framework.
+Maintainer: Carl Livitt
+Author: Carl Livitt
+Section: Tweaks

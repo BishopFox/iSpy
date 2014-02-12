@@ -1,0 +1,63 @@
+	<link href="/static/jqueryFileTree/jqueryFileTree.css" rel="stylesheet" />
+	<div class="container-fluid" class="animated fadeIn">
+	<div class="row-fluid">
+		<div class="span2">
+			<img src="/static/images/apple_ninja_small.jpg" class="img" align="right" padding="10px"/>
+		</div>
+		<div>
+	        <h1>iSpy </h1>
+			<h4 style="font-weight:normal" class="muted">iOS AppSec Assessment Framework</h4>
+			<br />
+			<!--
+				The iSpy logo is an unauthorized mashup of two images found on Google Images.
+				The iPad from here: https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/IPad_3.png/220px-IPad_3.png
+				The ninja apple from here: http://blog.martincrownover.com/wp-content/uploads/2008/09/apple_ninja.jpg
+				We should probably request permission from the content owners to do this.
+			-->
+		</div>
+	</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="span12 well">
+			<dl class="dl-horizontal">
+				<dt class="text-error" style="padding-bottom:4px">Current App</dt>
+				<dd id="processname" style="padding-bottom:4px"></dd>
+				<dt class="text-error" style="padding-bottom:4px">App Binary</dt>
+				<dd id="commandline" style="padding-bottom:4px"></dd>
+				<dt class="text-error" style="padding-bottom:4px">App Path</dt>
+				<dd id="apppath" style="padding-bottom:4px"></dd>
+				<dt class="text-error" style="padding-bottom:4px">Browser</dt>
+				<dd id="dirListing" style="padding-bottom:4px"><div class="well" id='dirListingDiv'></div></dd>
+				</dl>	
+		</div>
+		</script>
+		<script src="/static/jqueryFileTree/jqueryFileTree.js"></script>
+		<script>
+			$.getJSON("/api/info/summary", function(data) {
+				$("#processname").append(data["Process Name"]);
+				$("#processname").append("<br/><span class='muted'>" + data["Bundle ID"] + "<br/>\n");
+				$("#commandline").append(data["Commandline"]);
+				$("#apppath").append(data["Path"]);
+
+				$('#dirListingDiv').fileTree({
+			        root: data["Path"],
+			        script: '/api/dirListing',
+			        expandSpeed: 1,
+			        collapseSpeed: 1,
+			        multiFolder: true
+			    }, function(file) {
+			        openFile(file);
+			    });
+			
+			});
+
+			function openFile(file) {
+			    document.location="/download/" + file;
+			}
+
+			
+			    
+		</script>
+
+

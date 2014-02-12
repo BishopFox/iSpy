@@ -1,0 +1,16 @@
+.syntax-theme-base .syntax .add {
+  color: green; }
+.syntax-theme-base .syntax .del {
+  color: red; }
+.syntax-theme-base .syntax .insert {
+  color: green; }
+.syntax-theme-base .syntax .insert-line {
+  background-color: #ccffcc !important; }
+.syntax-theme-base .syntax .remove {
+  color: red; }
+.syntax-theme-base .syntax .remove-line {
+  background-color: #ffcccc !important; }
+.syntax-theme-base .syntax .offset {
+  color: blue; }
+.syntax-theme-base .syntax .offset-line {
+  background-color: #ccccff !important; }

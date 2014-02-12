@@ -1,0 +1,134 @@
+<link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
+<script src="/static/google-code-prettify/prettify.js"></script>
+<style>
+.sidebar-nav-fixed {
+	padding: 9px 0;
+	position: fixed;
+	left: 20px;
+	top: 60px;
+	width: 250px;
+	height: 90%;
+	overflow: auto;
+}
+.row-fluid > .span-fixed-sidebar {
+	margin-left: 290px;
+}
+
+.control-label {
+	font-weight: bold;
+}
+
+
+</style>
+
+<div class="container-fluid" class="animated fadeIn">
+	<div class="row-fluid">
+		
+		<!-- Sidebar goes here -->
+		<div class="span3">
+			<div class="well sidebar-nav-fixed">
+				<ul class="nav nav-list">
+					<li>
+						<div class="row-fluid">
+							<div class="span9"><p class="lead">Active Instances</p></div><div class="span3"><a class="btn btn-default" href="javascript:reloadInstanceList()"><i class="fa fa-refresh"></i></a></div>
+						</div>
+					</li>
+				</ul>
+				<ul class="nav nav-list" id="sidebar">
+				</ul>
+			</div>
+		</div>
+
+		<!-- Body goes here -->
+		<div class="span9">
+			<div class="well" style="margin-top: 20px;" id="dataPane">
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="hide" id="dummy">
+<div class="hide"><?prettify?><pre class="hide prettyprint" id="codeSection"></pre></div>
+<script src="/static/js/common.js"></script>
+<script>
+
+	$(document).ready(function () {
+		reloadInstanceList();
+	});
+
+	function renderInstanceData(addr, className) {
+		$.ajax({
+			url: "/api/instance/" + addr,
+			timeout: 30000,
+			dataType: "json"
+		}).done(function(instanceData) {
+			$("#dataPane").empty();
+			var p = $(document.createElement('p'));
+			$(p).append("Instance Variables for ");
+			$(p).addClass("lead");
+
+			var a = $(document.createElement('a')); 
+			$(a).addClass("classContextInfo");
+			$(a).attr("data-className", className);
+			$(a).html("<em>" + className + "</em>");
+			
+			$(p).append(a);
+			$(p).append(" @ <em>" + addr + "</em>")
+
+			$("#dataPane").append(p);
+
+			$.each(instanceData, function (key, data) {
+				$("#codeSection").empty();
+				$("#dataPane").append("<b>Name:</b> " + data["name"] + "<br/>\n");
+				
+				var a = $(document.createElement('a'));
+				$(a).addClass("classContextInfo");
+				$(a).attr("data-className", data["type"].replace(/\ \*/,""));
+				$(a).html(data["type"]);
+				$("#dataPane").append("<b>Type:</b> ");
+				$("#dataPane").append(a);
+				$("#dataPane").append("<br/>\n");
+
+				var value = $("#dummy").text(data["value"]).html();
+				var pre = $(document.createElement('pre')); 
+				$(pre).addClass("prettyprint");
+				$(pre).html(value);
+				$("#dataPane").append(pre);
+				//$("#dataPane").append("<hr>\n");
+			});
+			setupContextHelpHandler("bottom"); // show context help underneath the triggering link
+		});
+	}
+
+	function reloadInstanceList() {
+		$.ajax({
+			url: "/api/instances",
+			timeout: 30000,
+			dataType: "json"
+		}).done(function(instances) {
+			$("#sidebar").empty();
+			$.each(instances, function (i) {
+				var li = $(document.createElement('li')); 
+				var a = $(document.createElement('a'));
+				$(a).attr("data-instanceAddr", instances[i][1]);
+				$(a).on("click", function () {
+					//console.log($(a).attr("data-instanceAddr"));
+					renderInstanceData($(a).attr("data-instanceAddr"), $(a).html());
+					$("li").removeClass("active");
+					$(li).addClass("active");
+				});
+				$(a).addClass("instanceMenuItem");
+				a.append(instances[i][0]);
+				$(li).append(a);
+				$("#sidebar").append(li);
+			});
+			// we want a nice pointer when hovering over class names
+			$(".instanceMenuItem").hover(function() {
+				$(this).css('cursor','pointer');
+			}, function() {
+				$(this).css('cursor','auto');
+			});
+		});
+	}
+
+</script>

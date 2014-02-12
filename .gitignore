@@ -1,0 +1,12 @@
+.theos
+.theos/*
+_/
+_/*
+obj/*
+*.deb
+theos
+*.o
+*.sublime-workspace
+.DS_Store
+install.sh
+

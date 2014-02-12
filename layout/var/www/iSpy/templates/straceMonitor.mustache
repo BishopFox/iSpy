@@ -1,0 +1,68 @@
+<style>
+#logWindow {
+    height:600px;
+    overflow-y:scroll;
+}
+</style>
+<div class="container-fluid" class="animated fadeIn">
+	<div class="row-fluid">
+		<div class="span12" id="logDiv">
+			<legend>Strace Monitor</legend>
+			<pre id="logWindow"></pre>
+		</div>
+		<div class="span12">
+		    <button type="button" class="btn" data-toggle="button" id="btnScroll" data-complete-text="Scrolling is paused" autocomplete="off">Auto scrolling</button>
+		    <button type="button" class="btn" data-loading-text="Loading log..." id="btnReload" autocomplete="off">Reload entire log</button>
+		</div>
+	</div>
+</div>
+
+<script>
+// don't make ajax requests during an ajax request; this var acts as a mutex
+requestLock=0;
+
+// auto scrolling is annoying when you're trying to study older log entries.
+// this tracks the auto scroll state
+autoScroll=1;
+
+// called every second to update the log entries on screen
+function updateLog() {
+	if(requestLock)
+		return;
+	requestLock=1;
+
+	$.get("/api/strace/readlog", function(data) {
+		$("#logWindow").append(data);
+		if(autoScroll)
+			$("#logWindow").scrollTop($("#logWindow")[0].scrollHeight);
+		requestLock=0;
+	});
+}
+
+// handler for the autoscroll button
+$("#btnScroll").on("click", function () {
+	autoScroll = 1 - autoScroll;
+	if(!autoScroll)
+		$("#btnScroll").button('complete');
+	else
+		$("#btnScroll").button('reset');
+});
+
+// handler for the "reload entire log" button
+$("#btnReload").on("click", function () {
+	$("#btnReload").button('loading');
+	$("#logWindow").html("");
+	$.get("/api/strace/readentirelog", function(data) {
+		$("#logWindow").append(data);
+		if(autoScroll)
+			$("#logWindow").scrollTop($("#logWindow")[0].scrollHeight);
+		$("#btnReload").button('reset');
+		requestLock=0;
+	});
+});
+
+// setup a timer to load log entries every second
+intervalId = setInterval("updateLog()", 1000);
+</script>
+
+

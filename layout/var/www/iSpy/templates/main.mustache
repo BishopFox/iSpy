@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>iSpy</title>
+        
+        <meta name="description" content="iOS Hacking Framework">
+        <meta name="author" content="haggis, moloch">
+        <link rel="shortcut icon" href="/static/images/favicon.ico" />
+        <link href="/static/css/bootstrap.css" rel="stylesheet" />
+        <link href='/static/css/themes/bootstrap.min.css' rel='stylesheet' />
+        <link href="/static/css/animate.css" rel="stylesheet" />
+        <link href="/static/css/bishopfox.css" rel="stylesheet" />
+        <link rel="stylesheet" href="/static/font-awesome/css/font-awesome.min.css">
+        <style type="text/css">
+            body {
+                padding-top: 40px;
+            }
+        </style>
+        <!--[if lt IE 9]>
+          <script src="/static/js/libs/html5.js"></script>
+        <![endif]-->
+        <script src="/static/js/jquery.js" type="text/javascript"></script>
+        <script src="/static/js/bootstrap.min.js" type="text/javascript"></script>
+    </head>
+    <body data-spy="scroll" data-target=".bs-docs-sidebar" id="iSpyBody">
+        {{> menu }}
+        <div class="container-fluid">
+	{{{ content }}}
+        </div>
+<!--   
+    <div class="navbar navbar-fixed-bottom">
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <ul class="nav">
+                    <li><a href="#"><p class="muted"><small>iSpy &copy; Bishop Fox 2013</small></p></a></li>
+                </ul>
+                <ul class="nav pull-right">
+                    <li class="divider-vertical"></li>
+                    <li><a href="https://www.bishopfox.com/"><p class="muted"><small>https://www.bishopfox.com</small></p></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+-->
+    </body>
+</html>

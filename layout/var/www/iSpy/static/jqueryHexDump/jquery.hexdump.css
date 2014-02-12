@@ -1,0 +1,64 @@
+.asciiDump, .hexDump, .rowNumbers {
+    font-family: Monaco,
+                 "Courier New",
+                 "Nimbus Mono L",
+                 monospace;
+    font-size: 10pt;
+
+    cursor: pointer;
+
+    /* Disable user text highlighting */
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+
+}
+
+.hexDump {
+    float: left;
+}
+
+.asciiDump {
+    float: right;
+}
+
+.rowNumbers {
+    float: left;
+    text-align: right;
+    font-weight: bold;
+    cursor: auto;
+}
+
+.rowNumber {
+    padding-top: 1px;
+    padding-bottom: -1px;
+    padding-right: 6px;
+    padding-left: 0px;
+}
+
+.hexCell, .asciiCell {
+ 
+    float: left;
+    padding-top: 1px;
+    padding-bottom: -1px;
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+.end {
+   clear: both; 
+}
+
+.endRight {
+    clear: left;
+}
+
+.hexCell.spacer {
+    margin-right: 8px;
+}
+
+.ui-selecting { background: #CCFFCC; }
+.ui-selected { background: #CCFFCC; }
+

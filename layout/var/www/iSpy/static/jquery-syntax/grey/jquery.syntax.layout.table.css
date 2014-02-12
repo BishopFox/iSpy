@@ -1,0 +1,11 @@
+.syntax-container.syntax-theme-grey table.syntax {
+  background-color: #f0f0f0;
+  border: 1px solid #aaaaaa; }
+  .syntax-container.syntax-theme-grey table.syntax tr.alt td.source {
+    background-color: whitesmoke; }
+  .syntax-container.syntax-theme-grey table.syntax td.source {
+    color: #333333; }
+  .syntax-container.syntax-theme-grey table.syntax td.number {
+    border-right: 1px solid #aaaaaa;
+    color: #979797;
+    background-color: #e3e3e3; }

@@ -1,0 +1,6 @@
+.syntax-theme-base .syntax .bash-script .function {
+  font-weight: bold; }
+.syntax-theme-base .syntax .bash-script .option {
+  color: #0033ff; }
+.syntax-theme-base .syntax .bash-script .env {
+  font-style: italic; }

@@ -10,3 +10,6 @@
 [submodule "layout/var/www/iSpy/static/DataTables"]
 	path = layout/var/www/iSpy/static/DataTables
 	url = https://github.com/DataTables/DataTables.git
+[submodule "layout/var/www/iSpy/static/font-awesome"]
+	path = layout/var/www/iSpy/static/font-awesome
+	url = https://github.com/FortAwesome/Font-Awesome.git

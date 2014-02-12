@@ -68,41 +68,33 @@ namespace bf_msgSend_stret {
     __attribute__((used, weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
 
     extern "C" int is_object_from_app_bundle_stret(int *retVal, id Cls, SEL selector) {
-        int j = 0;
-        unsigned int i, count;
-        Method *methods;
-        BOOL isInstance = true; // generally the case, but we verify below
-
+        int j = 0; 
+        
         // don't do shit if we ain't ready
         if( ! appClassWhiteListIsReady )
             return false;
-
         if( ! appClassWhiteList)
             return false;
+        if(!Cls || !selector)
+            return false;
 
-        // First get the class definition for the object we've been passed.
-        // Then get the definition of the definition. 
-        // If the two class definitions match then we're being passed a class method.
-        // If the definitions differ then we're being passed an instance method.
-        id classDefinition = object_getClass(Cls);
-        id definitionOfClassDefinition = object_getClass(classDefinition);
-        if( classDefinition == definitionOfClassDefinition)
-            isInstance = false; // A class method is being called, not an instance method
-        
         while(appClassWhiteList[j]) {
-            if(appClassWhiteList[j++] == classDefinition) {
-                // try the class methods, if any
-                methods = class_copyMethodList(classDefinition , &count);
-                for(i=0; i<count;i++) {
-                    SEL name = method_getName(methods[i]);
-                    if(name == selector) {
-                        free(methods);
-                        return true;
-                    }
-                }
-                free(methods);
-                return false; 
+            id theClass = nil;
+
+            if(appClassWhiteList[j] == Cls->isa) { // Class method?
+                theClass = Cls->isa;
+                if(class_getClassMethod(theClass, selector))
+                    return true;
+                else
+                    return false;
+            } else if(appClassWhiteList[j] == Cls->isa->isa) { // Instance method?
+                theClass = Cls->isa->isa;
+                if(class_getInstanceMethod(theClass, selector))
+                    return true;
+                else
+                    return false;
             }
+            j++;
         }
         return false;
     }

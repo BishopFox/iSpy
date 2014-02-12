@@ -645,51 +645,5 @@ function importSQLData(upgradeEvent, bundleDate) {
 }
 
 
-// this dynamically scales the log window to fit vertically in the browser window
-// call like resolveFullHeight("#elementName")
-function resolveFullHeight(element) {
-    $(element).css("height", "auto");
-    var h_window = $(window).height(),
-        h_document = $(document).height(),
-        fullHeight_top = $(element).position().top,
-        est_footerHeight = 0;
-    var h_fullHeight = h_document - fullHeight_top - 100;
-    return h_fullHeight;
-}
 
 
-// connects to the iSpy websocket on the iDevice
-function socket_connect(port) {
-	var webSocketPort = port;
-	var webSocketURL = 'ws://' + window.location.hostname + ':' + webSocketPort;
-	var s = new WebSocket(webSocketURL);
-	return s;
-}
-
-
-// Pads a number with leading zeros
-function pad(num, size) {
-    var s = num+"";
-    while (s.length < size) s = "0" + s;
-    return s;
-}
-
-// Disable DataTables' automatic filter - it chews up the CPU on large datasets.
-// Instead we force the user to press enter to submit a search.
-jQuery.fn.dataTableExt.oApi.fnFilterOnReturn = function (oSettings) {
-    var _that = this;
-  
-    this.each(function (i) {
-        $.fn.dataTableExt.iApiIndex = i;
-        var $this = this;
-        var anControl = $('input', _that.fnSettings().aanFeatures.f);
-        anControl.unbind('keyup').bind('keypress', function (e) {
-            if (e.which == 13) {
-                $.fn.dataTableExt.iApiIndex = i;
-                _that.fnFilter(anControl.val());
-            }
-        });
-        return this;
-    });
-    return this;
-};

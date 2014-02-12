@@ -1970,8 +1970,6 @@ static bool bf_setup_msgSend_whitelist() {
     	NSString *name = [classes objectAtIndex:i];
         appClassWhiteList[i] = objc_getClass([name UTF8String]);
         bf_logwrite(LOG_GENERAL, "[Whitelist] adding %s (%p)", [name UTF8String], appClassWhiteList[i]);
-        NSLog(@"%@", appClassWhiteList[i]);
-        i++;
     }
     appClassWhiteList[i] = (id)0;
 

@@ -49,7 +49,7 @@ FILE *logReadFP[MAX_LOG+1];
 
 NSString *templatesPath = @"/var/www/iSpy/templates";   // Path to the Mustache HTML templates
 GRMustacheTemplateRepository *templatesRepo;                // Template repository class
-static struct mg_connection *globalMsgSendWebSocketPtr = NULL; 
+static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection is (was) a private struct in HTTPKit
 
 @implementation iSpyServer 
 /****************************************************************
@@ -65,17 +65,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL;
     return [bfTemplate renderObject:content error:NULL];  
 }
 
-
-/*
- Web socket ports, allocation, and variable names:
-    31330: general log      wsGeneral
-    31331: strace log       wsStrace
-    31332: msgSend log      wsMsgSend
-    31333: network log      wsNetwork
-    31334: file log         wsFile
-    31335: instance log     wsInstance
-    31336: iSpy control     wsISpy
-*/
 -(id)init {
     [super init];
     [self setHttp:NULL];
@@ -330,7 +319,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL;
             return nil;
     }];
 
-    // This is where shit gets real. Returns JSON structures to the client.
+    // Rest of the API stuff
     [[self http] handleGET:@"/api/**"
         with:^(HTTPConnection *connection, NSString *args) {
             NSString *content;
@@ -603,7 +592,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL;
 
             /*
                 /api/msgSend/options
-                Parameters: enableDisable="on or something not "on"
+                Parameters: enableDisable=<on|off>
 
                 Why is this called "options" instead of something more relevant? TBD.
             */

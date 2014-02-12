@@ -27,7 +27,7 @@
 <!--
 	This is the table used for DataTables. It displays scrollable, paginated data from the iSpy daemon.
 -->
-<div id="tableDiv" class="hide animated fadeIn">
+<div id="tableDiv" class="hide">
 <!--
 	<button type="button" class="btn" data-toggle="button" id="btnScroll" data-complete-text="Scrolling is paused" autocomplete="off">Auto scrolling</button>
     <button type="button" class="btn" data-loading-text="Loading log..." id="btnReload" autocomplete="off">Reload entire log</button>
@@ -149,7 +149,8 @@
 <script src="/static/js/jquery.indexeddb.min.js"></script>
 
 <!-- Our own shizzle -->
-<script src="/static/js/iSpy.db.js"></script>
+<!--<script src="/static/js/iSpy.db.js"></script>-->
+<script src="/static/js/common.js"></script>
 
 <link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
 <script src="/static/google-code-prettify/prettify.js"></script>
@@ -245,7 +246,7 @@ function show_method_popover(obj) {
 // This is called to create and display a Bootstrap modal dialog when the user clicks on a class name.
 function show_class_popover(obj) {
 	$("#infoHeader").html("Class Info");
-	$("#infoBody").html('<div id="loading">Loading... &nbsp; <i id="spinner" class="icon-spinner icon-spin icon-large"></i></div>');
+	$("#infoBody").html('<div id="loading">Loading... &nbsp; <i class="icon-spinner icon-spin icon-large"></i></div>');
 	$("#infoModal").modal('show');
 
 	obj = $(obj).closest('tr');
@@ -349,36 +350,38 @@ $(document).ready(function() {
 	// Setup a timer to update the UI with new log entries every couple of seconds (if logging is enabled)
 	// This runs in a background worker thread
 	intervalId = setInterval('updateLog()', 2000); 
-
+	setupWebSockets();
     // Open the websocket
+	
+});
+
+function setupWebSockets() {
 	socket = socket_connect(31338);
+
 	if(socket) {
 		socket.onopen = function(event) {
-			socket.send("hi");
+			if(socket.readyState == WebSocket.OPEN)
+				socket.send("hi");
 
 			// Listen for messages
 			socket.onmessage = function(event) {
-				newJSON += event.data; // + ",";
-				//var obj = $.parseJSON(event.data);
-				//newLogEntries.push(obj.msgSend);
+				newJSON += event.data.replace(/\n/, ''); // + ",";
 			};
 			
 			// Listen for socket closes
 			socket.onclose = function(event) {
-				console.log('Client notified socket has closed - reopening',event);
-				try {
-					socket.close();
-				} catch(e) {
-					// do nothing, fuck it
-				}
-				socket_connect();
+				console.log('Client notified socket has closed',event);
+				socket = undefined;
+			};
+			// Listen for socket closes
+			socket.onerror = function(event) {
+				console.log('Client notified socket error',event);
 			};
 		};
 	} else {
 		console.log("Bleh");
 	}
-});
-
+}
 // this is called when we press "save" in the "options" modal popup 
 // it sends updates to the iSpy server and dismisses the modal
 function saveChanges() {
@@ -392,13 +395,16 @@ function saveChanges() {
 // we batch the incoming websocket messages and chuck 'em to the screen once in a while
 
 function updateLog() {
-	socket.send("."); // keepalive
+	
+	if(socket === undefined || socket.readyState === undefined || socket.readyState != WebSocket.OPEN)  {
+		setupWebSockets();
+		return;
+	}
 
+	socket.send("."); // keepalive	
+	
 	var savedScroll = $('.dataTables_scrollBody').scrollTop();
 	
-	$("#tableDiv").removeClass("hide");
-	$("#spinner").addClass("hide");
-
 	// don't try to read the log if it's disabled
 	if( ! $("#btnmsgSendState").is('.active') ) // these are defined/set in menu.mustache
 		return;
@@ -434,6 +440,18 @@ $(document).ready(function () {
 	// don't make ajax requests during an ajax request; this var acts as a lock
 	requestLock=0;
 
+	// Make the scrollable log panel nice n pretty
+	$("#iSpyDataTable").css({
+		"border": "1px solid #cecece", 
+		"-webkit-border-radius": "10px", 
+		"-moz-border-radius": "10px", 
+		"border-radius": "10px"
+	});
+
+	// Show the table/log
+	$("#tableDiv").removeClass("hide");
+	$("#spinner").addClass("hide");
+
 	// We use a popover for filters; initialize it now
 	$("#btnFilters").popover({trigger: 'click'});
 
@@ -464,14 +482,6 @@ $(document).ready(function () {
 			$("#btnClear").button('reset');
 			requestLock=0;
 		});
-	});
-
-	// Make the scrollable log panel nice n pretty
-	$("#iSpyDataTable").css({
-		"border": "1px solid #cecece", 
-		"-webkit-border-radius": "10px", 
-		"-moz-border-radius": "10px", 
-		"border-radius": "10px"
 	});
 });
 

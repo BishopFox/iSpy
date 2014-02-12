@@ -422,10 +422,9 @@ const char* bf_dyld_get_image_name(uint32_t id) {
  Supports logging AF_SYSTEM, AF_INET(IPv4) and AF_INET6(IPv6) sockets.
  Other types (eg. UNIX domain) sockets are not (yet) supported. Please contribute!
  */
-int bf_connect(int socket, const struct sockaddr *address,
-        socklen_t address_len) {
+int bf_connect(int socket, const struct sockaddr *address, socklen_t address_len) {
     int port = -1;
-    char host[128];
+    char host[1024];
 
     bf_logwrite(LOG_STRACE, "connect(%d, %p, %d)", socket, address, address_len);
     if (address->sa_family == AF_INET) {

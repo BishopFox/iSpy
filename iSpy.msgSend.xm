@@ -68,54 +68,31 @@ namespace bf_msgSend {
     __attribute__((used)) __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
 
     extern "C" int is_object_from_app_bundle(id Cls, SEL selector) {
-        int j = 0;
-        unsigned int i, count;
-        Method *methods;
-        BOOL isInstance = true; // generally the case, but we verify below
-
+        int j = 0; 
+        
         // don't do shit if we ain't ready
         if( ! appClassWhiteListIsReady )
             return false;
-
         if( ! appClassWhiteList)
             return false;
+        if(!Cls || !selector)
+            return false;
 
-        // First get the class definition for the object we've been passed.
-        // Then get the definition of the definition. 
-        // If the two class definitions match then we're being passed a class method.
-        // If the definitions differ then we're being passed an instance method.
-        id classDefinition = object_getClass(Cls);
-        id definitionOfClassDefinition = object_getClass(classDefinition);
-        if( classDefinition == definitionOfClassDefinition)
-            isInstance = false; // A class method is being called, not an instance method
-        
         while(appClassWhiteList[j]) {
-            if(appClassWhiteList[j] == definitionOfClassDefinition) {
-                bf_logwrite(LOG_MSGSEND, "Class Method");
-                // try the class methods, if any
-                methods = class_copyMethodList(definitionOfClassDefinition , &count);
-                for(i=0; i<count;i++) {
-                    SEL name = method_getName(methods[i]);
-                    if(name == selector) {
-                        free(methods);
-                        return true;
-                    }
-                }
-                free(methods);
-                return false;    
-            } else if(appClassWhiteList[j] == classDefinition) {
-                bf_logwrite(LOG_MSGSEND, "Instance Method");
-                // try the instance methods, if any
-                methods = class_copyMethodList(classDefinition , &count);
-                for(i=0; i<count;i++) {
-                    SEL name = method_getName(methods[i]);
-                    if(name == selector) {
-                        free(methods);
-                        return true;
-                    }
-                }
-                free(methods);
-                return false;    
+            id theClass = nil;
+
+            if(appClassWhiteList[j] == Cls->isa) { // Class method?
+                theClass = Cls->isa;
+                if(class_getClassMethod(theClass, selector))
+                    return true;
+                else
+                    return false;
+            } else if(appClassWhiteList[j] == Cls->isa->isa) { // Instance method?
+                theClass = Cls->isa->isa;
+                if(class_getInstanceMethod(theClass, selector))
+                    return true;
+                else
+                    return false;
             }
             j++;
         }

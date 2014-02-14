@@ -41,13 +41,6 @@ function setupContextHelpHandler(alignment) {
 		placement: alignment,
 		title: function () {return $(this).attr("data-className");}
 	});
-
-	// we want a nice pointer when hovering over class names
-	$(".classContextInfo").hover(function() {
-		$(this).css('cursor','pointer');
-	}, function() {
-		$(this).css('cursor','auto');
-	});
 }
 
 function prettifyRenderedClassHTML(htmlElement, contentElement, callbackFunc) {
@@ -155,14 +148,9 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 					$(methodDiv).append("+");
 				var a = $(document.createElement('a'));
 				var actualType = m["returnType"].replace(/\ \*/,"");
-				if(classType[actualType] == true) { 
-					$(a).attr("data-className", actualType );
-					$(a).html(m["returnType"]);
-					$(a).addClass("classContextInfo");
-				} else {
-					$(a).attr("href", "#" + actualType );
-					$(a).html(m["returnType"]);
-				}
+				$(a).attr("data-className", actualType );
+				$(a).html(m["returnType"]);
+				$(a).addClass("classContextInfo");
 				$(methodDiv).append("(");
 				$(methodDiv).append(a);
 				$(methodDiv).append(")");

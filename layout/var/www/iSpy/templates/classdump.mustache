@@ -77,6 +77,13 @@ function classDumpCompletionHandler() {
 		localStorage["classHTML"] = "";
 	}
 	
+	// we want a nice pointer when hovering over class names
+	$(".classContextInfo").hover(function() {
+		$(this).css('cursor','pointer');
+	}, function() {
+		$(this).css('cursor','auto');
+	});
+
 	// Give the user context-specific links to Class data
 	setupContextHelpHandler();
 
@@ -148,12 +155,6 @@ function doClassDump() {
 					$("#progressBar").attr("style", "width: 100%;")	
 					classDumpCompletionHandler();
 				}
-					// we want a nice pointer when hovering over class names
-				$(".classContextInfo").hover(function() {
-					$(this).css('cursor','pointer');
-				}, function() {
-					$(this).css('cursor','auto');
-				});
 			});
 		});
 

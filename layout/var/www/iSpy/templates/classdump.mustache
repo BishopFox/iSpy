@@ -3,11 +3,21 @@
 <script src="/static/js/jquery.ajaxQueue.min.js"></script>
 <script src="/static/js/common.js"></script>
 
+<style>
+.popover {
+	width: 700px;
+	max-width: 700px;
+	height:500px;
+	overflow: auto;
+}
+</style>
+
 <div class="row-fluid">
 	<div class="span12">
 		<legend>Class Dump &nbsp; <span id="spinner"><i class="fa fa-refresh fa-spin fadeIn animated"></i></span>
 		<div id="progressBarWrapper" class="progress progress-info fadeIn animated">
-    		<div class="progress-bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  role="progressbar" id="progressBar" style="width: 0%;"></div>
+    		<div class="progress-bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  role="progressbar" id="progressBar" style="width: 0%;">
+    		</div>
     	</div>
     	</legend>
 	</div>
@@ -27,9 +37,9 @@
 	<li class="dropdown">
 		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Class Dump Options<b class="caret"></b></a>
 		<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:refreshClassList()">Refresh class data</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:refreshClassList()">Refresh all class data</a></li>
 			<!--<li role="presentation" class="divider"></li>-->
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand all classes</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand/collapse the classes</a></li>
 		</ul>
 	</li>
 </div>
@@ -55,9 +65,17 @@ function classDumpCompletionHandler() {
 	$("#spinner").addClass("hide");
 	setTimeout('$("#progressBarWrapper").addClass("fadeOut hide")', 1000);
 	
-	// Cache the class dump for performnace reassons. Will fail if the cache > 5MB.
-	localStorage["classList"] = classList;
-	localStorage["classHTML"] = $("#dumpDiv").html();
+	// Cache the class dump for performnace reasons (class dumps from iSpy server are slow). 
+	// Will throw an exception if the the HTML is > 5MB, 2.5MB, or 10MB depending on your browser.
+	try {
+		localStorage["classList"] = classList;
+		localStorage["classHTML"] = $("#dumpDiv").html();
+		console.log("Successfully cached the class dump in localStorage");
+	} catch(e) {
+		console.log("Failed to cache: too big!");
+		localStorage["classList"] = "Too big, blame your browser's size limit.";
+		localStorage["classHTML"] = "";
+	}
 	
 	// Give the user context-specific links to Class data
 	setupContextHelpHandler();
@@ -68,15 +86,18 @@ function classDumpCompletionHandler() {
 	console.log("Complete!");
 }
 
-doneYet = 0;
-
-var theQueue = $({});
-
 function doClassDump() {
 	// Show the progress bar
 	$("#progressBarWrapper").removeClass("fadeOut hide");
 	$("#dumpDiv").addClass("hide");
 	$("#dumpArea").empty();
+
+	// we want a nice pointer when hovering over class names
+	$(".classContextInfo").hover(function() {
+		$(this).css('cursor','pointer');
+	}, function() {
+		$(this).css('cursor','auto');
+	});
 
 	$.ajax({
 		url: "/api/classes",
@@ -89,7 +110,7 @@ function doClassDump() {
 
 		// If the classList cached in localStorage matches the class list from the server, we use the cached version for speed.
 		// If there's a mismatch, we refresh the class list based on data from the server.
-		if(0 && classList == localStorage["classList"]) {
+		if(classList == localStorage["classList"]) {
 			$("#dumpDiv").html(localStorage["classHTML"]);
 			$("#progressBarWrapper").addClass("fadeOut hide");
 			$("#dumpDiv").removeClass("hide");
@@ -127,6 +148,12 @@ function doClassDump() {
 					$("#progressBar").attr("style", "width: 100%;")	
 					classDumpCompletionHandler();
 				}
+					// we want a nice pointer when hovering over class names
+				$(".classContextInfo").hover(function() {
+					$(this).css('cursor','pointer');
+				}, function() {
+					$(this).css('cursor','auto');
+				});
 			});
 		});
 

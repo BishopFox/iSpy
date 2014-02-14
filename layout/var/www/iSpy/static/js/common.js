@@ -19,7 +19,7 @@ function setupContextHelpHandler(alignment) {
 	// When we click on a class name, popup a description of that class
 	$(".classContextInfo").popover( {
 		trigger: "click",
-		template: '<div class="popover" style="width: 700px"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p><?prettify?><pre id="popoverContent" class="prettyprint"></pre></p></div></div></div>',
+		template: '<div class="popover"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p><?prettify?><pre id="popoverContent" class="prettyprint"></pre></p></div></div></div>',
 		content: function() {
 			var that = this;
 			$("#popoverContent").empty();
@@ -31,12 +31,8 @@ function setupContextHelpHandler(alignment) {
 				
 				// Set things up so that a click on the document body will dismiss any popovers.
 				$('#popoverContent').on('click', function (e) {
-					/*if($(this).is("classContextInfo") && this == that)
-						return;
-					if($("#popoverContent").html().match($(that).attr("data-className"))) {*/
-						$(that).popover('hide');
-						$('#popovercontent').off('click');
-					//}
+					$(that).popover('hide');
+					$('#popovercontent').off('click');
 				});
 			});
 		},
@@ -54,8 +50,9 @@ function setupContextHelpHandler(alignment) {
 	});
 }
 
-function prettifyRenderedClassHTML(htmlElement, callbackFunc) {
+function prettifyRenderedClassHTML(htmlElement, contentElement, callbackFunc) {
 	$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
+	$(".classDetails").removeClass("hide");
 	callbackFunc();
 }
 
@@ -69,14 +66,13 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 	var methodDiv = $(document.createElement('div'));
 
 	// Join all the elements up in the correct order
-	$(implementationDiv).append(prettyPrintOne('<a name="' + className + '" style="padding-top: 40px">@interface ' + className + "</a>"));
-	$(detailsDiv).append("// Instance variables\n{\n");
+	$(implementationDiv).append('<a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">@interface ' + className + "</a>");
+	$(detailsDiv).append("{\n");
 	$(detailsDiv).append(iVarDiv);
-	$(detailsDiv).append("}\n// Properties\n");
+	$(detailsDiv).append("}\n");
 	$(detailsDiv).append(propertyDiv);
-	$(detailsDiv).append("// Methods\n");
 	$(detailsDiv).append(methodDiv);
-	$(detailsDiv).append(prettyPrintOne('@end'));
+	$(detailsDiv).append('@end');
 	$(detailsDiv).addClass("prettyprint");
 	$(detailsDiv).addClass("hide");
 	$(detailsDiv).addClass("classDetails");
@@ -104,10 +100,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 			$.each(iVars, function(mk, iVarData) {
 				$.each(iVarData, function (iVar, type) {
 					var actualType = type.replace(/\ \*/,"");
-					if(classType[actualType] == true)
-						$(iVarDiv).append("    " + "<a href='#" + actualType + "'>" + type + "</a> " + iVar + ";\n");
-					else
-						$(iVarDiv).append("    " + "<a class='classContextInfo' data-className='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
+					$(iVarDiv).append("    " + "<a class='classContextInfo' data-className='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
 				});
 			});
 		}
@@ -118,7 +111,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 		iVarsComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
 			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, callbackFunc);
+			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
 		}
 	});
 
@@ -133,10 +126,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 				$.each(propertyData, function (property, attributes) {
 					var propClass = attributes.replace(/\(.*\)\ /,"").replace(/\ \*/,"");
 					var propAttrs = attributes.match(/\(.*\)\ /);
-					if(classType[propClass] == true)
-						$(propertyDiv).append("@property " + propAttrs + "<a href='#" + propClass + "'>" + propClass + "</a> " + property + ";\n");
-					else
-						$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass + "'>" + propClass + "</a> " + property + ";\n");
+					$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass + "'>" + propClass + "</a> " + property + ";\n");
 				});
 			});
 		}
@@ -147,7 +137,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 		propertiesComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
 			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, callbackFunc);
+			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
 		}
 	});
 
@@ -198,7 +188,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 		methodsComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
 			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, callbackFunc);
+			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
 		}
 	});
 
@@ -214,7 +204,7 @@ function set_instance_tracker_state(boolState) {
 	originalInstanceState = get_instance_tracker_state();
 	
 	POSTBody = "item=" + "instanceTracking" + "&state=" + boolState;
-    $.post("/api/monitor/status", POSTBody);
+	$.post("/api/monitor/status", POSTBody);
 }
 
 // This is crazy and could make your head exploit with its awfulness.
@@ -238,49 +228,51 @@ function restore_instance_tracker_state() {
 		return;
 
 	POSTBody = "item=" + "instanceTracking" + "&state=" + originalInstanceState;
-    $.post("/api/monitor/status", POSTBody);
+	$.post("/api/monitor/status", POSTBody);
 
-    originalInstanceState = -1;
+	originalInstanceState = -1;
 }
 
 // this dynamically scales the log window to fit vertically in the browser window
 // call like resolveFullHeight("#elementName")
 function resolveFullHeight(element) {
-    $(element).css("height", "auto");
-    var h_window = $(window).height(),
-        h_document = $(document).height(),
-        fullHeight_top = $(element).position().top,
-        est_footerHeight = 0;
-    var h_fullHeight = h_document - fullHeight_top - 100;
-    return h_fullHeight;
+	$(element).css("height", "auto");
+	var h_window = $(window).height(),
+		h_document = $(document).height(),
+		fullHeight_top = $(element).position().top,
+		est_footerHeight = 0;
+	var h_fullHeight = h_document - fullHeight_top - 100;
+	return h_fullHeight;
 }
 
 
 // Pads a number with leading zeros
 function pad(num, size) {
-    var s = num+"";
-    while (s.length < size) s = "0" + s;
-    return s;
+	var s = num+"";
+	while (s.length < size) s = "0" + s;
+	return s;
 }
 
 // Disable DataTables' automatic filter - it chews up the CPU on large datasets.
 // Instead we force the user to press enter to submit a search.
 if(jQuery.fn.dataTableExt) {
 	jQuery.fn.dataTableExt.oApi.fnFilterOnReturn = function (oSettings) {
-	    var _that = this;
+		var _that = this;
 	  
-	    this.each(function (i) {
-	        $.fn.dataTableExt.iApiIndex = i;
-	        var $this = this;
-	        var anControl = $('input', _that.fnSettings().aanFeatures.f);
-	        anControl.unbind('keyup').bind('keypress', function (e) {
-	            if (e.which == 13) {
-	                $.fn.dataTableExt.iApiIndex = i;
-	                _that.fnFilter(anControl.val());
-	            }
-	        });
-	        return this;
-	    });
-	    return this;
+		this.each(function (i) {
+			$.fn.dataTableExt.iApiIndex = i;
+			var $this = this;
+			var anControl = $('input', _that.fnSettings().aanFeatures.f);
+			anControl.unbind('keyup').bind('keypress', function (e) {
+				if (e.which == 13) {
+					$.fn.dataTableExt.iApiIndex = i;
+					_that.fnFilter(anControl.val());
+				}
+			});
+			return this;
+		});
+		return this;
 	};
 }
+
+

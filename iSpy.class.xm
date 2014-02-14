@@ -503,7 +503,7 @@ Returns a NSDictionary like this:
     NSMutableArray *iVars = [[NSMutableArray alloc] init];
 
     if(!ivarList)
-        return nil;
+        return nil; //[iVars copy];
 
     for(j = 0; j < iVarCount; j++) {
         NSMutableDictionary *iVar = [[NSMutableDictionary alloc] init];
@@ -523,7 +523,7 @@ Returns a NSDictionary like this:
     NSMutableArray *properties = [[NSMutableArray alloc] init];
 
     if(!propertyList)
-        return nil;
+        return nil; //[properties copy];
 
     for(j = 0; j < propertyCount; j++) {
         NSMutableDictionary *property = [[NSMutableDictionary alloc] init];
@@ -548,14 +548,14 @@ Returns a NSDictionary like this:
     Method *instanceMethodList = NULL;
     
     if(!className)
-        return nil;
+        return nil; //[methods copy];
 
     if((classNameUTF8 = (char *)[className UTF8String]) == NULL)
-        return nil;
+        return nil; //[methods copy];
 
     Class cls = objc_getClass(classNameUTF8);
     if(cls == nil)
-        return nil;
+        return nil; //[methods copy];
     
     c = object_getClass(cls);
     if(c)
@@ -597,10 +597,10 @@ Returns a NSDictionary like this:
 
     numClasses = objc_getClassList(NULL, 0);
     if(numClasses <= 0)
-        return nil; 
+        return nil; //[classArray copy]; 
     
     if((classes = (Class *)malloc(sizeof(Class) * numClasses)) == NULL)
-        return nil;
+        return [classArray copy];
     
     objc_getClassList(classes, numClasses);
     

@@ -1,11 +1,13 @@
 <link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
 <script src="/static/google-code-prettify/prettify.js"></script>
+<script src="/static/js/jquery.ajaxQueue.min.js"></script>
+<script src="/static/js/common.js"></script>
 
 <div class="row-fluid">
 	<div class="span12">
 		<legend>Class Dump &nbsp; <span id="spinner"><i class="fa fa-refresh fa-spin fadeIn animated"></i></span>
 		<div id="progressBarWrapper" class="progress progress-info fadeIn animated">
-    		<div class="bar" id="progressBar" style="width: 0%;"></div>
+    		<div class="progress-bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  role="progressbar" id="progressBar" style="width: 0%;"></div>
     	</div>
     	</legend>
 	</div>
@@ -22,18 +24,16 @@
 <div id="fooBar" class="hide"></div>
 
 <div class="hide" id="classDumpMenu">
-	<ul class="nav" role="navigation">
-		<li class="dropdown">
-			<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Class Dump Options<b class="caret"></b></a>
-			<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-				<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:refreshClassList()">Refresh class data</a></li>
-				<!--<li role="presentation" class="divider"></li>-->
-				<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand all classes</a></li>
-			</ul>
-		</li>
-	</ul>
+	<li class="dropdown">
+		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Class Dump Options<b class="caret"></b></a>
+		<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:refreshClassList()">Refresh class data</a></li>
+			<!--<li role="presentation" class="divider"></li>-->
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand all classes</a></li>
+		</ul>
+	</li>
 </div>
-<script src="/static/js/common.js"></script>
+
 <script>
 
 function refreshClassList() {
@@ -53,7 +53,7 @@ function expandClassList() {
 function classDumpCompletionHandler() {
 	// Fix the UI
 	$("#spinner").addClass("hide");
-	$("#progressBarWrapper").addClass("fadeOut hide");
+	setTimeout('$("#progressBarWrapper").addClass("fadeOut hide")', 1000);
 	
 	// Cache the class dump for performnace reassons. Will fail if the cache > 5MB.
 	localStorage["classList"] = classList;
@@ -68,6 +68,10 @@ function classDumpCompletionHandler() {
 	console.log("Complete!");
 }
 
+doneYet = 0;
+
+var theQueue = $({});
+
 function doClassDump() {
 	// Show the progress bar
 	$("#progressBarWrapper").removeClass("fadeOut hide");
@@ -80,12 +84,12 @@ function doClassDump() {
 		dataType: "json"
 	}).done(function(classes) {
 		classList = classes;
-
+		console.log("Done");
 		$("#spinner").removeClass("hide");
 
 		// If the classList cached in localStorage matches the class list from the server, we use the cached version for speed.
 		// If there's a mismatch, we refresh the class list based on data from the server.
-		if(1 && classList == localStorage["classList"]) {
+		if(0 && classList == localStorage["classList"]) {
 			$("#dumpDiv").html(localStorage["classHTML"]);
 			$("#progressBarWrapper").addClass("fadeOut hide");
 			$("#dumpDiv").removeClass("hide");
@@ -119,8 +123,10 @@ function doClassDump() {
 				$("#progressBar").attr("style", "width: " + percentAmt.toString() + "%;")
 				
 				// If we're done then call the completion handler. This call is made once class dump has finished.
-				if(classCounter == numClasses)
+				if(classCounter == numClasses) {
+					$("#progressBar").attr("style", "width: 100%;")	
 					classDumpCompletionHandler();
+				}
 			});
 		});
 
@@ -131,7 +137,7 @@ function doClassDump() {
 
 $(document).ready(function() {
 	// Add a new menu to the menu bar
-	$('#menuItems').append($('#classDumpMenu').html());
+	$('#menuBarExtraMenu1').append($('#classDumpMenu').html());
 
 	// Grab the list of classes from the iSpy server
 	doClassDump();

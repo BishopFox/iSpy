@@ -95,7 +95,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 	var allComplete = false;
 
 	// Render the iVars
-	$.ajax({
+	$.ajaxQueue({
 		url: "/api/iVarsForClass/" + className,
 		timeout: 120000,
 		dataType: "json"
@@ -112,7 +112,8 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 			});
 		}
 	}).fail(function (j,t,e) {
-		console.log("Fail: " + className + " - " + t + " - " + e);
+		//console.log("iVarsForClass empty: " + className + " - " + t + " - " + e);
+		iVarsComplete = true;
 	}).always(function () {
 		iVarsComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
@@ -122,7 +123,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 	});
 
 	// Render the properties
-	$.ajax({
+	$.ajaxQueue({
 		url: "/api/propertiesForClass/" + className,
 		timeout: 120000,
 		dataType: "json"
@@ -140,7 +141,8 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 			});
 		}
 	}).fail(function (j,t,e) {
-		console.log("Fail: " + className + " - " + t + " - " + e);
+		//console.log("propertiesForClass empty: " + className + " - " + t + " - " + e);
+		propertiesComplete = true;
 	}).always(function () {
 		propertiesComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
@@ -150,7 +152,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 	});
 
 	// Render the methods
-	$.ajax({
+	$.ajaxQueue({
 		url: "/api/methodsForClass/" + className,
 		timeout: 120000,
 		dataType: "json"
@@ -187,11 +189,11 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 				} else {
 					$(methodDiv).append(m["name"] + ";\n");
 				}
-				
 			});
 		}
 	}).fail(function (j,t,e) {
-		console.log("Fail: " + className + " - " + t + " - " + e);
+		//console.log("methodsForClass empty: " + className + " - " + t + " - " + e);
+		methodsComplete = true;
 	}).always(function () {
 		methodsComplete = true;
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {

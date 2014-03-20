@@ -90,6 +90,10 @@ function classDumpCompletionHandler() {
 	// Restore the previous state of instance tracking.
 	restore_instance_tracker_state(); 
 
+	/* This generates a text (stripped of HTML) version of the class dump.
+	var foo=$("#dumpDiv").html();
+	$("#txtVersion").append($(foo).text());
+	*/
 	console.log("Complete!");
 }
 
@@ -106,8 +110,9 @@ function doClassDump() {
 		$(this).css('cursor','auto');
 	});
 
+	// grab the list of classes from the iDevice
 	$.ajax({
-		url: "/api/classes",
+		url: "/api/classesWithSuperClassAndProtocolInfo",
 		timeout: 30000,
 		dataType: "json"
 	}).done(function(classes) {
@@ -136,7 +141,9 @@ function doClassDump() {
 		console.log("Got " + numClasses + " classes" );
 
 		// Cycle through the classes, dump dump dumping.
-		$.each(classes, function(key, className) {
+		$.each(classes, function(key, classDict) {
+			className = classDict["className"];
+
 			// Cache this in a hash
 			classType[className] = true;
 
@@ -155,6 +162,20 @@ function doClassDump() {
 					$("#progressBar").attr("style", "width: 100%;")	
 					classDumpCompletionHandler();
 				}
+			}, classDict);
+		});
+
+		// grab the list of classes from the iDevice
+		$.ajax({
+			url: "/api/protocolsForRuntime",
+			timeout: 30000,
+			dataType: "json"
+		}).done(function(protocols) {
+			$.each(protocols, function(key, protocolDict) {
+				protocolName = protocolDict["protocolName"];
+				getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {
+
+				}, protocolDict);
 			});
 		});
 
@@ -172,3 +193,4 @@ $(document).ready(function() {
 });
 
 </script>
+

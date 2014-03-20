@@ -261,11 +261,32 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return nil;
     }];
 
+    // return an array of class names
+    [[self http] handleGET:@"/api/classesWithSuperClassAndProtocolInfo"
+        with:^(HTTPConnection *connection) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] classesWithSuperClassAndProtocolInfo] options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
+    }];
 
     [[self http] handleGET:@"/api/infoForMethod/*/*"
         with:^(HTTPConnection *connection, NSString *selName, NSString *clsName) {
             NSDictionary * dict = [[iSpy sharedInstance] infoForMethod:NSSelectorFromString(selName) inClass:objc_getClass([clsName UTF8String])];
             NSData *JSONData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
+    }];
+
+    [[self http] handleGET:@"/api/protocolsForRuntime"
+        with:^(HTTPConnection *connection, NSString *clsName) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] protocolsForRuntime] options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
+    }];
+
+    [[self http] handleGET:@"/api/protocolsForClass/*"
+        with:^(HTTPConnection *connection, NSString *clsName) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] protocolsForClass:clsName] options:0 error:NULL];
             [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
             return nil;
     }];

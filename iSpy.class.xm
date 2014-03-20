@@ -45,7 +45,7 @@
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <QuartzCore/QuartzCore.h>
-
+#import "typestring.h"
 
 static NSString *changeDateToDateString(NSDate *date);
 static char *bf_get_type_from_signature(char *typeStr);
@@ -285,44 +285,6 @@ id *appClassWhiteList = NULL;
 -(NSDictionary *) getSymbolTable {
     return nil;
 }
-    /*
-    int result;
-    NSUInteger numSymbols;
-    sqlite3_stmt *stmt;
-    iSpy *mySpy = [iSpy sharedInstance];
-
-    // Get the number of symbols in the app
-    sqlite3_prepare_v2([[mySpy db] handle], "SELECT count(id) FROM symbols", -1, &stmt, NULL);
-    if((result = sqlite3_step(stmt)) != SQLITE_ROW)
-        return NULL;
-    numSymbols = (NSUInteger)sqlite3_column_int(stmt, 0);
-    sqlite3_finalize(stmt);
-    bf_logwrite(LOG_GENERAL, "getSymbolTable: counted %u symbols", (unsigned int)numSymbols);
-
-    // Allocate a dictionary of the correct size to hold all the symbols plus nil and a bit
-    NSMutableDictionary *symtab = [[NSMutableDictionary alloc] initWithCapacity:numSymbols+2];
-    
-    // Populate the dict
-    sqlite3_prepare_v2([[mySpy db] handle], "SELECT name, offset, n_stab, n_pext, n_ext, n_pbud, n_indr, n_arm, type FROM symbols", -1, &stmt, NULL);
-    while((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-        NSMutableDictionary *symbol = [[NSMutableDictionary alloc] initWithCapacity:9]; 
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 1)] forKey:@"offset"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 2)] forKey:@"n_stab"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 3)] forKey:@"n_pext"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 4)] forKey:@"n_ext"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 5)] forKey:@"n_pbud"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 6)] forKey:@"n_indr"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 7)] forKey:@"n_arm"];
-        [symbol setObject:[NSNumber numberWithUnsignedInt: sqlite3_column_int(stmt, 8)] forKey:@"type"];
-        [symtab setObject:[symbol copy] forKey:[NSString stringWithUTF8String: (const char *)sqlite3_column_text(stmt, 0)]]; // main dict is keyed by symbol name
-    }
-    sqlite3_finalize(stmt);
-    sqlite3_close([[mySpy db] handle]);
-    NSDictionary *returnDict = [symtab copy];
-    bf_logwrite(LOG_GENERAL, "getSymbolTable: done!");
-    return returnDict;
-} 
-*/
 
 -(unsigned int) getMachFlags {
     return 0;
@@ -537,6 +499,140 @@ Returns a NSDictionary like this:
     return [properties copy];
 }
 
+-(id)propertiesForProtocol:(Protocol *)protocol {
+    unsigned int propertyCount = 0, j;
+    objc_property_t *propertyList = protocol_copyPropertyList(protocol, &propertyCount);
+    NSMutableArray *properties = [[NSMutableArray alloc] init];
+
+    if(!propertyList)
+        return properties;
+
+    for(j = 0; j < propertyCount; j++) {
+        NSMutableDictionary *property = [[NSMutableDictionary alloc] init];
+
+        char *name = (char *)property_getName(propertyList[j]);
+        char *attr = bf_get_attrs_from_signature((char *)property_getAttributes(propertyList[j])); 
+        [property setObject:[NSString stringWithUTF8String:attr] forKey:[NSString stringWithUTF8String:name]];
+        [properties addObject:property];
+        free(attr);
+    }
+    return [properties copy];
+}
+
+-(id)methodsForProtocol:(Protocol *)protocol {
+    BOOL isReqVals[4] =      {NO, NO,  YES, YES};
+    BOOL isInstanceVals[4] = {NO, YES, NO,  YES};
+    unsigned int methodCount;
+    NSMutableArray *methods = [[NSMutableArray alloc] init];
+    
+    for( int i = 0; i < 4; i++ ){
+        struct objc_method_description *methodDescriptionList = protocol_copyMethodDescriptionList(protocol, isReqVals[i], isInstanceVals[i], &methodCount);
+        if(!methodDescriptionList)
+            continue;
+
+        if(methodCount <= 0) {
+            free(methodDescriptionList);
+            continue;
+        }
+
+        NSMutableDictionary *methodInfo = [[NSMutableDictionary alloc] init];
+        for(int j = 0; j < methodCount; j++) {
+            NSArray *types = ParseTypeString([NSString stringWithUTF8String:methodDescriptionList[j].types]);
+            [methodInfo setObject:[NSString stringWithUTF8String:sel_getName(methodDescriptionList[j].name)] forKey:@"methodName"];
+            [methodInfo setObject:[types objectAtIndex:0] forKey:@"returnType"];
+            [methodInfo setObject:((isReqVals[i]) ? @"1" : @"0") forKey:@"required"];
+            [methodInfo setObject:((isInstanceVals[i]) ? @"1" : @"0") forKey:@"instance"];
+
+            NSMutableArray *params = [[NSMutableArray alloc] init];
+            if([types count] > 3) {  // return_type, class, selector, ...
+                NSRange range;
+                range.location = 3;
+                range.length = [types count]-3;
+                [params addObject:[types subarrayWithRange:range]];
+            }
+            [methodInfo setObject:params forKey:@"parameters"];
+        }
+
+        [methods addObject:methodInfo];
+
+        free(methodDescriptionList);
+    }
+    return [methods copy];
+}
+
+-(id)protocolsForClass:(NSString *)className {
+    unsigned int protocolCount = 0, j;
+    Protocol **protocols = class_copyProtocolList(objc_getClass([className UTF8String]), &protocolCount);
+    NSMutableArray *protocolList = [[NSMutableArray alloc] init];
+
+    if(protocolCount <= 0)
+        return protocolList;
+
+    // some of this code was inspired by (and a little of it is copy/pasta) https://gist.github.com/markd2/5961219
+    for(j = 0; j < protocolCount; j++) {
+        NSMutableArray *adoptees;
+        NSMutableDictionary *protocolInfoDict = [[NSMutableDictionary alloc] init];
+        const char *protocolName = protocol_getName(protocols[j]); 
+        unsigned int adopteeCount;
+        Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
+    
+        adoptees = [[NSMutableArray alloc] init];
+        for(int i = 0; i < adopteeCount; i++) {
+            const char *adopteeName = protocol_getName(adopteesList[i]);
+            if(!adopteeName)
+                continue; // skip broken names
+            [adoptees addObject:[NSString stringWithUTF8String:adopteeName]];
+        }
+        free(adopteesList);
+
+        [protocolInfoDict setObject:[NSString stringWithUTF8String:protocolName] forKey:@"protocolName"];
+        [protocolInfoDict setObject:adoptees forKey:@"adoptees"];
+        [protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
+        [protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
+         
+        [protocolList addObject:protocolInfoDict];
+    }
+    free(protocols);
+    return [protocolList copy];
+}
+
+-(id)protocolsForRuntime {
+    unsigned int protocolCount = 0, j;
+    Protocol **protocols = objc_copyProtocolList(&protocolCount);
+    NSMutableArray *protocolList = [[NSMutableArray alloc] init];
+
+    if(protocolCount <= 0)
+        return protocolList;
+
+    // some of this code was inspired by (and a little of it is copy/pasta) https://gist.github.com/markd2/5961219
+    for(j = 0; j < protocolCount; j++) {
+        NSMutableArray *adoptees;
+        NSMutableDictionary *protocolInfoDict = [[NSMutableDictionary alloc] init];
+        const char *protocolName = protocol_getName(protocols[j]); 
+        unsigned int adopteeCount;
+        Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
+    
+        adoptees = [[NSMutableArray alloc] init];
+        for(int i = 0; i < adopteeCount; i++) {
+            const char *adopteeName = protocol_getName(adopteesList[i]);
+            if(!adopteeName)
+                continue; // skip broken names
+            [adoptees addObject:[NSString stringWithUTF8String:adopteeName]];
+        }
+        free(adopteesList);
+
+        [protocolInfoDict setObject:[NSString stringWithUTF8String:protocolName] forKey:@"protocolName"];
+        [protocolInfoDict setObject:adoptees forKey:@"adoptees"];
+        [protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
+        [protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
+         
+        [protocolList addObject:protocolInfoDict];
+    }
+    free(protocols);
+    return [protocolList copy];
+}
+
+
 -(id)methodsForClass:(NSString *)className {
     unsigned int numClassMethods = 0;
     unsigned int numInstanceMethods = 0;
@@ -614,9 +710,55 @@ Returns a NSDictionary like this:
     return [classArray copy];  
 }
 
+-(id)classesWithSuperClassAndProtocolInfo {
+    Class * classes = NULL;
+    NSMutableArray *classArray = [[NSMutableArray alloc] init];
+    int numClasses;
+    unsigned int numProtocols;
+
+    numClasses = objc_getClassList(NULL, 0);
+    if(numClasses <= 0)
+        return nil; //[classArray copy]; 
+    
+    if((classes = (Class *)malloc(sizeof(Class) * numClasses)) == NULL)
+        return [classArray copy];
+    
+    objc_getClassList(classes, numClasses);
+    
+    int i=0;
+    while(i < numClasses) {
+        NSString *className = [NSString stringWithUTF8String:class_getName(classes[i])];
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+
+        if([iSpy isClassFromApp:className]) {
+            Protocol **protocols = class_copyProtocolList(classes[i], &numProtocols);
+            Class superClass = class_getSuperclass(classes[i]);
+            char *superClassName = NULL;
+
+            if(superClass)
+                superClassName = (char *)class_getName(superClass);
+
+            [dict setObject:className forKey:@"className"];
+            [dict setObject:[NSString stringWithUTF8String:superClassName] forKey:@"superClass"];
+
+            NSMutableArray *pr = [[NSMutableArray alloc] init];
+            if(numProtocols) {
+                for(int i = 0; i < numProtocols; i++) {
+                    [pr addObject:[NSString stringWithUTF8String:protocol_getName(protocols[i])]];
+                }
+                free(protocols);
+            }
+            [dict setObject:pr forKey:@"protocols"];
+            [classArray addObject:dict];
+        }
+        i++;
+    }
+    return [classArray copy];   
+}
+
 -(id)instance_atAddress:(NSString *)addr {
     // Given a string in the format @"0xdeadbeef", this first converts the string to an address, then
-    // returns an opaque Objective-C instance at that address.
+    // returns an opaque Objective-C object at that address.
     // The runtime can treat this return value just like any other object.
     // BEWARE: give this an incorrect/invalid address and you'll return a duff pointer. Caveat emptor.
     return (id)strtoul([addr UTF8String], (char **)NULL, 16);
@@ -704,98 +846,11 @@ static NSString *changeDateToDateString(NSDate *date) {
     return dateString;
 }
 
-
 // The caller is responsible for calling free() on the pointer returned by this function.
 static char *bf_get_type_from_signature(char *typeStr) {
-    char *type;
-    bool isPointer=false;
-    char *newType;
-    char *closeQuote;
-    char tmp[1024];
-    int index = 0;
-
-    if(!typeStr) {
-        if((newType = (char *)malloc(7)) == NULL)
-            return NULL;
-        // I always advise people not to to this, but...
-        strcpy(newType, "(null)");
-        return newType;
-    }
-    //bf_logwrite(LOG_GENERAL,"type: %s", typeStr);
-
-    if (typeStr[0] == '^') {
-        index++;
-        isPointer=true;
-    }
-
-    if(typeStr[index]) {
-        switch (typeStr[index]) {
-            case 'd': type = (char *)"double"; break;
-            case 'i': type = (char *)"int"; break;
-            case 'f': type = (char *)"float"; break;
-            case 'c': type = (char *)"char"; break;
-            case 's': type = (char *)"short"; break;
-            case 'I': type = (char *)"unsigned int"; break;
-            case 'l': type = (char *)"long"; break;
-            case 'q': type = (char *)"long long"; break;
-            case 'L': type = (char *)"unsigned long"; break;
-            case 'C': type = (char *)"unsigned char"; break;
-            case 'S': type = (char *)"unsigned short"; break;
-            case 'Q': type = (char *)"unsigned long long"; break;
-            case 'B': type = (char *)"BOOL"; break;
-            case 'v': type = (char *)"void"; break;
-            case '*': type = (char *)"char *"; break;
-            case ':': type = (char *)"SEL"; break;
-            case '#': type = (char *)"Class"; break;
-            case '@': 
-                type = (char *)"id"; 
-                if(typeStr[index+1] == 0)
-                    break;
-                if(typeStr[index+1] == 0x22 && strlen(typeStr) > 2) {
-                    strncpy(tmp, &typeStr[index + 2], 1023);
-                    type = closeQuote = tmp;
-                    while (*closeQuote && *closeQuote != 0x22)
-                        closeQuote++;
-                    *closeQuote = 0;
-                    isPointer = true; // is there ever a case where this is false? 
-                } 
-
-                else if (typeStr[index+1] == '?') {
-                    type = (char *)"^(__bf_unknown_args__)";
-                }
-                if(type[0] == 0)
-                    type = (char *)"id";
-                break;
-            case 'V': type = (char *)"void"; break;
-            case 'r': type = (char *)"const void *"; break;
-            case '{': // struct
-                //bf_logwrite(LOG_GENERAL, "struct %s", &typeStr[index + 1]);
-                snprintf(tmp, 1023, "struct %s", &typeStr[index + 1]);
-                type = closeQuote = tmp;
-                while(*closeQuote && *closeQuote != '=')
-                    closeQuote++;
-                *closeQuote = 0;
-                //bf_logwrite(LOG_GENERAL, "  now: %s", tmp);
-                break;
-            case '?': 
-                type = (char *)"^(__bf_unknown_args__)";
-                break;
-            default: 
-                //bf_logwrite(LOG_GENERAL, "Unknown data type: %s", typeStr);
-                type = (char *)"__bf_unknown_type__"; 
-                break;
-        }
-    } else {
-        type = (char *)"__bf_null_type_data__";
-    }
-    if((newType = (char *)malloc(strlen(type)+3)) == NULL) // +3 is to allow room for " *"
-        return NULL;
-    // strcpy() takes me to a happy place
-    strcpy(newType, type);
-    if(isPointer)
-        strcat(newType, " *");
-        
-    return newType;
+    NSArray *types = ParseTypeString([NSString stringWithUTF8String:typeStr]);
+    NSString *result = [[types valueForKey:@"description"] componentsJoinedByString:@" "];
+    return (char *)strdup([result UTF8String]);
 }
 
 /*
@@ -804,18 +859,19 @@ static char *bf_get_type_from_signature(char *typeStr) {
     The caller must free() the buffer returned by this func.
 */
 static char *bf_get_friendly_method_return_type(Method method) {
-    // Here's, I'll paste from the Apple docs:
+    // Here, I'll paste from the Apple docs:
     //      "The method's return type string is copied to dst. dst is filled as if strncpy(dst, parameter_type, dst_len) were called."
     // Um, ok... but how big does my destination buffer need to be?
     char tmpBuf[1024];
     
     // Does it pad with a NULL? Jeez. *shakes fist in Apple's general direction*
+    memset(tmpBuf, 0, 1024);
     method_getReturnType(method, tmpBuf, 1023);
     return bf_get_type_from_signature(tmpBuf);
 }
 
 // based on code from https://gist.github.com/markd2/5961219
-// You must free the resulting pointer
+// The caller must free the returned pointer.
 static char *bf_get_attrs_from_signature(char *attributeCString) {
     NSString *attributeString = @( attributeCString );
     NSArray *chunks = [attributeString componentsSeparatedByString: @","];
@@ -860,7 +916,7 @@ static char *bf_get_attrs_from_signature(char *attributeCString) {
                 [translatedChunks addObject: @"dynamic"];
                 break;
             case 'W': // weak
-                [translatedChunks addObject: @"weak"];
+                [translatedChunks addObject: @"__weak"];
                 break;
             case 'P': // eligible for GC
                 [translatedChunks addObject: @"GC"];

@@ -49,7 +49,7 @@ function prettifyRenderedClassHTML(htmlElement, contentElement, callbackFunc) {
 	callbackFunc();
 }
 
-function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
+function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classDict) {
 	// Create a DIV into which we'll place the ivar/prop/method info for this class.
 	var classDiv = $(document.createElement('div')); 
 	var implementationDiv = $(document.createElement('div'));
@@ -59,13 +59,31 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 	var methodDiv = $(document.createElement('div'));
 
 	// Join all the elements up in the correct order
-	$(implementationDiv).append('<a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">@interface ' + className + "</a>");
+	var classInfo;
+	if(classDict) {
+		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a> : ";
+		classInfo = classInfo + '<a class="classContextInfo" data-className="' + classDict["superClass"] + '">' + classDict["superClass"] + "</a>";
+		var numProtocols = classDict["protocols"].length;
+		if(numProtocols) {
+			classInfo = classInfo + " <";
+			$.each(classDict["protocols"], function (key, protocolName) {
+				numProtocols--;
+				classInfo = classInfo + '<a class="classContextInfo" data-protocolName="' + protocolName + '">' + protocolName + '</a>';
+				if(numProtocols)
+					classInfo = classInfo + ', ';
+			});
+			classInfo = classInfo + '&gt;\n';
+		}
+	} else {
+		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a>\n";
+	}
+	$(implementationDiv).append(classInfo);
 	$(detailsDiv).append("{\n");
 	$(detailsDiv).append(iVarDiv);
 	$(detailsDiv).append("}\n");
 	$(detailsDiv).append(propertyDiv);
 	$(detailsDiv).append(methodDiv);
-	$(detailsDiv).append('@end');
+	$(detailsDiv).append('@end\n\n');
 	$(detailsDiv).addClass("prettyprint");
 	$(detailsDiv).addClass("hide");
 	$(detailsDiv).addClass("classDetails");
@@ -92,7 +110,8 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 		if(iVars) {
 			$.each(iVars, function(mk, iVarData) {
 				$.each(iVarData, function (iVar, type) {
-					var actualType = type.replace(/\ \*/,"");
+					var actualType = type.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+					type = type.replace(/>/, "&gt;").replace(/</, "&lt;");
 					$(iVarDiv).append("    " + "<a class='classContextInfo' data-className='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
 				});
 			});
@@ -119,7 +138,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 				$.each(propertyData, function (property, attributes) {
 					var propClass = attributes.replace(/\(.*\)\ /,"").replace(/\ \*/,"");
 					var propAttrs = attributes.match(/\(.*\)\ /);
-					$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass + "'>" + propClass + "</a> " + property + ";\n");
+					$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass.replace(/[\<\>\^]/g, "") + "'>" + propClass + "</a> " + property + ";\n");
 				});
 			});
 		}
@@ -177,6 +196,162 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc) {
 		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
 			allComplete = true;
 			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
+		}
+	});
+
+	// Return to the caller. 
+	// Once all the methods, ivars, and properties have been rendered
+	// the DIV will be prettified and the callback function will called.
+}
+
+
+function getRenderedProtocolHTML(protocolName, parentHtmlElement, callbackFunc, protocolDict) {
+	// Create a DIV into which we'll place the ivar/prop/method info for this Protocol.
+	var protocolDiv = $(document.createElement('div')); 
+	var implementationDiv = $(document.createElement('div'));
+	var detailsDiv = $(document.createElement('div'));
+	var iVarDiv = $(document.createElement('div'));
+	var propertyDiv = $(document.createElement('div'));
+	var methodDiv = $(document.createElement('div'));
+
+	// Join all the elements up in the correct order
+	var protocolInfo;
+	if(protocolDict) {
+		protocolInfo = '@interface <a protocol="protocolContextInfo" data-protocolName="' + protocolName + '" style="padding-top: 40px">' + protocolName + "</a> : ";
+		protocolInfo = protocolInfo + '<a protocol="protocolContextInfo" data-protocolName="' + protocolDict["superprotocol"] + '">' + protocolDict["superprotocol"] + "</a>";
+		var numProtocols = protocolDict.length;
+		if(numProtocols) {
+			protocolInfo = protocolInfo + " <";
+			$.each(protocolDict, function (key, protocolName) {
+				numProtocols--;
+				protocolInfo = protocolInfo + '<a protocol="protocolContextInfo" data-protocolName="' + protocolName + '">' + protocolName + '</a>';
+				if(numProtocols)
+					protocolInfo = protocolInfo + ', ';
+			});
+			protocolInfo = protocolInfo + '&gt;\n';
+		}
+	} else {
+		protocolInfo = '@interface <a protocol="protocolContextInfo" data-protocolName="' + protocolName + '" style="padding-top: 40px">' + protocolName + "</a>\n";
+	}
+	$(implementationDiv).append(protocolInfo);
+	$(detailsDiv).append("{\n");
+	$(detailsDiv).append(iVarDiv);
+	$(detailsDiv).append("}\n");
+	$(detailsDiv).append(propertyDiv);
+	$(detailsDiv).append(methodDiv);
+	$(detailsDiv).append('@end\n\n');
+	$(detailsDiv).addprotocol("prettyprint");
+	$(detailsDiv).addprotocol("hide");
+	$(detailsDiv).addprotocol("protocolDetails");
+	$(detailsDiv).attr("style", "padding-bottom: 20pt;");
+	$(detailsDiv).attr("id", "details_" + protocolName);
+	//$(protocolDiv).append('');
+	$(protocolDiv).append(implementationDiv);
+	$(protocolDiv).append(detailsDiv);
+	$(protocolDiv).attr("id", "protocol_" + protocolName);
+	$(parentHtmlElement).append(protocolDiv);
+	
+	// Maintain state
+	var iVarsComplete = false;
+	var propertiesComplete = false;
+	var methodsComplete = false;
+	var allComplete = false;
+
+	// Render the iVars
+	$.ajaxQueue({
+		url: "/api/iVarsForprotocol/" + protocolName,
+		timeout: 120000,
+		dataType: "json"
+	}).done(function(iVars, t, j) {
+		if(iVars) {
+			$.each(iVars, function(mk, iVarData) {
+				$.each(iVarData, function (iVar, type) {
+					var actualType = type.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+					type = type.replace(/>/, "&gt;").replace(/</, "&lt;");
+					$(iVarDiv).append("    " + "<a protocol='protocolContextInfo' data-protocolName='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
+				});
+			});
+		}
+	}).fail(function (j,t,e) {
+		//console.log("iVarsForprotocol empty: " + protocolName + " - " + t + " - " + e);
+		iVarsComplete = true;
+	}).always(function () {
+		iVarsComplete = true;
+		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
+			allComplete = true;
+			prettifyRenderedprotocolHTML(protocolDiv, detailsDiv, callbackFunc);
+		}
+	});
+
+	// Render the properties
+	$.ajaxQueue({
+		url: "/api/propertiesForprotocol/" + protocolName,
+		timeout: 120000,
+		dataType: "json"
+	}).done(function(properties, t, j) {
+		if(properties){
+			$.each(properties, function(mk, propertyData) {
+				$.each(propertyData, function (property, attributes) {
+					var propprotocol = attributes.replace(/\(.*\)\ /,"").replace(/\ \*/,"");
+					var propAttrs = attributes.match(/\(.*\)\ /);
+					$(propertyDiv).append("@property " + propAttrs + "<a protocol='protocolContextInfo' data-protocolName='" + propprotocol.replace(/[\<\>\^]/g, "") + "'>" + propprotocol + "</a> " + property + ";\n");
+				});
+			});
+		}
+	}).fail(function (j,t,e) {
+		//console.log("propertiesForprotocol empty: " + protocolName + " - " + t + " - " + e);
+		propertiesComplete = true;
+	}).always(function () {
+		propertiesComplete = true;
+		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
+			allComplete = true;
+			prettifyRenderedprotocolHTML(protocolDiv, detailsDiv, callbackFunc);
+		}
+	});
+
+	// Render the methods
+	$.ajaxQueue({
+		url: "/api/methodsForprotocol/" + protocolName,
+		timeout: 120000,
+		dataType: "json"
+	}).done(function(methods) {
+		if(methods) {
+			$.each(methods, function(index, m) {
+				if(m["isInstanceMethod"] == 1)
+					$(methodDiv).append("-");
+				else
+					$(methodDiv).append("+");
+				var a = $(document.createElement('a'));
+				var actualType = m["returnType"].replace(/\ \*/,"");
+				$(a).attr("data-protocolName", actualType );
+				$(a).html(m["returnType"]);
+				$(a).addprotocol("protocolContextInfo");
+				$(methodDiv).append("(");
+				$(methodDiv).append(a);
+				$(methodDiv).append(")");
+				var methodDesc = "";
+				if(m["parameters"].length > 0) {
+					var paramNum = 1;
+					$.each(m["parameters"], function(index, p) {
+						if(paramNum > 1)
+							methodDesc += " ";
+						methodDesc = methodDesc + p["name"] + ":(" + p["type"] + ")arg" + paramNum;
+						paramNum++;
+					});
+					$(methodDiv).append(methodDesc + ";\n");	
+				} else {
+					$(methodDiv).append(m["name"] + ";\n");
+				}
+			});
+		}
+	}).fail(function (j,t,e) {
+		//console.log("methodsForprotocol empty: " + protocolName + " - " + t + " - " + e);
+		methodsComplete = true;
+	}).always(function () {
+		methodsComplete = true;
+		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
+			allComplete = true;
+			prettifyRenderedprotocolHTML(protocolDiv, detailsDiv, callbackFunc);
 		}
 	});
 

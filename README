@@ -8,6 +8,14 @@ make clean
 make
 make package
 
+If you get the error:
+
+	/Applications/Xcode.app/Contents/Developer/usr/bin/make package requires dpkg-deb.
+	make: *** [internal-package-check] Error 1
+
+it means you need to install the Debian package manager. I use Brew, so it was just a
+case of running "brew install dpkg" to get up and running.
+
 To install
 ----------
 SCP the com.bishopfox.iSpy<version-number>.deb file onto your iDevice.

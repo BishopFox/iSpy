@@ -83,5 +83,10 @@
 -(id)propertiesForClass:(NSString *)className;
 -(id)methodsForClass:(NSString *)className;
 -(id)classes;
+-(id)classesWithSuperClassAndProtocolInfo;
+-(id)protocolsForClass:(NSString *)className;
+-(id)propertiesForProtocol:(Protocol *)protocol;
+-(id)methodsForProtocol:(Protocol *)protocol;
+-(id)protocolsForRuntime;
 @end
 

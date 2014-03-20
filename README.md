@@ -3,10 +3,10 @@ iSpy Assessment Framework
 
 To build
 --------
-git submodule update --init   # you should need this only once
-make clean
-make
-make package
+	git submodule update --init   # you should need this only once
+	make clean
+	make
+	make package
 
 If you get the error:
 
@@ -22,7 +22,7 @@ SCP the com.bishopfox.iSpy<version-number>.deb file onto your iDevice.
 SSH onto your iDevice and change into the directory containing the .deb.
 Then:
 
-dpkg -i com.bishopfox.iSpy*.deb
+	dpkg -i com.bishopfox.iSpy*.deb
 
 Todo: replace this with an auto installer.
 

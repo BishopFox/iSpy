@@ -137,6 +137,19 @@ function doClassDump() {
 		set_instance_tracker_state(0);
 
 		// Ok, let's do it.
+		// Grab the list of protocols defined for this app
+		$.ajax({
+			url: "/api/protocolsForRuntime",
+			timeout: 30000,
+			dataType: "json"
+		}).done(function(protocols) {
+			$.each(protocols, function(key, protocolDict) {
+				protocolName = protocolDict["protocolName"];
+				getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {}, protocolDict);
+			});
+		});
+
+		// Now dump the classes
 		numClasses = classes.length;
 		console.log("Got " + numClasses + " classes" );
 
@@ -163,20 +176,6 @@ function doClassDump() {
 					classDumpCompletionHandler();
 				}
 			}, classDict);
-		});
-
-		// grab the list of classes from the iDevice
-		$.ajax({
-			url: "/api/protocolsForRuntime",
-			timeout: 30000,
-			dataType: "json"
-		}).done(function(protocols) {
-			$.each(protocols, function(key, protocolDict) {
-				protocolName = protocolDict["protocolName"];
-				getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {
-
-				}, protocolDict);
-			});
 		});
 
 		// We unhide the class dump pane here so that it's had a chance to populate with enough data to make the entrance look slick.

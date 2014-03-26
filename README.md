@@ -25,6 +25,7 @@ Then:
 	dpkg -i com.bishopfox.iSpy*.deb
 
 Todo: replace this with an auto installer.
+Note: you can edit install.sh to suit your needs.
 
 To configure
 ------------

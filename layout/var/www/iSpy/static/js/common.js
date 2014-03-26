@@ -1,7 +1,7 @@
 var numClasses = 0;
 var classCounter = 0;
 var classList = {};
-var classType = {};
+//var classType = {};
 var contextClassName = ""; // janky
 
 // connects to the iSpy websocket on the iDevice
@@ -60,7 +60,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classD
 
 	// Join all the elements up in the correct order
 	var classInfo;
-	if(classDict) {
+	if(classDict["superClass"]) {
 		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a> : ";
 		classInfo = classInfo + '<a class="classContextInfo" data-className="' + classDict["superClass"] + '">' + classDict["superClass"] + "</a>";
 		var numProtocols = classDict["protocols"].length;
@@ -75,8 +75,9 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classD
 			classInfo = classInfo + '&gt;\n';
 		}
 	} else {
-		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a>\n";
+		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a>;\n";
 	}
+
 	$(implementationDiv).append(classInfo);
 	$(detailsDiv).append("{\n");
 	$(detailsDiv).append(iVarDiv);
@@ -89,116 +90,63 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classD
 	$(detailsDiv).addClass("classDetails");
 	$(detailsDiv).attr("style", "padding-bottom: 20pt;");
 	$(detailsDiv).attr("id", "details_" + className);
-	//$(classDiv).append('');
 	$(classDiv).append(implementationDiv);
 	$(classDiv).append(detailsDiv);
 	$(classDiv).attr("id", "class_" + className);
-	$(parentHtmlElement).append(classDiv);
-	
-	// Maintain state
-	var iVarsComplete = false;
-	var propertiesComplete = false;
-	var methodsComplete = false;
-	var allComplete = false;
+	$(parentHtmlElement).prepend(classDiv);
 
 	// Render the iVars
-	$.ajaxQueue({
-		url: "/api/iVarsForClass/" + className,
-		timeout: 120000,
-		dataType: "json"
-	}).done(function(iVars, t, j) {
-		if(iVars) {
-			$.each(iVars, function(mk, iVarData) {
-				$.each(iVarData, function (iVar, type) {
-					var actualType = type.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
-					type = type.replace(/>/, "&gt;").replace(/</, "&lt;");
-					$(iVarDiv).append("    " + "<a class='classContextInfo' data-className='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
+	if(classDict["ivars"]) {
+		$.each(classDict["ivars"], function(mk, iVarData) {
+			$.each(iVarData, function (iVar, type) {
+				var actualType = type.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+				type = type.replace(/>/, "&gt;").replace(/</, "&lt;");
+				$(iVarDiv).append("    " + "<a class='classContextInfo' data-className='" + actualType + "'>" + type + "</a> " + iVar + ";\n");
+			});
+		});
+	}
+
+	if(classDict["properties"]){
+		$.each(classDict["properties"], function(mk, propertyData) {
+			$.each(propertyData, function (property, attributes) {
+				var propClass = attributes.replace(/\(.*\)\ /,"").replace(/\ \*/,"");
+				var propAttrs = attributes.match(/\(.*\)\ /);
+				$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass.replace(/[\<\>\^]/g, "") + "'>" + propClass + "</a> " + property + ";\n");
+			});
+		});
+	}
+
+	if(classDict["methods"]) {
+		$.each(classDict["methods"], function(index, m) {
+			if(m["isInstanceMethod"] == 1)
+				$(methodDiv).append("-");
+			else
+				$(methodDiv).append("+");
+			var a = $(document.createElement('a'));
+			var actualType = m["returnType"].replace(/\ \*/,"");
+			$(a).attr("data-className", actualType );
+			$(a).html(m["returnType"]);
+			$(a).addClass("classContextInfo");
+			$(methodDiv).append("(");
+			$(methodDiv).append(a);
+			$(methodDiv).append(")");
+			var methodDesc = "";
+			if(m["parameters"].length > 0) {
+				var paramNum = 1;
+				$.each(m["parameters"], function(index, p) {
+					if(paramNum > 1)
+						methodDesc += " ";
+					methodDesc = methodDesc + p["name"] + ":(" + p["type"] + ")arg" + paramNum;
+					paramNum++;
 				});
-			});
-		}
-	}).fail(function (j,t,e) {
-		//console.log("iVarsForClass empty: " + className + " - " + t + " - " + e);
-		iVarsComplete = true;
-	}).always(function () {
-		iVarsComplete = true;
-		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
-			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
-		}
-	});
-
-	// Render the properties
-	$.ajaxQueue({
-		url: "/api/propertiesForClass/" + className,
-		timeout: 120000,
-		dataType: "json"
-	}).done(function(properties, t, j) {
-		if(properties){
-			$.each(properties, function(mk, propertyData) {
-				$.each(propertyData, function (property, attributes) {
-					var propClass = attributes.replace(/\(.*\)\ /,"").replace(/\ \*/,"");
-					var propAttrs = attributes.match(/\(.*\)\ /);
-					$(propertyDiv).append("@property " + propAttrs + "<a class='classContextInfo' data-className='" + propClass.replace(/[\<\>\^]/g, "") + "'>" + propClass + "</a> " + property + ";\n");
-				});
-			});
-		}
-	}).fail(function (j,t,e) {
-		//console.log("propertiesForClass empty: " + className + " - " + t + " - " + e);
-		propertiesComplete = true;
-	}).always(function () {
-		propertiesComplete = true;
-		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
-			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
-		}
-	});
-
-	// Render the methods
-	$.ajaxQueue({
-		url: "/api/methodsForClass/" + className,
-		timeout: 120000,
-		dataType: "json"
-	}).done(function(methods) {
-		if(methods) {
-			$.each(methods, function(index, m) {
-				if(m["isInstanceMethod"] == 1)
-					$(methodDiv).append("-");
-				else
-					$(methodDiv).append("+");
-				var a = $(document.createElement('a'));
-				var actualType = m["returnType"].replace(/\ \*/,"");
-				$(a).attr("data-className", actualType );
-				$(a).html(m["returnType"]);
-				$(a).addClass("classContextInfo");
-				$(methodDiv).append("(");
-				$(methodDiv).append(a);
-				$(methodDiv).append(")");
-				var methodDesc = "";
-				if(m["parameters"].length > 0) {
-					var paramNum = 1;
-					$.each(m["parameters"], function(index, p) {
-						if(paramNum > 1)
-							methodDesc += " ";
-						methodDesc = methodDesc + p["name"] + ":(" + p["type"] + ")arg" + paramNum;
-						paramNum++;
-					});
-					$(methodDiv).append(methodDesc + ";\n");	
-				} else {
-					$(methodDiv).append(m["name"] + ";\n");
-				}
-			});
-		}
-	}).fail(function (j,t,e) {
-		//console.log("methodsForClass empty: " + className + " - " + t + " - " + e);
-		methodsComplete = true;
-	}).always(function () {
-		methodsComplete = true;
-		if(iVarsComplete && propertiesComplete && methodsComplete && !allComplete) {
-			allComplete = true;
-			prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
-		}
-	});
-
+				$(methodDiv).append(methodDesc + ";\n");	
+			} else {
+				$(methodDiv).append(m["name"] + ";\n");
+			}
+		});
+	}
+	prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
+	
 	// Return to the caller. 
 	// Once all the methods, ivars, and properties have been rendered
 	// the DIV will be prettified and the callback function will called.
@@ -297,7 +245,7 @@ function getRenderedProtocolHTML(protocolName, parentHtmlElement, callbackFunc, 
 	$(detailsDiv).attr("id", "details_" + protocolName);
 	$(protocolDiv).append(detailsDiv);
 	$(protocolDiv).attr("id", "protocol_" + protocolName);
-	$(parentHtmlElement).prepend(protocolDiv);
+	$(parentHtmlElement).append(protocolDiv);
 	
 	prettifyRenderedProtocolHTML(protocolDiv, detailsDiv, callbackFunc);
 }

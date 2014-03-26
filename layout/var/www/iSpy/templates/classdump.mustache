@@ -15,16 +15,32 @@
 <div class="row-fluid">
 	<div class="span12">
 		<legend>Class Dump &nbsp; <span id="spinner"><i class="fa fa-refresh fa-spin fadeIn animated"></i></span>
-		<div id="progressBarWrapper" class="progress progress-info fadeIn animated">
-    		<div class="progress-bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  role="progressbar" id="progressBar" style="width: 0%;">
-    		</div>
-    	</div>
-    	</legend>
+
+		</legend>
+	</div>
+</div>
+
+<div class="modal" id="modalLoading">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="statusText">Initializing...</h4>
+			</div>
+			<div class="modal-body">
+				<div>
+					<div class="progress">
+						<div class="progress-bar" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 10%;" id="progressBar">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 
 <div class="animated fadeIn hide" id="controlsDiv">
-	    <a class="btn" id="btnExpandAll" href="#" data-toggle="tooltip" data-original-title="Expand all of the data for all the classes">Expand all</a>
+		<a class="btn" id="btnExpandAll" href="#" data-toggle="tooltip" data-original-title="Expand all of the data for all the classes">Expand all</a>
 </div>
 
 <div id="dumpDiv" class="animated fadeIn hide">
@@ -46,6 +62,28 @@
 
 <script>
 
+// Setup
+$('#modalLoading').modal({
+  backdrop: 'static',
+  show: true
+});
+/*
+$('#load').click(function() {
+  var $modal = $('.js-loading-bar'),
+	  $bar = $modal.find('.progress-bar');
+  
+  $modal.modal('show');
+  setTimeout(function() {
+	 $bar.addClass('animate');
+  }, 0);   
+  
+  setTimeout(function() {   
+	$bar.removeClass('animate');
+	$modal.modal('hide');    
+  }, 1500);
+});
+*/
+
 function refreshClassList() {
 	$('#classDumpMenu').dropdown('toggle');
 	$("#spinner").removeClass("hide");
@@ -60,11 +98,25 @@ function expandClassList() {
 	$('#classDumpMenu').dropdown('toggle');
 }
 
+function waitForAnimationToComplete() {
+	setTimeout(function () {
+		if( $("#progressBar").is(':animated') ) {
+			waitForAnimationToComplete();
+		} else {
+			$('#modalLoading').modal('hide');
+		}
+	}, 250);
+}
+
 function classDumpCompletionHandler() {
 	// Fix the UI
-	$("#spinner").addClass("hide");
-	setTimeout('$("#progressBarWrapper").addClass("fadeOut hide")', 1000);
-	
+	setTimeout( function () {
+		$("#statusText").html("Finalizing...");
+		$("#progressBar").attr("style", "width: 100%;");
+		$("#modalLoading").modal('show').is(":visible");
+		$("#progressBar").addClass('animate');	
+	}, 0);
+
 	// Cache the class dump for performnace reasons (class dumps from iSpy server are slow). 
 	// Will throw an exception if the the HTML is > 5MB, 2.5MB, or 10MB depending on your browser.
 	try {
@@ -94,14 +146,18 @@ function classDumpCompletionHandler() {
 	var foo=$("#dumpDiv").html();
 	$("#txtVersion").append($(foo).text());
 	*/
+
+	$("#statusText").html("Finished!");
 	console.log("Complete!");
+	waitForAnimationToComplete();
 }
 
 function doClassDump() {
-	// Show the progress bar
-	$("#progressBarWrapper").removeClass("fadeOut hide");
+	// Show the spinny wheel
+	$("#spinner").removeClass("hide");
 	$("#dumpDiv").addClass("hide");
 	$("#dumpArea").empty();
+	$('#modalLoading').addClass("animate");
 
 	// we want a nice pointer when hovering over class names
 	$(".classContextInfo").hover(function() {
@@ -112,74 +168,61 @@ function doClassDump() {
 
 	// grab the list of classes from the iDevice
 	$.ajax({
-		url: "/api/classesWithSuperClassAndProtocolInfo",
+		url: "/api/classDump",
 		timeout: 30000,
 		dataType: "json"
 	}).done(function(classes) {
-		classList = classes;
-		console.log("Done");
-		$("#spinner").removeClass("hide");
+		$("#dumpDiv").removeClass("hide");
+		console.log("Class dump of " + numClasses + " classes...");
 
-		// If the classList cached in localStorage matches the class list from the server, we use the cached version for speed.
-		// If there's a mismatch, we refresh the class list based on data from the server.
-		if(classList == localStorage["classList"]) {
-			$("#dumpDiv").html(localStorage["classHTML"]);
-			$("#progressBarWrapper").addClass("fadeOut hide");
-			$("#dumpDiv").removeClass("hide");
-			setupContextHelpHandler();
-			$("#spinner").addClass("hide");
-			return;
-		}
+		var classCounter = 0 | 0;
+		var numClasses = 0 | 0;
+		$.each(classes, function(key, classDict) {
+			numClasses++;
+		});
+
+		$("#statusText").html("Dumping " + numClasses + " classes...");
+		$("#progressBar").attr("style", "width: 75%;");
+		$("#progressBar").is(":visible");
 
 		// We need to turn off (a) the instance tracker, (b) the strace logger, and (c) the msgSend logger.
 		// If we don't, this process takes for ever.
 		// This will eventually be re-enabled in classDumpCompleteHandler();
-		set_instance_tracker_state(0);
+		//set_instance_tracker_state(0);
 
 		// Ok, let's do it.
-		// Grab the list of protocols defined for this app
-		$.ajax({
-			url: "/api/protocolsForRuntime",
-			timeout: 30000,
-			dataType: "json"
-		}).done(function(protocols) {
-			$.each(protocols, function(key, protocolDict) {
-				protocolName = protocolDict["protocolName"];
-				getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {}, protocolDict);
-			});
-		});
-
-		// Now dump the classes
-		numClasses = classes.length;
-		console.log("Got " + numClasses + " classes" );
-
 		// Cycle through the classes, dump dump dumping.
+		
+		// We unhide the class dump pane here so that it's had a chance to populate with enough data to make the entrance look slick.
 		$.each(classes, function(key, classDict) {
-			className = classDict["className"];
-
-			// Cache this in a hash
-			classType[className] = true;
+			var className = classDict["className"];
 
 			// Render the appropriate HTML for this class, then save it into the element "#dumpArea".
 			// Upon success, run the inline function as a callback.
-			getRenderedClassHTML(className, "#dumpArea", function (data) {
-				// Keep track of how many classes we've processed
-				classCounter++;
-				var percentAmt = (100 * (classCounter / numClasses)) | 0;
-
-				// Update the progress bar
-				$("#progressBar").attr("style", "width: " + percentAmt.toString() + "%;")
-				
-				// If we're done then call the completion handler. This call is made once class dump has finished.
-				if(classCounter == numClasses) {
-					$("#progressBar").attr("style", "width: 100%;")	
-					classDumpCompletionHandler();
-				}
-			}, classDict);
+			getRenderedClassHTML(className, "#dumpArea", function (data) {}, classDict);
+			
+			// Keep track of how many classes we've processed
+			classCounter++;
+			var percentAmt = (100 * (classCounter / numClasses)) | 0;
 		});
+		classDumpCompletionHandler();
+	});
 
-		// We unhide the class dump pane here so that it's had a chance to populate with enough data to make the entrance look slick.
-		$("#dumpDiv").removeClass("hide");
+	// Grab the list of protocols defined for this app
+	$("#statusText").html("Dumping protocols...");
+	$("#progressBar").attr("style", "width: 40%;");
+	$("#modalLoading").modal('show').is(":visible");
+	$("#progressBar").addClass('animate');
+	console.log("Protocol dump...");
+	$.ajax({
+		url: "/api/protocolDump",
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(protocols) {
+		$.each(protocols, function(key, protocolDict) {
+			protocolName = protocolDict["protocolName"];
+			getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {}, protocolDict);
+		});
 	});
 }
 

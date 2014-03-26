@@ -87,6 +87,7 @@
 -(id)protocolsForClass:(NSString *)className;
 -(id)propertiesForProtocol:(Protocol *)protocol;
 -(id)methodsForProtocol:(Protocol *)protocol;
--(id)protocolsForRuntime;
+-(id)protocolDump;
+-(id)classDump;
 @end
 

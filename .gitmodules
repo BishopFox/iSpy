@@ -13,3 +13,6 @@
 [submodule "layout/var/www/iSpy/static/font-awesome"]
 	path = layout/var/www/iSpy/static/font-awesome
 	url = https://github.com/FortAwesome/Font-Awesome.git
+[submodule "layout/var/www/iSpy/static/bootstrap-progressbar"]
+	path = layout/var/www/iSpy/static/bootstrap-progressbar
+	url = https://github.com/minddust/bootstrap-progressbar.git

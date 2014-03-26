@@ -596,7 +596,7 @@ Returns a NSDictionary like this:
     return [protocolList copy];
 }
 
--(id)protocolsForRuntime {
+-(id)protocolDump {
     unsigned int protocolCount = 0, j;
     Protocol **protocols = objc_copyProtocolList(&protocolCount);
     NSMutableArray *protocolList = [[NSMutableArray alloc] init];
@@ -754,6 +754,57 @@ Returns a NSDictionary like this:
         i++;
     }
     return [classArray copy];   
+}
+
+/*
+{
+    "MyClass1": {
+        "className": "MyClass1",
+        "superClass": "class name",
+        "methods": {
+            
+        },
+        "ivars": {
+            
+        },
+        "properties": {
+
+        },
+        "protocols": {
+
+        }
+    },
+    "MyClass2": {
+        "methods": {
+            
+        },
+        "ivars": {
+            
+        },
+        "properties": {
+
+        },
+        "protocols": {
+
+        }
+    },
+    ...
+}
+*/
+-(id)classDump {
+    NSMutableDictionary *classDumpDict = [[NSMutableDictionary alloc] init];
+    NSArray *clsList = [self classesWithSuperClassAndProtocolInfo]; // returns an array of dictionaries
+    NSLog(@"Got %d classes", [clsList count]);
+    for(int i = 0; i < [clsList count]; i++) {
+        NSMutableDictionary *cls = [[clsList objectAtIndex:i] mutableCopy];
+        NSString *className = [cls objectForKey:@"className"];
+        [cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
+        [cls setObject:[NSArray arrayWithArray:[self iVarsForClass:className]]       forKey:@"ivars"];
+        [cls setObject:[NSArray arrayWithArray:[self propertiesForClass:className]]  forKey:@"properties"];
+        [cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
+        [classDumpDict setObject:cls forKey:className];
+    }
+    return [classDumpDict copy];
 }
 
 -(id)instance_atAddress:(NSString *)addr {

@@ -277,9 +277,16 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return nil;
     }];
 
-    [[self http] handleGET:@"/api/protocolsForRuntime"
+    [[self http] handleGET:@"/api/protocolDump"
         with:^(HTTPConnection *connection, NSString *clsName) {
-            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] protocolsForRuntime] options:0 error:NULL];
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] protocolDump] options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
+    }];
+
+    [[self http] handleGET:@"/api/classDump"
+        with:^(HTTPConnection *connection, NSString *clsName) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] classDump] options:0 error:NULL];
             [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
             return nil;
     }];

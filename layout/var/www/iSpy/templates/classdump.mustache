@@ -1,6 +1,7 @@
 <link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
 <script src="/static/google-code-prettify/prettify.js"></script>
 <script src="/static/js/jquery.ajaxQueue.min.js"></script>
+<script type="text/javascript" src="/static/bootstrap-progressbar/bootstrap-progressbar.js"></script>
 <script src="/static/js/common.js"></script>
 
 <style>
@@ -12,25 +13,17 @@
 }
 </style>
 
-<div class="row-fluid">
-	<div class="span12">
-		<legend>Class Dump &nbsp; <span id="spinner"><i class="fa fa-refresh fa-spin fadeIn animated"></i></span>
-
-		</legend>
-	</div>
-</div>
-
 <div class="modal" id="modalLoading">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-				<h4 class="modal-title" id="statusText">Initializing...</h4>
+				<h4 class="modal-title" id="statusText">iSpy Class Dump...</h4>
 			</div>
 			<div class="modal-body">
 				<div>
 					<div class="progress">
-						<div class="progress-bar" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 10%;" id="progressBar">
+						<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-valuetransitiongoal="10" id="progressBar" style="width: 0;">
 						</div>
 					</div>
 				</div>
@@ -62,31 +55,29 @@
 
 <script>
 
-// Setup
+// Setup the "Loading..." modal
+$('.progress .progress-bar').progressbar({
+        transition_delay: 0,
+        refresh_speed: 50,
+        display_text: 'fill',
+        update: function (percent) {
+			if(percent == 100) {
+        		setTimeout(function () {
+        			$('#modalLoading').modal('hide');
+        		}, 0);
+        	}
+        }
+    });
+
 $('#modalLoading').modal({
   backdrop: 'static',
   show: true
 });
-/*
-$('#load').click(function() {
-  var $modal = $('.js-loading-bar'),
-	  $bar = $modal.find('.progress-bar');
-  
-  $modal.modal('show');
-  setTimeout(function() {
-	 $bar.addClass('animate');
-  }, 0);   
-  
-  setTimeout(function() {   
-	$bar.removeClass('animate');
-	$modal.modal('hide');    
-  }, 1500);
-});
-*/
+
+
 
 function refreshClassList() {
 	$('#classDumpMenu').dropdown('toggle');
-	$("#spinner").removeClass("hide");
 	localStorage["classList"] = "";
 	localStorage["classHTML"] = "";
 	classCounter = numClasses = 0;
@@ -98,25 +89,9 @@ function expandClassList() {
 	$('#classDumpMenu').dropdown('toggle');
 }
 
-function waitForAnimationToComplete() {
-	setTimeout(function () {
-		if( $("#progressBar").is(':animated') ) {
-			waitForAnimationToComplete();
-		} else {
-			$('#modalLoading').modal('hide');
-		}
-	}, 250);
-}
-
 function classDumpCompletionHandler() {
+	$("#progressBar").attr("aria-valuetransitiongoal", 100).progressbar();
 	// Fix the UI
-	setTimeout( function () {
-		$("#statusText").html("Finalizing...");
-		$("#progressBar").attr("style", "width: 100%;");
-		$("#modalLoading").modal('show').is(":visible");
-		$("#progressBar").addClass('animate');	
-	}, 0);
-
 	// Cache the class dump for performnace reasons (class dumps from iSpy server are slow). 
 	// Will throw an exception if the the HTML is > 5MB, 2.5MB, or 10MB depending on your browser.
 	try {
@@ -147,17 +122,14 @@ function classDumpCompletionHandler() {
 	$("#txtVersion").append($(foo).text());
 	*/
 
-	$("#statusText").html("Finished!");
 	console.log("Complete!");
-	waitForAnimationToComplete();
 }
 
 function doClassDump() {
-	// Show the spinny wheel
-	$("#spinner").removeClass("hide");
 	$("#dumpDiv").addClass("hide");
 	$("#dumpArea").empty();
 	$('#modalLoading').addClass("animate");
+	$("#progressBar").attr("aria-valuetransitiongoal", 25).progressbar();
 
 	// we want a nice pointer when hovering over class names
 	$(".classContextInfo").hover(function() {
@@ -173,17 +145,14 @@ function doClassDump() {
 		dataType: "json"
 	}).done(function(classes) {
 		$("#dumpDiv").removeClass("hide");
-		console.log("Class dump of " + numClasses + " classes...");
+		$("#progressBar").attr("aria-valuetransitiongoal", 50).progressbar();
 
 		var classCounter = 0 | 0;
 		var numClasses = 0 | 0;
 		$.each(classes, function(key, classDict) {
 			numClasses++;
 		});
-
-		$("#statusText").html("Dumping " + numClasses + " classes...");
-		$("#progressBar").attr("style", "width: 75%;");
-		$("#progressBar").is(":visible");
+		console.log("Class dump of " + numClasses + " classes...");
 
 		// We need to turn off (a) the instance tracker, (b) the strace logger, and (c) the msgSend logger.
 		// If we don't, this process takes for ever.
@@ -204,15 +173,15 @@ function doClassDump() {
 			// Keep track of how many classes we've processed
 			classCounter++;
 			var percentAmt = (100 * (classCounter / numClasses)) | 0;
+			console.log(percentAmt);
+			if(percentAmt > 50)
+				$("#progressBar").attr("aria-valuetransitiongoal", percentAmt).progressbar();
 		});
 		classDumpCompletionHandler();
 	});
 
 	// Grab the list of protocols defined for this app
-	$("#statusText").html("Dumping protocols...");
-	$("#progressBar").attr("style", "width: 40%;");
-	$("#modalLoading").modal('show').is(":visible");
-	$("#progressBar").addClass('animate');
+	$("#progressBar").attr("aria-valuetransitiongoal", 40).progressbar();
 	console.log("Protocol dump...");
 	$.ajax({
 		url: "/api/protocolDump",

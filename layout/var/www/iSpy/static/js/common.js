@@ -25,7 +25,7 @@ function setupContextHelpHandler(alignment) {
 			$("#popoverContent").empty();
 			var scratch = $(document.createElement('div'));
 			
-			getRenderedClassHTML($(that).attr("data-className"), $(scratch), function () {
+			renderClassDataAndAppendToDOMElement($(that).attr("data-className"), $(scratch), function () {
 				$("#popoverContent").html($(scratch).html());
 				$("#popoverContent div").removeClass("hide");
 				
@@ -44,12 +44,12 @@ function setupContextHelpHandler(alignment) {
 }
 
 function prettifyRenderedClassHTML(htmlElement, contentElement, callbackFunc) {
-	$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
+	//$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
 	$(".classDetails").removeClass("hide");
 	callbackFunc();
 }
 
-function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classDict) {
+function renderClassDataAndAppendToDOMElement(className, parentHtmlElement, callbackFunc, classDict) {
 	// Create a DIV into which we'll place the ivar/prop/method info for this class.
 	var classDiv = $(document.createElement('div')); 
 	var implementationDiv = $(document.createElement('div'));
@@ -60,7 +60,7 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classD
 
 	// Join all the elements up in the correct order
 	var classInfo;
-	if(classDict["superClass"]) {
+	if(classDict && classDict["superClass"]) {
 		classInfo = '@interface <a class="classContextInfo" data-className="' + className + '" style="padding-top: 40px">' + className + "</a> : ";
 		classInfo = classInfo + '<a class="classContextInfo" data-className="' + classDict["superClass"] + '">' + classDict["superClass"] + "</a>";
 		var numProtocols = classDict["protocols"].length;
@@ -153,12 +153,12 @@ function getRenderedClassHTML(className, parentHtmlElement, callbackFunc, classD
 }
 
 function prettifyRenderedProtocolHTML(htmlElement, contentElement, callbackFunc) {
-	$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
+	//$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
 	$(".protocolDetails").removeClass("hide");
 	callbackFunc();
 }
 
-function getRenderedProtocolHTML(protocolName, parentHtmlElement, callbackFunc, protocolDict) {
+function renderProtocolDataAndAppendToDOMElement(protocolName, parentHtmlElement, callbackFunc, protocolDict) {
 	// Create a DIV into which we'll place the ivar/prop/method info for this Protocol.
 	var protocolDiv = $(document.createElement('div'));
 	var propertyDiv = $(document.createElement('div'));

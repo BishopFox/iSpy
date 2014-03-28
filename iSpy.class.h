@@ -87,7 +87,13 @@
 -(id)protocolsForClass:(NSString *)className;
 -(id)propertiesForProtocol:(Protocol *)protocol;
 -(id)methodsForProtocol:(Protocol *)protocol;
--(id)protocolDump;
+-(NSDictionary *)protocolDump;
 -(id)classDump;
+-(NSString *)SHA256HMACForAppBinary;
 @end
 
+/*
+	Helper functions. 
+*/
+
+NSString *SHA256HMAC(NSData *theData);

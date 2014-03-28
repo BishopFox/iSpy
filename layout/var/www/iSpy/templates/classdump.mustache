@@ -16,15 +16,17 @@
 <div class="modal" id="modalLoading">
 	<div class="modal-dialog">
 		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-				<h4 class="modal-title" id="statusText">iSpy Class Dump...</h4>
-			</div>
-			<div class="modal-body">
-				<div>
-					<div class="progress">
-						<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-valuetransitiongoal="10" id="progressBar" style="width: 0;">
+			<div class="modal-body" id="modalBody">
+				<div class="row">
+					<div class="col-md-2">
+						<i class="fa fa-cloud-download fa-5x"></i>
+					</div>
+					<div class="col-md-10">
+						<div class="progress">
+							<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-valuetransitiongoal="10" id="progressBar" style="width: 0;">
+							</div>
 						</div>
+						<div id="smallStatusText">Initializing...</div>
 					</div>
 				</div>
 			</div>
@@ -46,7 +48,7 @@
 	<li class="dropdown">
 		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Class Dump Options<b class="caret"></b></a>
 		<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:refreshClassList()">Refresh all class data</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:clearCachedClassData()">Clear cached class data</a></li>
 			<!--<li role="presentation" class="divider"></li>-->
 			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand/collapse the classes</a></li>
 		</ul>
@@ -55,55 +57,45 @@
 
 <script>
 
-// Setup the "Loading..." modal
-$('.progress .progress-bar').progressbar({
-        transition_delay: 0,
-        refresh_speed: 50,
-        display_text: 'fill',
-        update: function (percent) {
-			if(percent == 100) {
-        		setTimeout(function () {
-        			$('#modalLoading').modal('hide');
-        		}, 0);
-        	}
-        }
-    });
+// Don't reference these directly. Instead, use:
+// 	var classDump    = getCachedClassDump();
+// 	var protocolDump = getCachedProtocolDump(); 
+var cachedClassDump;
+var cachedProtocolDump;
 
-$('#modalLoading').modal({
-  backdrop: 'static',
-  show: true
-});
-
-
-
-function refreshClassList() {
-	$('#classDumpMenu').dropdown('toggle');
-	localStorage["classList"] = "";
-	localStorage["classHTML"] = "";
-	classCounter = numClasses = 0;
-	doClassDump();
+// The next two functions are a cached interface to the JSON objects representing the class and protocol dumps
+function getCachedClassDump() {
+	if(cachedClassDump === undefined) {
+		cachedClassDump = JSON.parse(localStorage.getItem("classData"));
+	}
+	return cachedClassDump;
+}
+function getCachedProtocolDump() {
+	if(cachedProtocolDump === undefined) {
+		cachedProtocolDump = JSON.parse(localStorage.getItem("protocolData"));
+	}
+	return cachedProtocolDump;
 }
 
+// the user can pick "Clear cached class data" in the UI. It's handled here.
+function clearCachedClassData() {
+	updateStatus("Checking cache...", 10);
+	localStorage.clear();
+	$('#classDumpMenu').dropdown('toggle');
+}
+
+// reduntant
 function expandClassList() {
 	$('.classDetails').toggleClass('fadeOut hide');
 	$('#classDumpMenu').dropdown('toggle');
 }
 
+// Clean up, make things appear/disappear as needed.
 function classDumpCompletionHandler() {
-	$("#progressBar").attr("aria-valuetransitiongoal", 100).progressbar();
-	// Fix the UI
-	// Cache the class dump for performnace reasons (class dumps from iSpy server are slow). 
-	// Will throw an exception if the the HTML is > 5MB, 2.5MB, or 10MB depending on your browser.
-	try {
-		localStorage["classList"] = classList;
-		localStorage["classHTML"] = $("#dumpDiv").html();
-		console.log("Successfully cached the class dump in localStorage");
-	} catch(e) {
-		console.log("Failed to cache: too big!");
-		localStorage["classList"] = "Too big, blame your browser's size limit.";
-		localStorage["classHTML"] = "";
-	}
-	
+	updateStatus("Last stage...", 100);
+	prettyPrint();
+	$("#dumpDiv").removeClass("hide");
+
 	// we want a nice pointer when hovering over class names
 	$(".classContextInfo").hover(function() {
 		$(this).css('cursor','pointer');
@@ -113,23 +105,86 @@ function classDumpCompletionHandler() {
 
 	// Give the user context-specific links to Class data
 	setupContextHelpHandler();
+	localStorage["SHA256HMAC"] = globalAppChecksum;
+}
 
-	// Restore the previous state of instance tracking.
-	restore_instance_tracker_state(); 
 
-	/* This generates a text (stripped of HTML) version of the class dump.
-	var foo=$("#dumpDiv").html();
-	$("#txtVersion").append($(foo).text());
-	*/
+function updateStatus(statusTxt, percent) {
+		$("#progressBar").attr("aria-valuetransitiongoal", percent).progressbar();
+		console.log(statusTxt);
+		if(statusTxt != "") {
+			$("#smallStatusText").html(statusTxt + "\n");
+		}
+}
 
-	console.log("Complete!");
+function render_classDumpIntoDOM () {
+	var classCount = 0 | 0;
+	var numClasses = localStorage["numClasses"] | 0;
+	var classes = getCachedClassDump();
+
+	// Cycle through the classes, dump dump dumping.		
+	$.each(classes, function(key, classDict) {
+		// Render the appropriate HTML for this class, then save it into the element "#dumpArea".
+		// Upon success, run the inline function as a callback.
+		classCount++;
+		var className = classDict["className"];
+		var percentAmt = (100 * (classCount / numClasses)) | 0;
+		
+		renderClassDataAndAppendToDOMElement(className, "#dumpArea", function (data) {}, classDict);
+		
+		if(percentAmt > 60 && (percentAmt % 10 == 0)) {
+			//updateStatus("", percentAmt); // refresh the progress bar from time to time
+		}
+	});
+}
+
+function render_protocolDumpIntoDOM () {
+	var protocols = getCachedProtocolDump();
+	$.each(protocols, function(key, protocolDict) {
+		protocolName = protocolDict["protocolName"];
+		renderProtocolDataAndAppendToDOMElement(protocolName, "#dumpArea", function (data) {}, protocolDict);
+	});
 }
 
 function doClassDump() {
+	// Get the SHA256 checksum of the current iOS app binary.
+	// Check our browser's localStorage for a copy of the same checksum.
+	// If there's a match, then we've got a cached class dump for this app in our local browser store. Sweet.
+	updateStatus("Initializing...", 25);
+	$.ajax({
+		url: "/api/appChecksum",
+		timeout: 30000,
+		dataType: "json",
+	}).done(function(checksum) {
+		// if our cached checksum matches the current app's checksum, great. 
+		// now validate that we actually have cached data.
+		var isClassDataCached = false;
+		globalAppChecksum = checksum["SHA256HMAC"];
+
+		if(	localStorage["SHA256HMAC"] && 
+			(localStorage["SHA256HMAC"] == checksum["SHA256HMAC"]) && 
+			(localStorage["numClasses"] !== undefined) &&
+			(localStorage["classData"] !== undefined) && 
+			(localStorage["protocolData"] !== undefined))
+		{
+			// If we have a sane cache, use it.
+			isClassDataCached = true;
+		} else {
+			// if the cache is invalid in any way, clear it out and start again.
+			localStorage.clear();
+		}
+
+		// Render the classdump into the browser
+		real_ClassDump(isClassDataCached);
+	});
+
+}
+
+
+function real_ClassDump(isDataCached) {
 	$("#dumpDiv").addClass("hide");
 	$("#dumpArea").empty();
 	$('#modalLoading').addClass("animate");
-	$("#progressBar").attr("aria-valuetransitiongoal", 25).progressbar();
 
 	// we want a nice pointer when hovering over class names
 	$(".classContextInfo").hover(function() {
@@ -138,66 +193,102 @@ function doClassDump() {
 		$(this).css('cursor','auto');
 	});
 
-	// grab the list of classes from the iDevice
-	$.ajax({
-		url: "/api/classDump",
-		timeout: 30000,
-		dataType: "json"
-	}).done(function(classes) {
-		$("#dumpDiv").removeClass("hide");
-		$("#progressBar").attr("aria-valuetransitiongoal", 50).progressbar();
+	// If we have cached data, use it.
+	if(isDataCached) {
+		console.log("Size of class dump data in localStorage: " + localStorage.getItem("classData").length);
+		console.log("Size of protocol dump data in localStorage: " + localStorage.getItem("protocolData").length);
+		updateStatus("Rendering classes...", 33);
+		render_classDumpIntoDOM();
 
-		var classCounter = 0 | 0;
-		var numClasses = 0 | 0;
-		$.each(classes, function(key, classDict) {
-			numClasses++;
-		});
-		console.log("Class dump of " + numClasses + " classes...");
+		updateStatus("Rendering protocols...", 66);
+		render_protocolDumpIntoDOM();
 
-		// We need to turn off (a) the instance tracker, (b) the strace logger, and (c) the msgSend logger.
-		// If we don't, this process takes for ever.
-		// This will eventually be re-enabled in classDumpCompleteHandler();
-		//set_instance_tracker_state(0);
-
-		// Ok, let's do it.
-		// Cycle through the classes, dump dump dumping.
-		
-		// We unhide the class dump pane here so that it's had a chance to populate with enough data to make the entrance look slick.
-		$.each(classes, function(key, classDict) {
-			var className = classDict["className"];
-
-			// Render the appropriate HTML for this class, then save it into the element "#dumpArea".
-			// Upon success, run the inline function as a callback.
-			getRenderedClassHTML(className, "#dumpArea", function (data) {}, classDict);
-			
-			// Keep track of how many classes we've processed
-			classCounter++;
-			var percentAmt = (100 * (classCounter / numClasses)) | 0;
-			console.log(percentAmt);
-			if(percentAmt > 50)
-				$("#progressBar").attr("aria-valuetransitiongoal", percentAmt).progressbar();
-		});
+		updateStatus("Finalizing...", 100);
 		classDumpCompletionHandler();
-	});
+	} 
+	// No cached data in the browser? We'll pull it from the iDevice.
+	else {
+		// Grab the list of protocols defined for this app
+		updateStatus("Waiting for iDevice...", 33);
+		$.ajax({
+			url: "/api/protocolDump",
+			timeout: 30000,
+			dataType: "json"
+		}).done(function(protocols) {
+			updateStatus("Reading protocol data...", 45);
 
-	// Grab the list of protocols defined for this app
-	$("#progressBar").attr("aria-valuetransitiongoal", 40).progressbar();
-	console.log("Protocol dump...");
-	$.ajax({
-		url: "/api/protocolDump",
-		timeout: 30000,
-		dataType: "json"
-	}).done(function(protocols) {
-		$.each(protocols, function(key, protocolDict) {
-			protocolName = protocolDict["protocolName"];
-			getRenderedProtocolHTML(protocolName, "#dumpArea", function (data) {}, protocolDict);
+			// cache the protocol data
+			localStorage.setItem("protocolData", JSON.stringify(protocols));
+
+			// count the number of classes
+			var numProtocols = 0;
+			protocols = getCachedProtocolDump();
+			$.each(protocols, function(key, data) {
+				numProtocols++;
+			});
+			console.log("num protocols " + numProtocols);
+
+			// Store the number in localStorage
+			localStorage.setItem("numProtocols", numProtocols);
+
+			// add class data to the UI
+			updateStatus("Rendering...", 50);
+			render_protocolDumpIntoDOM();
+			updateStatus("Waiting for iDevice...", 66);
+			
+			// grab the list of classes from the iDevice
+			$.ajax({
+				url: "/api/classDump",
+				timeout: 30000,
+				dataType: "json",
+			}).done(function(classes) {
+				updateStatus("Class AJAX call finished.", 75);
+				// Store the classdump data in our browser cache
+				localStorage.setItem("classData", JSON.stringify(classes));
+
+				// count the number of classes
+				var numClasses = 0;
+				classes = getCachedClassDump();
+				$.each(classes, function(key, data) {
+					numClasses++;
+				});
+				console.log("num classes " + numClasses);
+
+				// Store the number in localStorage
+				localStorage.setItem("numClasses", numClasses);
+
+				// render the data into browser UI
+				updateStatus("Rendering...", 90);
+				render_classDumpIntoDOM();
+
+				// call the handler to take care of clean-up
+				classDumpCompletionHandler();
+			});
 		});
-	});
+	}
 }
 
 $(document).ready(function() {
 	// Add a new menu to the menu bar
 	$('#menuBarExtraMenu1').append($('#classDumpMenu').html());
+
+	// Setup the "Loading..." modal
+	$('.progress .progress-bar').progressbar({
+        transition_delay: 0,
+        refresh_speed: 100,
+        display_text: 'fill',
+        update: function (percent) {
+			if(percent == 100) {
+        		$('#modalLoading').modal('hide');
+        	}
+        }
+    });
+
+	// show the modal
+	$('#modalLoading').modal({
+	  backdrop: 'static',
+	  show: true
+	});
 
 	// Grab the list of classes from the iSpy server
 	doClassDump();

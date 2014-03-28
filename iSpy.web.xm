@@ -259,6 +259,13 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] classes] options:0 error:NULL];
             [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
             return nil;
+    }];    // return an array of class names
+    
+    [[self http] handleGET:@"/api/appChecksum"
+        with:^(HTTPConnection *connection) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{ @"SHA256HMAC": [[iSpy sharedInstance] SHA256HMACForAppBinary]} options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
     }];
 
     // return an array of class names
@@ -515,27 +522,17 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 NSLog(@"REading logfile... %d", [self generalReadLock]);
 
                 if(![self generalReadLock]) {
-                    NSLog(@"really reading logfile..");
                     [self setGeneralReadLock:1];
-                    NSLog(@"1");
                     oldpos = ftell(logReadFP[LOG_GENERAL]);
-                    NSLog(@"2");
                     fclose(logReadFP[LOG_GENERAL]);
-                    NSLog(@"3");
                     logReadFP[LOG_GENERAL] = fopen(BF_LOGFILE_GENERAL, "r");
-                    NSLog(@"4");
                     fseek(logReadFP[LOG_GENERAL], oldpos, SEEK_SET);
-                    NSLog(@"5");
                     while(!feof(logReadFP[LOG_GENERAL])) {
-                        NSLog(@"6");
                         if(!fgets(buf, 1024, logReadFP[LOG_GENERAL]))
                             break;
-                        NSLog(@"7 - %s", buf);
                         [mString appendString:[NSString stringWithCString:buf encoding:NSUTF8StringEncoding]];
                     }
-                    NSLog(@"8");
                     content = [mString copy];
-                    NSLog(@"9");
                     [self setGeneralReadLock:0];
                 }
                 NSLog(@"done reading logfile");

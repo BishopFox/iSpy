@@ -1,8 +1,22 @@
-var numClasses = 0;
-var classCounter = 0;
-var classList = {};
-//var classType = {};
-var contextClassName = ""; // janky
+// Don't reference these directly. Instead, use:
+// 	  var myClassDump    = getCachedClassDump();
+// 	  var myProtocolDump = getCachedProtocolDump(); 
+var cachedClassDump;
+var cachedProtocolDump;
+
+// The next two functions are a cached interface to the JSON objects representing the class and protocol dumps
+function getCachedClassDump() {
+	if(cachedClassDump === undefined) {
+		cachedClassDump = JSON.parse(localStorage.getItem("classData"));
+	}
+	return cachedClassDump;
+}
+function getCachedProtocolDump() {
+	if(cachedProtocolDump === undefined) {
+		cachedProtocolDump = JSON.parse(localStorage.getItem("protocolData"));
+	}
+	return cachedProtocolDump;
+}
 
 // connects to the iSpy websocket on the iDevice
 function socket_connect(port) {
@@ -10,6 +24,49 @@ function socket_connect(port) {
 	var webSocketURL = 'ws://' + window.location.hostname + ':' + webSocketPort;
 	var s = new WebSocket(webSocketURL);
 	return s;
+}
+
+function prettifyDOMElement(element) {
+	$(element).html(prettyPrintOne($(element).html()));
+}
+
+function renderClassInfoIntoPopup(className, selfRef) {
+	var that = selfRef;
+	$("#popoverContent").empty();
+	var scratch = $(document.createElement('div'));
+	//var className = $(that).attr("data-className");
+	
+	$.ajax({
+		url: "/api/classDumpClass/" + className,
+		timeout: 30000,
+		dataType: "json",
+	}).done(function(classDict) {
+		renderClassDataAndAppendToDOMElement(className, $(scratch), function () {
+			$("#popoverContent").html(prettyPrintOne($(scratch).html()));
+			$("#popoverContent div").removeClass("hide");
+			
+			// Set things up so that a click anywhere except an <a> element will dismiss the popover.
+			$(window).on('click', function (e) {
+				if(e.target.parentElement.nodeName != 'A') { 
+					$(that).popover('hide');
+					$(window).off('click');
+				} else {
+					$(window).off('click');
+					className = e.target.parentElement.text;
+					className = className.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+					console.log("Fetching class " + className);
+					renderClassInfoIntoPopup(className, that);
+				}
+			});
+
+			// we want a nice pointer when hovering over class names
+			$(".classContextInfo").hover(function() {
+				$(this).css('cursor','pointer');
+			}, function() {
+				$(this).css('cursor','auto');
+			});
+		}, classDict);
+	});
 }
 
 function setupContextHelpHandler(alignment) {
@@ -21,32 +78,14 @@ function setupContextHelpHandler(alignment) {
 		trigger: "click",
 		template: '<div class="popover"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p><?prettify?><pre id="popoverContent" class="prettyprint"></pre></p></div></div></div>',
 		content: function() {
-			var that = this;
-			$("#popoverContent").empty();
-			var scratch = $(document.createElement('div'));
-			
-			renderClassDataAndAppendToDOMElement($(that).attr("data-className"), $(scratch), function () {
-				$("#popoverContent").html($(scratch).html());
-				$("#popoverContent div").removeClass("hide");
-				
-				// Set things up so that a click on the document body will dismiss any popovers.
-				$('#popoverContent').on('click', function (e) {
-					$(that).popover('hide');
-					$('#popovercontent').off('click');
-				});
-			});
+			console.log("Fetching class " + $(this).attr("data-className"));
+			renderClassInfoIntoPopup($(this).attr("data-className"), this);
 		},
 		html: true,
 		animation: true,
 		placement: alignment,
 		title: function () {return $(this).attr("data-className");}
 	});
-}
-
-function prettifyRenderedClassHTML(htmlElement, contentElement, callbackFunc) {
-	//$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
-	$(".classDetails").removeClass("hide");
-	callbackFunc();
 }
 
 function renderClassDataAndAppendToDOMElement(className, parentHtmlElement, callbackFunc, classDict) {
@@ -145,17 +184,12 @@ function renderClassDataAndAppendToDOMElement(className, parentHtmlElement, call
 			}
 		});
 	}
-	prettifyRenderedClassHTML(classDiv, detailsDiv, callbackFunc);
+	$(".classDetails").removeClass("hide");
+	callbackFunc();
 	
 	// Return to the caller. 
 	// Once all the methods, ivars, and properties have been rendered
 	// the DIV will be prettified and the callback function will called.
-}
-
-function prettifyRenderedProtocolHTML(htmlElement, contentElement, callbackFunc) {
-	//$(htmlElement).html(prettyPrintOne($(htmlElement).html()));
-	$(".protocolDetails").removeClass("hide");
-	callbackFunc();
 }
 
 function renderProtocolDataAndAppendToDOMElement(protocolName, parentHtmlElement, callbackFunc, protocolDict) {
@@ -247,7 +281,8 @@ function renderProtocolDataAndAppendToDOMElement(protocolName, parentHtmlElement
 	$(protocolDiv).attr("id", "protocol_" + protocolName);
 	$(parentHtmlElement).append(protocolDiv);
 	
-	prettifyRenderedProtocolHTML(protocolDiv, detailsDiv, callbackFunc);
+	$(".protocolDetails").removeClass("hide");
+	callbackFunc();
 }
 
 // Be nice, pass a 1 or 0. Expect bugs for non-binary values of boolState.

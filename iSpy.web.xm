@@ -248,7 +248,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     [[self http] handleGET:@"/api/instances"
         with:^(HTTPConnection *connection) {
-            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] instance_dumpAppInstancesWithPointersArray] options:0 error:NULL];
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] instance_dumpAppInstancesWithPointersDict] options:0 error:NULL];
             [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
             return nil;
     }];
@@ -294,6 +294,13 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     [[self http] handleGET:@"/api/classDump"
         with:^(HTTPConnection *connection, NSString *clsName) {
             NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] classDump] options:0 error:NULL];
+            [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
+            return nil;
+    }];
+
+    [[self http] handleGET:@"/api/classDumpClass/*"
+        with:^(HTTPConnection *connection, NSString *clsName) {
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:[[iSpy sharedInstance] classDumpClass:clsName] options:0 error:NULL];
             [connection writeString:[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding]];
             return nil;
     }];

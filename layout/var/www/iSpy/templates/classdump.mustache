@@ -11,6 +11,23 @@
 	height:500px;
 	overflow: auto;
 }
+.std-border {
+	border-color: #dcdcdc !important;
+	-webkit-box-shadow: inset 0 1px 3px rgba(0,0,0,.05),0 1px 0 rgba(255,255,255,.1) !important;
+	box-shadow: inset 0 1px 3px rgba(0,0,0,.05),0 1px 0 rgba(255,255,255,.1) !important;
+}
+.std-padding {
+	padding: 5px !important;
+}
+.no-left-margin {
+	margin-left: 0px !important;
+}
+
+.scroll-div {
+    height: 600px !important;
+    width: 100%;
+    overflow: scroll !important;
+}
 </style>
 
 <div class="modal" id="modalLoading">
@@ -38,9 +55,47 @@
 		<a class="btn" id="btnExpandAll" href="#" data-toggle="tooltip" data-original-title="Expand all of the data for all the classes">Expand all</a>
 </div>
 
-<div id="dumpDiv" class="animated fadeIn hide">
-	<?prettify?><pre id='dumpArea' class='prettyprint'></pre>
+<!--
+Content goes here
+-->
+<div class="row" style="padding-top: 1em">
+	<div class="col-md-12">
+		<div data-spy="affix" data-offset-top="60" data-offset-bottom="200">
+		<div class="well well-sm">
+			<ul class="nav nav-pills">
+			  <li class="active"><a href="#classTab" data-toggle="tab">Classes</a></li>
+			  <li><a href="#protocolTab" data-toggle="tab">Protocols</a></li>
+			  <li><a href="#instanceTab" data-toggle="tab">Instances</a></li>
+			</ul>
+		</div>
+		</div>
+	</div>
+
+	<!--<div class="col-md-2">
+		<div class="well well-sm" id="sidePanel">
+		Some shit here.
+		</div>
+	</div>-->
+
+	<div class="col-md-12">
+		<!-- Tab panes -->
+		<div class="tab-content no-left-margin">
+			<div class="tab-pane active no-left-margin" id="classTab">
+				<div id="dumpDiv" class="hide no-left-margin" >
+					<?prettify?><pre id='dumpArea' class='prettyprint std-border std-padding scroll-div'></pre>
+				</div>
+			</div>
+			<div class="tab-pane active no-left-margin" id="protocolTab">
+				<div id="dumpDiv" class="hide no-left-margin" >
+					<?prettify?><pre id='dumpArea' class='prettyprint std-border std-padding scroll-div'></pre>
+				</div>
+			</div>
+			<div class="tab-pane" id="instanceTab">{{>instances}}</div>
+		</div>
+	</div>
 </div>
+
+		
 
 <div id="fooBar" class="hide"></div>
 
@@ -56,27 +111,6 @@
 </div>
 
 <script>
-
-// Don't reference these directly. Instead, use:
-// 	var classDump    = getCachedClassDump();
-// 	var protocolDump = getCachedProtocolDump(); 
-var cachedClassDump;
-var cachedProtocolDump;
-
-// The next two functions are a cached interface to the JSON objects representing the class and protocol dumps
-function getCachedClassDump() {
-	if(cachedClassDump === undefined) {
-		cachedClassDump = JSON.parse(localStorage.getItem("classData"));
-	}
-	return cachedClassDump;
-}
-function getCachedProtocolDump() {
-	if(cachedProtocolDump === undefined) {
-		cachedProtocolDump = JSON.parse(localStorage.getItem("protocolData"));
-	}
-	return cachedProtocolDump;
-}
-
 // the user can pick "Clear cached class data" in the UI. It's handled here.
 function clearCachedClassData() {
 	updateStatus("Checking cache...", 10);

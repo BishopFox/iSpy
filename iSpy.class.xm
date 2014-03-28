@@ -191,6 +191,20 @@ id *appClassWhiteList = NULL;
 	return [instances copy];
 }
 
+-(NSDictionary *) instance_dumpAppInstancesWithPointersDict {
+	NSMutableDictionary *instances = [[NSMutableDictionary alloc] init];
+	struct bf_instance *p = bf_get_instance_list_ptr();
+
+	while(p) {
+		if( p->name && p->instance && [iSpy isClassFromApp:[NSString stringWithUTF8String:p->name]] ) {
+			[instances setObject:[NSString stringWithFormat:@"%p", p->instance] forKey:[NSString stringWithCString:p->name encoding:NSUTF8StringEncoding]];
+		}
+		p=p->next;
+	}
+
+	return [instances copy];
+}
+
 // Does a brute-force search of the linked list of currently tracked instances.
 // Returns the number of tracked instances.
 -(int) instance_numberOfTrackedInstances {
@@ -793,20 +807,35 @@ Returns a NSDictionary like this:
 	...
 }
 */
--(id)classDump {
+-(NSDictionary *)classDump {
 	NSMutableDictionary *classDumpDict = [[NSMutableDictionary alloc] init];
 	NSArray *clsList = [self classesWithSuperClassAndProtocolInfo]; // returns an array of dictionaries
+	
 	NSLog(@"Got %d classes", [clsList count]);
 	for(int i = 0; i < [clsList count]; i++) {
 		NSMutableDictionary *cls = [[clsList objectAtIndex:i] mutableCopy];
 		NSString *className = [cls objectForKey:@"className"];
+
 		[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
 		[cls setObject:[NSArray arrayWithArray:[self iVarsForClass:className]]       forKey:@"ivars"];
 		[cls setObject:[NSArray arrayWithArray:[self propertiesForClass:className]]  forKey:@"properties"];
 		[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
-		[classDumpDict setObject:cls forKey:className];
+		[classDumpDict setObject:[NSDictionary dictionaryWithDictionary:cls] forKey:className];
+		[cls release];
 	}
+
 	return [classDumpDict copy];
+}
+
+-(NSDictionary *)classDumpClass:(NSString *)className {
+	NSMutableDictionary *cls = [[NSMutableDictionary alloc] init];
+	[cls setObject:className forKey:@"className"];
+	[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
+	[cls setObject:[NSArray arrayWithArray:[self iVarsForClass:className]]       forKey:@"ivars"];
+	[cls setObject:[NSArray arrayWithArray:[self propertiesForClass:className]]  forKey:@"properties"];
+	[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
+
+	return (NSDictionary *)[cls copy];
 }
 
 -(NSString *)SHA256HMACForAppBinary {

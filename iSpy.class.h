@@ -88,8 +88,10 @@
 -(id)propertiesForProtocol:(Protocol *)protocol;
 -(id)methodsForProtocol:(Protocol *)protocol;
 -(NSDictionary *)protocolDump;
--(id)classDump;
+-(NSDictionary *)classDump;
 -(NSString *)SHA256HMACForAppBinary;
+-(NSDictionary *)classDumpClass:(NSString *)className;
+-(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
 @end
 
 /*

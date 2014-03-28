@@ -1,5 +1,4 @@
-<link href="/static/google-code-prettify/prettify.css" rel="stylesheet" type="text/css" />
-<script src="/static/google-code-prettify/prettify.js"></script>
+
 <style>
 .sidebar-nav-fixed {
 	padding: 9px 0;
@@ -17,44 +16,35 @@
 .control-label {
 	font-weight: bold;
 }
-
-
 </style>
 
-<div class="container-fluid" class="animated fadeIn">
-	<div class="row-fluid">
-		
-		<!-- Sidebar goes here -->
-		<div class="span3">
-			<div class="well sidebar-nav-fixed">
-				<ul class="nav nav-list">
-					<li>
-						<div class="row-fluid">
-							<div class="span9"><p class="lead">Active Instances</p></div><div class="span3"><a class="btn btn-default" href="javascript:reloadInstanceList()"><i class="fa fa-refresh"></i></a></div>
-						</div>
-					</li>
-				</ul>
-				<ul class="nav nav-list" id="sidebar">
-				</ul>
-			</div>
-		</div>
+<!-- content in here -->
+<div class="row">
+	<div class="col-md-3">
+	<div class="std-border std-padding scroll-div well">
+		<table class="table table-condensed table-hover">
+		<thead>
+			<tr>
+				<th>Class</th>
+			</tr>
+		</thead>
+		<tbody id="instanceTable"></tbody>
+		</table>
+	</div>
+	</div>
 
-		<!-- Body goes here -->
-		<div class="span9">
-			<div class="well" style="margin-top: 20px;" id="dataPane">
-			</div>
-		</div>
+	<div class="col-md-9">
+	<div class="std-border std-padding scroll-div well" id="dataPane">
 	</div>
 </div>
 
-<div class="hide" id="dummy">
+<div class="hide" id="dummy"></div>
 <div class="hide"><?prettify?><pre class="hide prettyprint" id="codeSection"></pre></div>
-<script src="/static/js/common.js"></script>
-<script>
 
-	$(document).ready(function () {
+<script>
+	setTimeout(function () {
 		reloadInstanceList();
-	});
+	}, 1000);
 
 	function renderInstanceData(addr, className) {
 		$.ajax({
@@ -106,27 +96,44 @@
 			timeout: 30000,
 			dataType: "json"
 		}).done(function(instances) {
-			$("#sidebar").empty();
-			$.each(instances, function (i) {
-				var li = $(document.createElement('li')); 
+			$.each(instances, function (className, ptrAddr) {
+				var tr = $(document.createElement('tr')); 
+				
+				$(tr).attr("data-instanceAddr", ptrAddr);
+				$(tr).attr("data-className", className);
+
+				var td = $(document.createElement('td'));
 				var a = $(document.createElement('a'));
-				$(a).attr("data-instanceAddr", instances[i][1]);
-				$(a).on("click", function () {
-					//console.log($(a).attr("data-instanceAddr"));
-					renderInstanceData($(a).attr("data-instanceAddr"), $(a).html());
-					$("li").removeClass("active");
-					$(li).addClass("active");
+				$(a).addClass("classContextInfo");
+				$(a).attr("data-className", className);
+				$(a).html(className);
+				$(td).append($(a));
+				$(tr).append($(td));
+				$(tr).on('click', function (e) {
+					console.log(e);
+					if(e.target.parentElement.nodeName != 'A') { 
+						
+					} else {
+						className = e.target.parentElement.text;
+						className = className.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+						console.log("Fetching class " + className);
+						renderClassInfoIntoPopup(className, that);
+						//renderInstanceData($(a).attr("data-instanceAddr"), $(a).html());
+						//$("li").removeClass("active");
+						//$(li).addClass("active");
+					}
 				});
-				$(a).addClass("instanceMenuItem");
-				a.append(instances[i][0]);
-				$(li).append(a);
-				$("#sidebar").append(li);
-			});
-			// we want a nice pointer when hovering over class names
-			$(".instanceMenuItem").hover(function() {
-				$(this).css('cursor','pointer');
-			}, function() {
-				$(this).css('cursor','auto');
+				
+				/*td = $(document.createElement('td'));
+				$(td).html(ptrAddr);
+				$(tr).append($(td));
+				
+				td = $(document.createElement('td'));
+				$(td).html("...");
+				$(tr).append($(td));
+				*/
+				
+				$("#instanceTable").append($(tr));
 			});
 		});
 	}

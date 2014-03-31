@@ -647,6 +647,7 @@ function reloadClassList() {
 			$(item).html(className); // + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
 			$("#classGroup").append($(item));
 		});
+		$("#classGroup a:first").click();
 	});
 }
 
@@ -678,6 +679,7 @@ function reloadProtocolList() {
 			$(item).html(protocolName); // + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
 			$("#protocolGroup").append($(item));
 		});
+		$("#protocolGroup a:first").click();
 	});
 }
 
@@ -759,6 +761,7 @@ function reloadInstanceList() {
 			$(item).html(className + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
 			$("#instanceGroup").append($(item));
 		});
+		$("#instanceGroup a:first").click();
 	});
 }
 

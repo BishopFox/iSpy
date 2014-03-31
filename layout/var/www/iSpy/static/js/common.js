@@ -3,6 +3,8 @@
 // 	  var myProtocolDump = getCachedProtocolDump(); 
 var cachedClassDump;
 var cachedProtocolDump;
+var classBrowseHistory = [];
+var classBrowseHistoryPos = 0;
 
 // The next two functions are a cached interface to the JSON objects representing the class and protocol dumps
 function getCachedClassDump() {
@@ -30,9 +32,23 @@ function prettifyDOMElement(element) {
 	$(element).html(prettyPrintOne($(element).html()));
 }
 
+function showHideHistoryButtons() {
+	if(classBrowseHistoryPos == classBrowseHistory.length - 1)
+		$(historyForward).attr("disabled","true");
+	else
+		$(historyForward).removeAttr("disabled");
+	
+	if(classBrowseHistoryPos == 0)
+		$(historyBack).attr("disabled","true");
+	else
+		$(historyBack).removeAttr("disabled");
+}
+
+
+
 function renderClassInfoIntoPopup(className, destinationElement) {
 	var scratch = $(document.createElement('div'));
-	var e = destinationElement;
+	var element = destinationElement;
 	console.log(className);
 	
 	$.ajax({
@@ -41,10 +57,26 @@ function renderClassInfoIntoPopup(className, destinationElement) {
 		dataType: "json",
 	}).done(function(classDict) {
 		renderClassDataAndAppendToDOMElement(className, $(scratch), function () {
-			$(e).html(prettyPrintOne($(scratch).html()));
-			$(e + " div").removeClass("hide");
-			console.log("OK");
-			console.log(e);
+			$(element).html(prettyPrintOne($(scratch).html()));
+			$(element + " div").removeClass("hide");
+
+			// Set things up so that a click anywhere except an <a> element will dismiss the popover.
+			$(element).off('click');
+			$(element).on('click', function (e) {
+				if(e.target.parentElement.nodeName == 'A') {
+					className = e.target.parentElement.text;
+					className = className.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
+
+					console.log("Fetching class " + className);
+					console.log("Adding class " + className + " to history.");
+					classBrowseHistory.length = classBrowseHistoryPos + 1; // truncate our previous "forward" history. We're making a new one.
+					classBrowseHistory.push(className);
+					classBrowseHistoryPos = classBrowseHistory.length - 1;
+					showHideHistoryButtons();
+					renderClassInfoIntoPopup(className, destinationElement);
+				}
+			});
+
 			// we want a nice pointer when hovering over class names
 			$(".classContextInfo").hover(function() {
 				$(this).css('cursor','pointer');

@@ -204,7 +204,11 @@ Provide context help!!
 				<div class="col-md-9">
 					<div class="panel panel-default">
 						<div class="panel-heading">
-							<h3 class="panel-title">Details</h3>
+							<h3 class="panel-title">
+								Details 
+								<a href="#" class="btn btn-default btn-xs" id="historyBack"><span class="glyphicon glyphicon-chevron-left"></span></a>
+								<a href="#" class="btn btn-default btn-xs" id="historyForward"><span class="glyphicon glyphicon-chevron-right"></span></a>
+							</h3>
 						</div>
 						<!--<div id="dumpDiv" class="hide no-left-margin" >-->
 						<div id="dumpDiv">
@@ -627,10 +631,17 @@ function reloadClassList() {
 			$(item).attr("id", "class_" + className);
 			$(item).attr("href", "#");
 			$(item).on("click", function () {
+				console.log("Adding class " + className + " to history.");
+				classBrowseHistory = [];
+				classBrowseHistoryPos = 0;
+				classBrowseHistory.push(className);
+				showHideHistoryButtons();
+
 				renderClassInfoIntoPopup(className, "#dumpArea");
 				if(globalActiveClassItem !== undefined)
 					$(globalActiveClassItem).removeClass("list-group-item-success");
 				globalActiveClassItem = this;
+				
 				$(this).addClass("list-group-item-success");
 			});
 			$(item).html(className); // + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
@@ -737,6 +748,8 @@ function reloadInstanceList() {
 			$(item).attr("id", ptrAddr + "_" + className);
 			$(item).attr("href", "#");
 			$(item).on("click", function () {
+				classBrowseHistory = [];
+				classBrowseHistoryPos = 0;
 				renderInstanceData(ptrAddr, className);
 				if(globalActiveInstanceItem !== undefined)
 					$(globalActiveInstanceItem).removeClass("list-group-item-success");
@@ -783,7 +796,6 @@ function refreshClassList() {
 }
 
 
-
 /*
 	Ok. Good to go. Let's kick-start this show.
 */
@@ -806,6 +818,24 @@ $(document).ready(function() {
 
 	// Grab the list of classes from the iSpy server and show it to the user
 	//doClassDump();
+
+	$(historyBack).attr("disabled","true");
+	$(historyForward).attr("disabled","true");
+	
+	$(historyBack).on("click", function () {
+		if(classBrowseHistoryPos)
+			classBrowseHistoryPos--;
+		showHideHistoryButtons();
+		renderClassInfoIntoPopup(classBrowseHistory[classBrowseHistoryPos], "#dumpArea");
+	});
+
+	$(historyForward).on("click", function () {
+		if(classBrowseHistoryPos < classBrowseHistory.length - 1)
+			classBrowseHistoryPos++;
+		showHideHistoryButtons();
+		renderClassInfoIntoPopup(classBrowseHistory[classBrowseHistoryPos], "#dumpArea");
+	});	
+
 
 	// instances
 	populateCache();

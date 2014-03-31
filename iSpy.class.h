@@ -28,8 +28,8 @@
 
 -(NSString *)renderStaticTemplate:(NSString *)tpl;
 -(NSDictionary *) getNetworkInfo;
+-(void) configureWebServer;
 -(BOOL) startWebServices;
-
 @end
 
 
@@ -92,6 +92,7 @@
 -(NSString *)SHA256HMACForAppBinary;
 -(NSDictionary *)classDumpClass:(NSString *)className;
 -(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
+//-(void) bounceWebServer;
 @end
 
 /*

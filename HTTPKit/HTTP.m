@@ -44,8 +44,8 @@ static NSString *HTTPSentinel = @" __HTTPSentinel__ ";
 @end
 
 @interface HTTP () {
-    struct mg_context *_ctx;
     @public
+    struct mg_context *_ctx; // Carl: made this public so we can use it to bounce the webserver
     NSMutableArray *_GETHandlers, *_POSTHandlers, *_PUTHandlers, *_DELETEHandlers;
     HTTPHandlerBlock _webSocketHandler;
 }
@@ -186,6 +186,10 @@ static struct mg_callbacks _MongooseCallbacks = {
     return self;
 }
 
+-(struct mg_context *)__ctx {
+    return self->_ctx;
+}
+
 - (BOOL)listenOnPort:(NSUInteger)port onError:(HTTPErrorBlock)aErrorHandler
 {
     char threadStr[5], portStr[8];
@@ -219,6 +223,7 @@ static struct mg_callbacks _MongooseCallbacks = {
 {
     if(_ctx)
         mg_stop(_ctx);
+	[super dealloc];
 }
 
 - (id<HTTPHandler>)_handlerFromObject:(id)aObj handlerBlock:(id)aBlock

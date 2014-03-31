@@ -252,6 +252,8 @@ const char **mg_get_valid_option_names(void) {
 
 static int is_file_in_memory(struct mg_connection *conn, const char *path,
                              struct file *filep) {
+    return 0;
+    
     size_t size = 0;
     if((filep->membuf = conn->ctx->callbacks.open_file == NULL ? NULL :
          conn->ctx->callbacks.open_file(conn, path, &size)) != NULL) {

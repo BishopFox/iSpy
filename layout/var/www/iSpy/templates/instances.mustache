@@ -16,25 +16,34 @@
 .control-label {
 	font-weight: bold;
 }
+
+.list-condensed {
+	padding-top: 5px !important;
+	padding-bottom: 5px !important;
+}
 </style>
 
 <!-- content in here -->
 <div class="row">
 	<div class="col-md-3">
-	<div class="std-border std-padding scroll-div well">
-		<table class="table table-condensed table-hover">
-		<thead>
-			<tr>
-				<th>Class</th>
-			</tr>
-		</thead>
-		<tbody id="instanceTable"></tbody>
-		</table>
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h3 class="panel-title">Active Instances</h3>
+		</div>
+		<!--<div class="bs-example scroll-div"-->
+		<div class="scroll-div">
+			<div class="list-group" id="instanceGroup">
+  			</div> 
+		</div>
 	</div>
 	</div>
 
 	<div class="col-md-9">
-	<div class="std-border std-padding scroll-div well" id="dataPane">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h3 class="panel-title">Instance Details</h3>
+		</div>
+		<div class="scroll-div" id="dataPane"></div>
 	</div>
 </div>
 
@@ -90,52 +99,50 @@
 		});
 	}
 
+	var globalActiveInstanceItem;
 	function reloadInstanceList() {
 		$.ajax({
 			url: "/api/instances",
 			timeout: 30000,
 			dataType: "json"
 		}).done(function(instances) {
+			var flag=1;
 			$.each(instances, function (className, ptrAddr) {
-				var tr = $(document.createElement('tr')); 
+				var item = $(document.createElement('a'));
 				
-				$(tr).attr("data-instanceAddr", ptrAddr);
-				$(tr).attr("data-className", className);
-
-				var td = $(document.createElement('td'));
-				var a = $(document.createElement('a'));
-				$(a).addClass("classContextInfo");
-				$(a).attr("data-className", className);
-				$(a).html(className);
-				$(td).append($(a));
-				$(tr).append($(td));
-				$(tr).on('click', function (e) {
-					console.log(e);
-					if(e.target.parentElement.nodeName != 'A') { 
-						
-					} else {
-						className = e.target.parentElement.text;
-						className = className.replace(/\ \*/,"").replace(/[\<\>\^]/g, "");
-						console.log("Fetching class " + className);
-						renderClassInfoIntoPopup(className, that);
-						//renderInstanceData($(a).attr("data-instanceAddr"), $(a).html());
-						//$("li").removeClass("active");
-						//$(li).addClass("active");
-					}
+				$(item).addClass("list-group-item list-group-item-default list-condensed")
+				$(item).attr("data-instanceAddr", ptrAddr);
+				$(item).attr("data-className", className);
+				$(item).attr("id", ptrAddr + "_" + className);
+				$(item).attr("href", "#");
+				$(item).on("click", function () {
+					renderInstanceData(ptrAddr, className);
+					if(globalActiveInstanceItem !== undefined)
+						$(globalActiveInstanceItem).removeClass("list-group-item-info");
+					globalActiveInstanceItem = this;
+					$(this).addClass("list-group-item-info");
 				});
-				
-				/*td = $(document.createElement('td'));
-				$(td).html(ptrAddr);
-				$(tr).append($(td));
-				
-				td = $(document.createElement('td'));
-				$(td).html("...");
-				$(tr).append($(td));
-				*/
-				
-				$("#instanceTable").append($(tr));
+				$(item).html(className + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
+				$("#instanceGroup").append($(item));
 			});
 		});
+	}
+
+	function refreshClassList() {
+		if(searchMode == 0) {			
+				// loop through each of the items in the list
+				$("#instanceGroup").find("a").each(function() {
+					var id = $(this).attr("id");
+					var re = new RegExp($("#simpleClassNameField").val(), 'g');
+					var match = id.match(re);
+					console.log("Match: " + match);
+					if(match) {
+						$(this).removeClass("hide");
+					} else {
+						$(this).addClass("hide");
+					}
+				});
+		}
 	}
 
 </script>

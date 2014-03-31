@@ -39,6 +39,7 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #import "HTTPKit/HTTP.h"
+#import "HTTPKit/mongoose.h" 
 #import  "GRMustache/include/GRMustache.h"
 #include <dlfcn.h>
 #include <mach-o/nlist.h>
@@ -65,8 +66,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     return [bfTemplate renderObject:content error:NULL];  
 }
 
--(id)init {
-    [super init];
+-(void)configureWebServer {
     [self setHttp:NULL];
     [self setWsGeneral:NULL];
     [self setWsStrace:NULL];
@@ -85,10 +85,23 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     [[self http] setPublicDir:@"/var/www/iSpy"];
 
     [[self wsISpy] setEnableKeepAlive:YES];
+}
+
+-(id)init {
+    [super init];
+    [self configureWebServer];
     
     return self;
 } 
 
+-(void)bounceWebServer {
+    bf_logwrite(LOG_GENERAL, "Stopping mongoose...");
+    mg_stop([[self http] __ctx]);
+    sleep(2);
+    bf_logwrite(LOG_GENERAL, "Starting webserver...");
+    [self startWebServices];
+    bf_logwrite(LOG_GENERAL, "Done.");
+}
 
 -(BOOL) startWebServices {
     // Initialize the iSpy web service
@@ -196,7 +209,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     [[self http] handleGET:@"/symbols"
         with:^(HTTPConnection *connection) {
             return [self renderStaticTemplate:@"symbols"];
-    }];
+    }]; 
     
     [[self http] handleGET:@"/keychain"
         with:^(HTTPConnection *connection) {
@@ -617,6 +630,11 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 } else {
                     ; // more nothing
                 }
+            }
+
+            // restart the webserver to flush its cache, etc
+            else if([args containsString:@"bounceWebServer"]) {
+                [self bounceWebServer];
             }
 
             /*

@@ -19,6 +19,9 @@
 .std-padding {
 	padding: 5px !important;
 }
+.field-padding {
+	padding: 0px !important;
+}
 .no-left-margin {
 	margin-left: 0px !important;
 }
@@ -28,9 +31,46 @@
     width: 100%;
     overflow: scroll !important;
 }
+
+.bs-example {
+	position:relative;
+	/*padding:45px 15px 15px;*/
+	padding: 5px;
+	margin:0 -15px 15px;
+	background-color:#fafafa;
+	box-shadow:inset 0 3px 6px rgba(0,0,0,.05);
+	border-color:#e5e5e5 #eee #eee;
+	border-style:solid;
+	border-width:1px 0;
+}
+
+.sidebar-nav-fixed {
+	padding: 9px 0;
+	position: fixed;
+	left: 20px;
+	top: 60px;
+	width: 250px;
+	height: 90%;
+	overflow: auto;
+}
+.row-fluid > .span-fixed-sidebar {
+	margin-left: 290px;
+}
+
+.control-label {
+	font-weight: bold;
+}
+
+.list-condensed {
+	padding-top: 5px !important;
+	padding-bottom: 5px !important;
+}
 </style>
 
-<div class="modal" id="modalLoading">
+<!--
+	Nice "please wait, loading" progress bar thingy.
+-->
+<div class="modal hide" id="modalLoading">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-body" id="modalBody">
@@ -51,66 +91,229 @@
 	</div>
 </div>
 
-<div class="animated fadeIn hide" id="controlsDiv">
-		<a class="btn" id="btnExpandAll" href="#" data-toggle="tooltip" data-original-title="Expand all of the data for all the classes">Expand all</a>
-</div>
 
 <!--
-Content goes here
+	Simple regex Search
 -->
-<div class="row" style="padding-top: 1em">
-	<div class="col-md-12">
-		<div data-spy="affix" data-offset-top="60" data-offset-bottom="200">
-		<div class="well well-sm">
-			<ul class="nav nav-pills">
-			  <li class="active"><a href="#classTab" data-toggle="tab">Classes</a></li>
-			  <li><a href="#protocolTab" data-toggle="tab">Protocols</a></li>
-			  <li><a href="#instanceTab" data-toggle="tab">Instances</a></li>
-			</ul>
-		</div>
-		</div>
+<div class="row bs-example" id="searchBox">
+</div>
+
+<div class="hide" id="simpleSearchForm">
+	<div class="col-md-6">
+		<form class="form-horizontal" role="form" onsubmit="javascript:refreshClassList();return false;">
+			<div class="form-group field-padding">
+			<label for="classNameField" class="col-sm-2 control-label">Search</label>
+				<div class="col-sm-10" id="simpleSearchInput">
+					<input type="text" class="form-control" id="simpleClassNameField" placeholder="Search">
+					<small class="muted">Supports regexes.</small>
+				</div>
+			</div>
+		</form>
 	</div>
+</div>
 
-	<!--<div class="col-md-2">
-		<div class="well well-sm" id="sidePanel">
-		Some shit here.
+
+<!--
+	Advanced Search
+-->
+
+<!--
+Search by class metadata
+	Class name				<< text
+	IVar name				<< text
+	Property name			<< text 
+	Method name				<< text 
+	Adheres to protocol		<< dropdown
+	Has property of type	<< dropdown
+
+Search instances
+	for data				<< text (regex?)
+	
+Provide context help!!
+-->
+<div class="hide" id="advancedSearchForm">
+	<div class="col-md-6">
+		<form class="form-horizontal" role="form">
+			<div class="form-group field-padding">
+				<label for="classNameField" class="col-sm-2 control-label">Class</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="classNameField" placeholder="Class name">
+				</div>
+			</div>
+			<div class="form-group field-padding">
+				<label for="propertyNameField" class="col-sm-2 control-label">Property</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="propertyNameField" placeholder="Property name">
+				</div>
+			</div>
+			<div class="form-group field-padding">
+				<label for="ivarNameField" class="col-sm-2 control-label">IVar</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="ivarNameField" placeholder="Instance variable name">
+				</div>
+			</div>
+			<div class="form-group field-padding">
+				<label for="methodNameField" class="col-sm-2 control-label">Method</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="methodNameField" placeholder="Method name">
+				</div>
+			</div>
+		</form>		
+
+	</div>
+	<div class="col-md-6">
+		<form class="form-horizontal" role="form">
+			<div class="form-group field-padding">
+				<label for="protocolField" class="col-sm-2 control-label">Adheres to protocol</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="protocolField" placeholder="Protocol">
+				</div>
+			</div>
+			<div class="form-group field-padding">
+				<label for="dataField" class="col-sm-2 control-label">Data</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="dataField" placeholder="Data value">
+				</div>
+			</div>
+		</form>	
+	</div>
+</div>
+<!-- 
+	Tab panes: Classes, Protocols, Instances 
+-->
+<div class="col-md-12">
+	<div class="tab-content no-left-margin" id="tabDiv">
+		
+		<!-- classes -->
+		<div class="tab-pane active" id="classTab">
+			<div class="row">
+				<div class="col-md-3">
+					<!-- list of classes -->
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Classes</h3>
+						</div>
+						<div class="scroll-div">
+							<div class="list-group" id="classGroup">
+				  			</div> 
+						</div>
+					</div>
+				</div>
+
+				<!-- Details of the selected instance -->
+				<div class="col-md-9">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Details</h3>
+						</div>
+						<!--<div id="dumpDiv" class="hide no-left-margin" >-->
+						<div id="dumpDiv">
+							<?prettify?><pre id='dumpArea' class='prettyprint std-border std-padding scroll-div'></pre>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
-	</div>-->
 
-	<div class="col-md-12">
-		<!-- Tab panes -->
-		<div class="tab-content no-left-margin">
-			<div class="tab-pane active no-left-margin" id="classTab">
-				<div id="dumpDiv" class="hide no-left-margin" >
-					<?prettify?><pre id='dumpArea' class='prettyprint std-border std-padding scroll-div'></pre>
+		<!-- protocols -->
+		<div class="tab-pane" id="protocolTab">
+			<div class="row">
+				<div class="col-md-3">
+					<!-- list of protocols -->
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Protocols</h3>
+						</div>
+						<div class="scroll-div">
+							<div class="list-group" id="protocolGroup">
+				  			</div> 
+						</div>
+					</div>
+				</div>
+
+				<!-- Details of the selected instance -->
+				<div class="col-md-9">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Details</h3>
+						</div>
+						<!--<div id="dumpDiv" class="hide no-left-margin" >-->
+						<div id="dumpDivP">
+							<?prettify?><pre id='dumpAreaP' class='prettyprint std-border std-padding scroll-div'></pre>
+						</div>
+					</div>
 				</div>
 			</div>
-			<div class="tab-pane active no-left-margin" id="protocolTab">
-				<div id="dumpDiv" class="hide no-left-margin" >
-					<?prettify?><pre id='dumpArea' class='prettyprint std-border std-padding scroll-div'></pre>
+		</div>
+
+		<!-- instances -->
+		<div class="tab-pane" id="instanceTab">
+			<div class="row">
+				<div class="col-md-3">
+					<!-- list of instances -->
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Active Instances</h3>
+						</div>
+						<div class="scroll-div">
+							<div class="list-group" id="instanceGroup">
+				  			</div> 
+						</div>
+					</div>
+				</div>
+
+				<!-- Details of the selected instance -->
+				<div class="col-md-9">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Instance Details</h3>
+						</div>
+						<div class="scroll-div std-border std-padding" id="dataPane" ></div>
+					</div>
 				</div>
 			</div>
-			<div class="tab-pane" id="instanceTab">{{>instances}}</div>
 		</div>
 	</div>
 </div>
 
+<!-- scratch -->
+<div class="hide" id="dummy"></div>
+<div class="hide"><?prettify?><pre class="hide prettyprint" id="codeSection"></pre></div>
+
 		
-
-<div id="fooBar" class="hide"></div>
-
+<!-- Add a new drop-down menu to the navbar at the top of the page. -->
 <div class="hide" id="classDumpMenu">
+	<li><a href="#classTab"    data-group="classGroup"    data-toggle="tab">Classes</a></li>
+	<li><a href="#protocolTab" data-group="protocolGroup" data-toggle="tab">Protocols</a></li>
+	<li><a href="#instanceTab" data-group="instanceGroup" data-toggle="tab">Instances</a></li>
 	<li class="dropdown">
-		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Class Dump Options<b class="caret"></b></a>
+		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
+		<!-- menu options -->
 		<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
 			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:clearCachedClassData()">Clear cached class data</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:toggleSearchBox()">Toggle simple/advanced search</a></li>
 			<!--<li role="presentation" class="divider"></li>-->
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:expandClassList()">Expand/collapse the classes</a></li>
 		</ul>
 	</li>
 </div>
 
 <script>
+
+// Toggle for simple/advanced search. Access via menu in browser.
+// 0 = simple
+// 1 = advanced
+var searchMode = 1;
+var currentGroup;
+
+// swap between simple/advanced search modes
+function toggleSearchBox() {
+	searchMode = 1 - searchMode; // toggle
+	if(searchMode == 1)
+		$("#searchBox").html($("#advancedSearchForm").html());
+	else
+		$("#searchBox").html($("#simpleSearchForm").html());
+}
+
 // the user can pick "Clear cached class data" in the UI. It's handled here.
 function clearCachedClassData() {
 	updateStatus("Checking cache...", 10);
@@ -142,7 +345,7 @@ function classDumpCompletionHandler() {
 	localStorage["SHA256HMAC"] = globalAppChecksum;
 }
 
-
+// update the progress bar and update status message
 function updateStatus(statusTxt, percent) {
 		$("#progressBar").attr("aria-valuetransitiongoal", percent).progressbar();
 		console.log(statusTxt);
@@ -151,6 +354,7 @@ function updateStatus(statusTxt, percent) {
 		}
 }
 
+// cycle through classes, rendering a classic Classump
 function render_classDumpIntoDOM () {
 	var classCount = 0 | 0;
 	var numClasses = localStorage["numClasses"] | 0;
@@ -172,6 +376,7 @@ function render_classDumpIntoDOM () {
 	});
 }
 
+// render the protocol information in the same manner as classic classdump
 function render_protocolDumpIntoDOM () {
 	var protocols = getCachedProtocolDump();
 	$.each(protocols, function(key, protocolDict) {
@@ -180,6 +385,7 @@ function render_protocolDumpIntoDOM () {
 	});
 }
 
+// does what it says on the tin
 function doClassDump() {
 	// Get the SHA256 checksum of the current iOS app binary.
 	// Check our browser's localStorage for a copy of the same checksum.
@@ -214,7 +420,7 @@ function doClassDump() {
 
 }
 
-
+// this is what actually does the work of classdump
 function real_ClassDump(isDataCached) {
 	$("#dumpDiv").addClass("hide");
 	$("#dumpArea").empty();
@@ -302,30 +508,310 @@ function real_ClassDump(isDataCached) {
 	}
 }
 
+
+function populateCache() {
+	updateStatus("Initializing...", 10);
+	$.ajax({
+		url: "/api/appChecksum",
+		timeout: 30000,
+		dataType: "json",
+	}).done(function(checksum) {
+		// if our cached checksum matches the current app's checksum, great. 
+		// now validate that we actually have cached data.
+		var isClassDataCached = false;
+		globalAppChecksum = checksum["SHA256HMAC"];
+
+		if(	localStorage["SHA256HMAC"] && 
+			(localStorage["SHA256HMAC"] == checksum["SHA256HMAC"]) && 
+			(localStorage["numClasses"] !== undefined) &&
+			(localStorage["classData"] !== undefined) && 
+			(localStorage["protocolData"] !== undefined))
+		{
+			// If we have a sane cache, use it.
+			isClassDataCached = true;
+		} else {
+			// if the cache is invalid in any way, clear it out and start again.
+			localStorage.clear();
+
+			// Setup the "Loading..." modal
+			$('.progress .progress-bar').progressbar({
+		        transition_delay: 0,
+		        refresh_speed: 100,
+		        display_text: 'fill',
+		        update: function (percent) {
+					if(percent == 100) {
+		        		$('#modalLoading').modal('hide');
+		        	}
+		        }
+		    });
+
+    		// show the "Loading..." modal
+			$('#modalLoading').modal({
+			  backdrop: 'static',
+			  show: true
+			});
+			$("#modalLoading").removeClass("hide");
+
+			// Cache all the things
+			real_populateCache();
+		}
+	});
+}
+
+function real_populateCache() {
+	// Grab the list of protocols defined for this app
+	updateStatus("Waiting for iDevice...", 25);
+	$.ajax({
+		url: "/api/protocolDump",
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(protocols) {
+		updateStatus("Reading protocol data...", 50);
+
+		// cache the protocol data
+		localStorage.setItem("protocolData", JSON.stringify(protocols));
+
+		// count the number of classes
+		var numProtocols = 0;
+		protocols = getCachedProtocolDump();
+		$.each(protocols, function(key, data) {
+			numProtocols++;
+		});
+		console.log("num protocols " + numProtocols);
+
+		// Store the number in localStorage
+		localStorage.setItem("numProtocols", numProtocols);
+
+		updateStatus("Waiting for iDevice...", 75);
+		
+		// grab the list of classes from the iDevice
+		$.ajax({
+			url: "/api/classDump",
+			timeout: 30000,
+			dataType: "json",
+		}).done(function(classes) {
+			updateStatus("Done.", 100);
+			// Store the classdump data in our browser cache
+			localStorage.setItem("classData", JSON.stringify(classes));
+			localStorage.setItem("SHA256HMAC", globalAppChecksum);
+
+			// count the number of classes
+			var numClasses = 0;
+			classes = getCachedClassDump();
+			$.each(classes, function(key, data) {
+				numClasses++;
+			});
+			console.log("num classes " + numClasses);
+
+			// Store the number in localStorage
+			localStorage.setItem("numClasses", numClasses);
+			// hide stuff again
+			$('#modalLoading').modal('hide');
+		});
+	});
+}
+
+var globalActiveClassItem;
+function reloadClassList() {
+	$.ajax({
+		url: "/api/classes",
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(classes) {
+		var flag=1;
+		$.each(classes, function (id) {
+			var item = $(document.createElement('a'));
+			var className = classes[id];
+			$(item).addClass("list-group-item list-group-item-default list-condensed")
+			$(item).attr("data-className", className);
+			$(item).attr("id", "class_" + className);
+			$(item).attr("href", "#");
+			$(item).on("click", function () {
+				renderClassInfoIntoPopup(className, "#dumpArea");
+				if(globalActiveClassItem !== undefined)
+					$(globalActiveClassItem).removeClass("list-group-item-success");
+				globalActiveClassItem = this;
+				$(this).addClass("list-group-item-success");
+			});
+			$(item).html(className); // + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
+			$("#classGroup").append($(item));
+		});
+	});
+}
+
+var globalActiveProtocolItem;
+function reloadProtocolList() {
+	$.ajax({
+		url: "/api/protocolDump",
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(protocols) {
+		$.each(protocols, function (key, protocol) {
+			var item = $(document.createElement('a'));
+			var protocolName = key;
+
+			$(item).addClass("list-group-item list-group-item-default list-condensed")
+			$(item).attr("data-protocolName", protocolName);
+			$(item).attr("id", "protocol_" + protocolName);
+			$(item).attr("href", "#");
+			$(item).on("click", function () {
+				$("#dumpAreaP").html("");
+				renderProtocolDataAndAppendToDOMElement(protocolName, "#dumpAreaP", function () {}, protocols[protocolName]);
+				$("#dumpAreaP").html(prettyPrintOne($("#dumpAreaP").html()));
+
+				if(globalActiveProtocolItem !== undefined)
+					$(globalActiveProtocolItem).removeClass("list-group-item-success");
+				globalActiveProtocolItem = this;
+				$(this).addClass("list-group-item-success");
+			});
+			$(item).html(protocolName); // + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
+			$("#protocolGroup").append($(item));
+		});
+	});
+}
+
+
+/*
+	This section contains JavaScript used in the Instances tab
+*/
+
+function renderInstanceData(addr, className) {
+	$.ajax({
+		url: "/api/instance/" + addr,
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(instanceData) {
+		$("#dataPane").empty();
+		var p = $(document.createElement('p'));
+		$(p).append("Instance Variables for ");
+		$(p).addClass("lead");
+
+		var a = $(document.createElement('a')); 
+		$(a).addClass("classContextInfo");
+		$(a).attr("data-className", className);
+		$(a).html("<em>" + className + "</em>");
+		
+		$(p).append(a);
+		$(p).append(" @ <em>" + addr + "</em>")
+
+		$("#dataPane").append(p);
+
+		$.each(instanceData, function (key, data) {
+			$("#codeSection").empty();
+			$("#dataPane").append("<b>Name:</b> " + data["name"] + "<br/>\n");
+			
+			var a = $(document.createElement('a'));
+			$(a).addClass("classContextInfo");
+			$(a).attr("data-className", data["type"].replace(/\ \*/,""));
+			$(a).html(data["type"]);
+			$("#dataPane").append("<b>Type:</b> ");
+			$("#dataPane").append(a);
+			$("#dataPane").append("<br/>\n");
+
+			var value = $("#dummy").text(data["value"]).html();
+			var pre = $(document.createElement('pre')); 
+			$(pre).addClass("prettyprint");
+			$(pre).html(value);
+			$("#dataPane").append(pre);
+			//$("#dataPane").append("<hr>\n");
+		});
+		setupContextHelpHandler("bottom"); // show context help underneath the triggering link
+	});
+}
+
+// show the list of active instances in the left-hand pane on the instances tab
+var globalActiveInstanceItem;
+function reloadInstanceList() {
+	$.ajax({
+		url: "/api/instances",
+		timeout: 30000,
+		dataType: "json"
+	}).done(function(instances) {
+		var flag=1;
+		$.each(instances, function (className, ptrAddr) {
+			var item = $(document.createElement('a'));
+			
+			$(item).addClass("list-group-item list-group-item-default list-condensed")
+			$(item).attr("data-instanceAddr", ptrAddr);
+			$(item).attr("data-className", className);
+			$(item).attr("id", ptrAddr + "_" + className);
+			$(item).attr("href", "#");
+			$(item).on("click", function () {
+				renderInstanceData(ptrAddr, className);
+				if(globalActiveInstanceItem !== undefined)
+					$(globalActiveInstanceItem).removeClass("list-group-item-success");
+				globalActiveInstanceItem = this;
+				$(this).addClass("list-group-item-success");
+			});
+			$(item).html(className + "<br/><span class='text-muted small'>" + ptrAddr + "</span>");
+			$("#instanceGroup").append($(item));
+		});
+	});
+}
+
+// If the user is searching for classes, filter the left-hand UI pane to contain only valid search results.
+function refreshClassList() {
+	if(searchMode == 0) {		
+		var numFound = 0;	
+		var totalItems =0;
+
+		// loop through each of the items in the list
+		$(currentGroup).find("a").each(function() {
+			totalItems++;
+			var id = $(this).attr("id");
+			var re = new RegExp($("#simpleClassNameField").val(), 'g');
+			var match = id.match(re);
+			if(match) {
+				numFound++;
+				$(this).removeClass("hide");
+			} else {
+				$(this).addClass("hide");
+			}
+		});
+		var panel = $(currentGroup).parent().parent().get(0);
+		$(panel).removeClass("panel-danger panel-success");
+		$(simpleSearchInput).removeClass("has-error has-success");
+		
+		if(numFound == 0) {
+			$(panel).addClass("panel-danger")
+			$(simpleSearchInput).addClass("has-error");	
+		} else if(numFound != totalItems) {
+			$(panel).addClass("panel-success")
+			$(simpleSearchInput).addClass("has-success");	
+		}
+	}
+}
+
+
+
+/*
+	Ok. Good to go. Let's kick-start this show.
+*/
 $(document).ready(function() {
+	// track the current tab and maintain a pointer to the current left-hand UI pane.
+	// We'll use this to populate the class/protocol/instance list according to context.
+	$(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+		currentGroup = $("#" + $(e.target).attr("data-group"));
+		refreshClassList();
+	});
+
+	// make sure we're looking at the class tab, forcing the above event-handler to fire
+	currentGroup = $("#classGroup");
+
 	// Add a new menu to the menu bar
 	$('#menuBarExtraMenu1').append($('#classDumpMenu').html());
 
-	// Setup the "Loading..." modal
-	$('.progress .progress-bar').progressbar({
-        transition_delay: 0,
-        refresh_speed: 100,
-        display_text: 'fill',
-        update: function (percent) {
-			if(percent == 100) {
-        		$('#modalLoading').modal('hide');
-        	}
-        }
-    });
+	// display the search box in "simple" mode by default
+	toggleSearchBox();
 
-	// show the modal
-	$('#modalLoading').modal({
-	  backdrop: 'static',
-	  show: true
-	});
+	// Grab the list of classes from the iSpy server and show it to the user
+	//doClassDump();
 
-	// Grab the list of classes from the iSpy server
-	doClassDump();
+	// instances
+	populateCache();
+	reloadClassList();
+	reloadProtocolList();
+	reloadInstanceList();
 });
 
 </script>

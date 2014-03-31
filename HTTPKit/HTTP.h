@@ -6,7 +6,7 @@
 typedef void (^HTTPErrorBlock)(id reason);
 typedef id (^HTTPHandlerBlock)(HTTPConnection *, ...);
 
-@interface HTTP : NSObject
+@interface HTTP : NSObject 
 @property(readwrite, strong) NSString *publicDir;
 @property(readwrite, assign) BOOL enableDirListing, enableKeepAlive;
 @property(readwrite, assign) unsigned int numberOfThreads;
@@ -19,4 +19,5 @@ typedef id (^HTTPHandlerBlock)(HTTPConnection *, ...);
 - (void)handlePUT:(id)aRoute    with:(id)aHandler;
 - (void)handleDELETE:(id)aRoute with:(id)aHandler;
 - (void)handleWebSocket:(id)aHandler;
+- (struct mg_context *)__ctx;
 @end

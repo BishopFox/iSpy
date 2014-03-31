@@ -627,12 +627,20 @@ Returns a NSDictionary like this:
 		const char *protocolName = protocol_getName(protocols[j]); 
 		unsigned int adopteeCount;
 		Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
+
+		if(!adopteeCount) {
+			free(adopteesList);
+			continue;
+		}
 	
 		adoptees = [[NSMutableArray alloc] init];
 		for(int i = 0; i < adopteeCount; i++) {
 			const char *adopteeName = protocol_getName(adopteesList[i]);
-			if(!adopteeName)
-				continue; // skip broken names
+
+			if(!adopteeName) {
+				free(adopteesList);
+				continue; // skip broken names or shit we don't care about
+			}
 			[adoptees addObject:[NSString stringWithUTF8String:adopteeName]];
 		}
 		free(adopteesList);
@@ -829,7 +837,26 @@ Returns a NSDictionary like this:
 
 -(NSDictionary *)classDumpClass:(NSString *)className {
 	NSMutableDictionary *cls = [[NSMutableDictionary alloc] init];
-	[cls setObject:className forKey:@"className"];
+	Class theClass = objc_getClass([className UTF8String]);
+	unsigned int numProtocols;
+
+	Class superClass = class_getSuperclass(theClass);
+	char *superClassName = NULL;
+
+	if(superClass)
+		superClassName = (char *)class_getName(superClass);
+
+	Protocol **protocols = class_copyProtocolList(theClass, &numProtocols);
+	NSMutableArray *pr = [[NSMutableArray alloc] init];
+	if(numProtocols) {
+		for(int i = 0; i < numProtocols; i++) {
+			[pr addObject:[NSString stringWithUTF8String:protocol_getName(protocols[i])]];
+		}
+		free(protocols);
+	}
+	[cls setObject:pr 															 forKey:@"protocols"];
+	[cls setObject:className 													 forKey:@"className"];
+	[cls setObject:[NSString stringWithUTF8String:superClassName]				 forKey:@"superClass"];
 	[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
 	[cls setObject:[NSArray arrayWithArray:[self iVarsForClass:className]]       forKey:@"ivars"];
 	[cls setObject:[NSArray arrayWithArray:[self propertiesForClass:className]]  forKey:@"properties"];
@@ -918,7 +945,16 @@ Returns a NSDictionary like this:
 	return [iVarData copy];
 }
 
-
+/*-(void) bounceWebServer {
+    bf_logwrite(LOG_GENERAL, "Bouncing webserver...");
+    iSpyServer *selfHTTP = [self webServer];
+    [selfHTTP dealloc];
+    selfHTTP = nil;
+    sleep(2);
+    [[self webServer] configureWebServer];
+    [[self webServer] startWebServices];
+    bf_logwrite(LOG_GENERAL, "Bounce done.");
+}*/
 
 @end
 

@@ -30,9 +30,39 @@ function prettifyDOMElement(element) {
 	$(element).html(prettyPrintOne($(element).html()));
 }
 
-function renderClassInfoIntoPopup(className, selfRef) {
+function renderClassInfoIntoPopup(className, destinationElement) {
+	var scratch = $(document.createElement('div'));
+	var e = destinationElement;
+	console.log(className);
+	
+	$.ajax({
+		url: "/api/classDumpClass/" + className,
+		timeout: 30000,
+		dataType: "json",
+	}).done(function(classDict) {
+		renderClassDataAndAppendToDOMElement(className, $(scratch), function () {
+			$(e).html(prettyPrintOne($(scratch).html()));
+			$(e + " div").removeClass("hide");
+			console.log("OK");
+			console.log(e);
+			// we want a nice pointer when hovering over class names
+			$(".classContextInfo").hover(function() {
+				$(this).css('cursor','pointer');
+			}, function() {
+				$(this).css('cursor','auto');
+			});
+		}, classDict);
+	});
+}
+
+
+function old_renderClassInfoIntoPopup(className, selfRef, optionalDestinationElement) {
+	var destinationElement = "#popoverContent";
+	if(optionalDestinationElement !== undefined) {
+		destinationElement = optionalDestinationElement;
+	}
 	var that = selfRef;
-	$("#popoverContent").empty();
+	$(destinationElement).empty();
 	var scratch = $(document.createElement('div'));
 	//var className = $(that).attr("data-className");
 	
@@ -42,13 +72,13 @@ function renderClassInfoIntoPopup(className, selfRef) {
 		dataType: "json",
 	}).done(function(classDict) {
 		renderClassDataAndAppendToDOMElement(className, $(scratch), function () {
-			$("#popoverContent").html(prettyPrintOne($(scratch).html()));
-			$("#popoverContent div").removeClass("hide");
+			$(destinationElement).html(prettyPrintOne($(scratch).html()));
+			$(destinationElement + "div").removeClass("hide");
 			
 			// Set things up so that a click anywhere except an <a> element will dismiss the popover.
 			$(window).on('click', function (e) {
 				if(e.target.parentElement.nodeName != 'A') { 
-					$(that).popover('hide');
+					//$(that).popover('hide');
 					$(window).off('click');
 				} else {
 					$(window).off('click');
@@ -199,6 +229,9 @@ function renderProtocolDataAndAppendToDOMElement(protocolName, parentHtmlElement
 	var detailsDiv = $(document.createElement('div'));
 	var requiredDiv = $(document.createElement('div'));
 	var optionalDiv = $(document.createElement('div'));
+
+	console.log("renderProtocolDataAndAppendToDOMElement");
+	console.log(protocolDict);
 
 	// Join all the elements up in the correct order
 	var protocolInfo;

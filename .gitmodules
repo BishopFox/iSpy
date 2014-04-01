@@ -16,3 +16,6 @@
 [submodule "layout/var/www/iSpy/static/bootstrap-progressbar"]
 	path = layout/var/www/iSpy/static/bootstrap-progressbar
 	url = https://github.com/minddust/bootstrap-progressbar.git
+[submodule "layout/var/www/iSpy/static/jQuery-contextMenu"]
+	path = layout/var/www/iSpy/static/jQuery-contextMenu
+	url = https://github.com/medialize/jQuery-contextMenu.git

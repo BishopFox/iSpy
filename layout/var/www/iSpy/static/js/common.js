@@ -32,7 +32,7 @@ function prettifyDOMElement(element) {
 	$(element).html(prettyPrintOne($(element).html()));
 }
 
-function showHideHistoryButtons() {
+function showHideHistoryButtons(className) {
 	if(classBrowseHistoryPos == classBrowseHistory.length - 1)
 		$(historyForward).attr("disabled","true");
 	else
@@ -42,8 +42,20 @@ function showHideHistoryButtons() {
 		$(historyBack).attr("disabled","true");
 	else
 		$(historyBack).removeAttr("disabled");
+
+	$(historySelector).append('<li role="presentation"><a role="menuitem" tabindex="-1" href="javascript:renderClassInfoIntoPopup(\'' + className + '\', \'#dumpArea\')">' + className + '</a></li>');
+	$(historySelectorText).html(className);
 }
 
+function clearClassBrowserHistory() {
+	classBrowseHistoryPos = undefined;
+	classBrowseHistory = [];
+}
+
+function addClassToBrowserHistory(className) {
+	classBrowseHistory.push(className);
+	classBrowseHistoryPos++;
+}
 
 
 function renderClassInfoIntoPopup(className, destinationElement) {

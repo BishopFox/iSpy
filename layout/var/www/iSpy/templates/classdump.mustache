@@ -3,6 +3,11 @@
 <script src="/static/js/jquery.ajaxQueue.min.js"></script>
 <script type="text/javascript" src="/static/bootstrap-progressbar/bootstrap-progressbar.js"></script>
 <script src="/static/js/common.js"></script>
+<script src="/static/jQuery-contextMenu/src/jquery.ui.position.js" type="text/javascript"></script>
+<script src="/static/jQuery-contextMenu/src/jquery.contextMenu.js" type="text/javascript"></script>
+<script src="/static/jQuery-contextMenu/screen.js" type="text/javascript"></script>
+<link href="/static/jQuery-contextMenu/src/jquery.contextMenu.css" rel="stylesheet" type="text/css" />
+<link href="/static/jQuery-contextMenu/screen.css" rel="stylesheet" type="text/css" />
 
 <style>
 .popover {
@@ -65,6 +70,8 @@
 	padding-top: 5px !important;
 	padding-bottom: 5px !important;
 }
+
+
 </style>
 
 <!--
@@ -219,6 +226,13 @@ Provide context help!!
 								<span class="pull-left">
 									<a href="#" class="btn btn-default btn-xs " id="historyBack"> <i class="fa fa-chevron-left"></i></a>
 									<a href="#" class="btn btn-default btn-xs " id="historyForward"> <i class="fa fa-chevron-right"></i></a>
+									<div class="btn-group">
+										<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
+											<span id="historySelectorText">&nbsp;</span> <span class="caret"></span>
+										</button>
+										<ul class="dropdown-menu" role="menu" id="historySelector">
+										</ul>
+									</div>
 								</span>
 							</h3>
 						</div>
@@ -299,9 +313,9 @@ Provide context help!!
 		
 <!-- Add a new drop-down menu to the navbar at the top of the page. -->
 <div class="hide" id="classDumpMenu">
-	<li><a href="#classTab"    data-group="classGroup"    data-toggle="tab">Classes</a></li>
+	<li><a id="classTabButton" href="#classTab"    data-group="classGroup"    data-toggle="tab">Classes</a></li>
 	<li><a href="#protocolTab" data-group="protocolGroup" data-toggle="tab">Protocols</a></li>
-	<li><a href="#instanceTab" data-group="instanceGroup" data-toggle="tab">Instances</a></li>
+	<li><a id="instanceTabButton" href="#instanceTab" data-group="instanceGroup" data-toggle="tab">Instances</a></li>
 	<li class="dropdown">
 		<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
 		<!-- menu options -->
@@ -644,10 +658,9 @@ function reloadClassList() {
 			$(item).attr("href", "#");
 			$(item).on("click", function () {
 				console.log("Adding class " + className + " to history.");
-				classBrowseHistory = [];
-				classBrowseHistoryPos = 0;
-				classBrowseHistory.push(className);
-				showHideHistoryButtons();
+				clearClassBrowserHistory();
+				addClassToBrowserHistory(className);
+				showHideHistoryButtons(className);
 
 				renderClassInfoIntoPopup(className, "#dumpArea");
 				if(globalActiveClassItem !== undefined)
@@ -840,14 +853,14 @@ $(document).ready(function() {
 	$(historyBack).on("click", function () {
 		if(classBrowseHistoryPos)
 			classBrowseHistoryPos--;
-		showHideHistoryButtons();
+		showHideHistoryButtons(classBrowseHistory[classBrowseHistoryPos]);
 		renderClassInfoIntoPopup(classBrowseHistory[classBrowseHistoryPos], "#dumpArea");
 	});
 
 	$(historyForward).on("click", function () {
 		if(classBrowseHistoryPos < classBrowseHistory.length - 1)
 			classBrowseHistoryPos++;
-		showHideHistoryButtons();
+		showHideHistoryButtons(classBrowseHistory[classBrowseHistoryPos]);
 		renderClassInfoIntoPopup(classBrowseHistory[classBrowseHistoryPos], "#dumpArea");
 	});	
 
@@ -857,6 +870,27 @@ $(document).ready(function() {
 	reloadClassList();
 	reloadProtocolList();
 	reloadInstanceList();
+
+	// setup right-click
+	$(function(){
+	    $("#classGroup").contextMenu({
+	        selector: 'a', 
+	        callback: function(key, options) {
+	            var m = "clicked: " + key + " on " + $(this).text();
+	            window.getSelection().removeAllRanges();
+	            window.console && console.log(m);
+	            $("#simpleClassNameField").val($(this).text());
+	            $("#instanceTabButton").click();
+	            $("#simpleSearchForm").submit();
+	            $("#instanceGroup").find('a[data-className="' + $(this).text() + '"]:first').click();
+	        },
+	        items: {
+	            "instances": {name: "Show instances", icon: "edit"},
+	            "protocols": {name: "Show protocols", icon: "copy"}
+	        }
+	    });
+	});
+   
 });
 
 </script>

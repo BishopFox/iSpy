@@ -19,3 +19,6 @@
 [submodule "layout/var/www/iSpy/static/jQuery-contextMenu"]
 	path = layout/var/www/iSpy/static/jQuery-contextMenu
 	url = https://github.com/medialize/jQuery-contextMenu.git
+[submodule "theosfork"]
+	path = theos
+	url = https://github.com/moloch--/theos

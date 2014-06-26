@@ -156,7 +156,7 @@ Enabling this will cause all of your Theos "%hook ... %end" blocks to use the ne
             <key>key</key>
             <string>settings_ReplaceMSubstrate</string>
             <key>label</key>
-            <string>Replace MSMessageHookEx with iSpy Variant</string>      
+            <string>Replace MSMessageHookEx with iSpy Variant</string>
          </dict><!-- End Swizzling -->
          <!-- Instance Tracking -->
          <dict>

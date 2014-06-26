@@ -120,7 +120,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     // Setup the HTTP endpoint handlers
     [[self wsISpy] listenOnPort:31338 onError:^(id reason) {
-        NSLog(@"Fucked up web services socket: %s", [reason UTF8String]);
+        NSLog(@"[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
     }];
 
     [[self wsISpy] handleWebSocket:^id (HTTPConnection *connection) {
@@ -539,7 +539,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 NSMutableString *mString = [[NSMutableString alloc] init];
                 long oldpos;
 
-                NSLog(@"REading logfile... %d", [self generalReadLock]);
+                NSLog(@"[iSpy] Reading logfile... %d", [self generalReadLock]);
 
                 if(![self generalReadLock]) {
                     [self setGeneralReadLock:1];
@@ -555,7 +555,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                     content = [mString copy];
                     [self setGeneralReadLock:0];
                 }
-                NSLog(@"done reading logfile");
+                NSLog(@"[iSpy] done reading logfile");
             }
 
             // The user can elect to reload an entire log from the beginning

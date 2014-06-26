@@ -330,7 +330,7 @@ id *appClassWhiteList = NULL;
 	count = [items count];
 	do {
 		NSMutableArray *keychainItems = nil;
-		NSLog(@"Area: %@", [items objectAtIndex:i]);
+		NSLog(@"[iSpy] Area: %@", [items objectAtIndex:i]);
 		[genericQuery setObject:(id)[items objectAtIndex:i] forKey:(id)kSecClass];
 		[genericQuery setObject:(id)kSecMatchLimitAll forKey:(id)kSecMatchLimit];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnAttributes];
@@ -819,7 +819,7 @@ Returns a NSDictionary like this:
 	NSMutableDictionary *classDumpDict = [[NSMutableDictionary alloc] init];
 	NSArray *clsList = [self classesWithSuperClassAndProtocolInfo]; // returns an array of dictionaries
 	
-	NSLog(@"Got %d classes", [clsList count]);
+	NSLog(@"[iSpy] Got %d classes", [clsList count]);
 	for(int i = 0; i < [clsList count]; i++) {
 		NSMutableDictionary *cls = [[clsList objectAtIndex:i] mutableCopy];
 		NSString *className = [cls objectForKey:@"className"];
@@ -868,7 +868,7 @@ Returns a NSDictionary like this:
 -(NSString *)SHA256HMACForAppBinary {
 	NSString *fileName = [[[NSProcessInfo processInfo] arguments] objectAtIndex:0];
 	NSString *HMAC = SHA256HMAC([NSData dataWithContentsOfFile:fileName]);
-	NSLog(@"HMAC: %@", HMAC);
+	NSLog(@"[iSpy] HMAC: %@", HMAC);
 	return HMAC;
 }
 
@@ -1196,7 +1196,7 @@ NSString *SHA256HMAC(NSData *theData) {
     unsigned char cHMAC[CC_SHA256_DIGEST_LENGTH+1];
     
     if(!cData) {
-    	NSLog(@"Error with theData in SHA256HMAC");
+    	NSLog(@"[iSpy] Error with theData in SHA256HMAC");
     	return nil;
     }
     memset(cHMAC, 0, sizeof(cHMAC));

@@ -57,10 +57,10 @@ static void bf_MSHookMessageEx(id cls, SEL selector, IMP replacement,
         IMP *result) {
     struct poisonedCacheList *p;
 
-    NSLog(@"iSpy: substrate: Someone is using MSHookMessageEx to hook [%s %s]. Using iSpy's hooker instead.", (char *)class_getName(cls), (char *)sel_getName(selector));
+    NSLog(@"[iSpy]: substrate: Someone is using MSHookMessageEx to hook [%s %s]. Using iSpy's hooker instead.", (char *)class_getName(cls), (char *)sel_getName(selector));
     p=hookList;
     if(p != NULL) {
-        NSLog(@"iSpy: substrate: Adding new node for %s", (char *)sel_getName(selector));
+        NSLog(@"[iSpy]: substrate: Adding new node for %s", (char *)sel_getName(selector));
         while(p->next)
             p=p->next;
         p->next=(struct poisonedCacheList *)malloc(sizeof(struct poisonedCacheList));
@@ -104,7 +104,7 @@ static IMP bf_method_getImplementation(Method method) {
     p=hookList;
     while(p) {
         if(p->orig_method == method) {
-            NSLog(@"iSpy: substrate: method_getImplementation: Found hooked method %s, replacing it with swizzled version!", (char *)sel_getName(method->method_name));
+            NSLog(@"[iSpy]: substrate: method_getImplementation: Found hooked method %s, replacing it with swizzled version!", (char *)sel_getName(method->method_name));
             return p->new_imp;
         }
         p = p->next;

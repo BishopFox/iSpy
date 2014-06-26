@@ -354,7 +354,7 @@ void showGUIPopOver() {
     NSSet *touches = [event allTouches];
     UITouch *touch = [touches anyObject];
     CALayer *touchedLayer = [touch view].layer;
-    NSLog(@"Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
+    NSLog(@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
 
     %orig;
 }
@@ -1824,7 +1824,7 @@ EXPORT int return_true() {
  We use it to hijack C function calls. Extend as necessary.
  */
 %ctor {
-	NSLog(@"iSpy: entry point.");
+	NSLog(@"[iSpy] *** Entry point ***");
 
 	iSpy *mySpy = [iSpy sharedInstance];
 
@@ -1834,7 +1834,7 @@ EXPORT int return_true() {
 	int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
 	
 	// Load preferences. Abort if prefs file not found.
-	NSLog(@"iSpy: initializing prefs for %@", [mySpy bundleId]);
+	NSLog(@"[iSpy] : initializing prefs for %@", [mySpy bundleId]);
 	NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
 	if (!plist) {
 		NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");

@@ -4,9 +4,6 @@
 [submodule "GRMustache"]
 	path = GRMustache
 	url = https://github.com/groue/GRMustache.git
-[submodule "theos"]
-	path = theos
-	url = https://github.com/moloch--/theos
 [submodule "layout/var/www/iSpy/static/DataTables"]
 	path = layout/var/www/iSpy/static/DataTables
 	url = https://github.com/DataTables/DataTables.git

@@ -1,26 +1,22 @@
-//
-//  HCAppDelegate.m
-//  HelloCBL
-//
-//  Created by Amy Kurtzman on 11/17/13.
-//  Copyright (c) 2013 Couchbase. All rights reserved.
-//
+
 #import <Foundation/Foundation.h>
-#import "HCAppDelegate.h"
+#import <Foundation/NSFileManager.h>
+#import <UIKit/UIKit.h>
+#import <UIKit/UIApplication.h>
 
-#import "couchbase-lite-ios/Source/API/CouchbaseLite.h"
-#import "couchbase-lite-ios/Source/API/CBLDocument.h"
+#import "CouchbaseLite.framework/Headers/CouchbaseLite.h"
+#import "CouchbaseLite.framework/Headers/CBLDocument.h"
 
-@interface HCAppDelegate ()
+@interface HCAppDelegate : NSObject
 
 // shared manager
-@property (strong, nonatomic) CBLManager *manager;
+@property (retain, strong, nonatomic) CBLManager *manager;
 
 // the database
-@property (strong, nonatomic) CBLDatabase *database;
+@property (retain, strong, nonatomic) CBLDatabase *database;
 
 // document identifier
-@property (strong, nonatomic) NSString *docID;
+@property (retain, strong, nonatomic) NSString *docID;
 
 @end
 
@@ -53,17 +49,9 @@ updating the document, and deleting the document.
     if (![self createTheDatabase]) return NO;
     
     // create a new document & save it in the database
-    if (![self createTheDocument]) return NO;
+    if (![self createTheDocument:0]) return NO;
 
-    // retrieve a document from the database
-    if (![self retrieveTheDocument]) return NO;
-    
-    // update a document
-    if (![self updateTheDocument]) return NO;
-    
-    // delete a document
-    if (![self deleteTheDocument]) return NO;
-    
+   
     return YES;
     
 }
@@ -75,8 +63,8 @@ updating the document, and deleting the document.
 - (BOOL) createTheManager {
     
     // create a shared instance of CBLManager
-    _manager = [CBLManager sharedInstance];
-    if (!_manager) {
+    self.manager = [CBLManager sharedInstance];
+    if (!self.manager) {
         NSLog (@"Cannot create shared instance of CBLManager");
         return NO;
     }
@@ -101,25 +89,23 @@ updating the document, and deleting the document.
     }
     
     // create a new database
-    _database = [_manager databaseNamed: dbname error: &error];
-    if (!_database) {
+    self.database = [_manager databaseNamed: dbname error: &error];
+    if (!self.database) {
         NSLog (@"Cannot create database. Error message: %@", error.localizedDescription);
         return NO;
     }
     
     // log the database location
-    NSString *databaseLocation = @"CouchbaseLite"];
+    NSString *databaseLocation = @"CouchbaseLite";
     NSLog(@"Database %@ created at %@", dbname, [NSString stringWithFormat:@"%@/%@%@", databaseLocation, dbname, @".cblite"]);
     
     return YES;
 }
 
 
-#pragma mark CRUD Methods
-
 
 // creates the document
-- (BOOL) createTheDocument {
+- (BOOL) createTheDocument:(int)num {
     
     NSError *error;
     
@@ -127,17 +113,14 @@ updating the document, and deleting the document.
     NSDictionary *myDictionary =
         @{@"message" : @"Hello Couchbase Lite!",
           @"name" : @"Joey",
-          @"age" : @15,
-          @"timestamp" : [[NSDate date] description]};
+          @"age" : @15};
     
     // display the data for the new document
-    NSLog(@"This is the data for the document: %@", myDictionary);
+    //NSLog(@"This is the data for the document: %@", myDictionary);
     
     // create an empty document
     CBLDocument* doc = [_database createDocument];
     
-    // save the ID of the new document
-    _docID = doc.documentID;
     
     // write the document to the database
     CBLRevision *newRevision = [doc putProperties: myDictionary error: &error];
@@ -146,70 +129,8 @@ updating the document, and deleting the document.
         return NO;
     }
     
-    NSLog(@"Document created and written to database. ID = %@", _docID);
+    //NSLog(@"Document created and written to database. ID = %@", doc.documentID);
 
-    return YES;
-    
-}
-
-
-// retrieves the document
-- (BOOL) retrieveTheDocument {
-    
-    // retrieve the document from the database
-    CBLDocument *retrievedDoc = [_database documentWithID: _docID];
-    
-    // display the retrieved document
-    NSLog(@"The retrieved document contains: %@", retrievedDoc.properties);
-    
-    return YES;
-}
-
-
-// updates the document
-- (BOOL) updateTheDocument {
-    
-    NSError *error;
-
-    // retrieve the document from the database
-    CBLDocument *retrievedDoc = [_database documentWithID: _docID];
-
-    // make a mutable copy of the properties from the document we just retrieved
-    NSMutableDictionary *docContent = [retrievedDoc.properties mutableCopy];
-    
-    // modify the document properties
-    [docContent setObject:@"Good Morning Couchbase Lite!!!" forKey:@"message"];
-    [docContent setObject:@"breakfast" forKey:@"meal"];
-    [docContent setObject:@"Green eggs and ham" forKey:@"entree"];
-    [docContent setObject:@"burnt" forKey:@"toast"];
-    
-    // write the updated document to the database
-    CBLSavedRevision *newRev = [retrievedDoc putProperties: docContent error: &error];
-    if (!newRev) {
-        NSLog (@"Cannot update document. Error message: %@", error.localizedDescription);
-    }
-    
-    // display the new revision of the document
-    NSLog (@"The new revision of the document contains: %@", newRev.properties);
-    
-    return YES;
-    
-}
-
-
-// deletes the document
-- (BOOL) deleteTheDocument {
-    
-    NSError *error;
-    
-    // retrieve the document from the database and then delete it
-    if (![[_database documentWithID: _docID] deleteDocument: &error])
-        NSLog (@"Cannot delete document. Error message: %@", error.localizedDescription);
-
-    // verify the deletion by retrieving the document and checking whether it has been deleted
-    CBLDocument *ddoc = [_database documentWithID: _docID];
-    NSLog (@"The document with ID %@ is %@", _docID, ([ddoc isDeleted] ? @"deleted" : @"not deleted"));
-    
     return YES;
     
 }
@@ -218,6 +139,18 @@ updating the document, and deleting the document.
 
 int main() {
     HCAppDelegate *h = [[HCAppDelegate alloc] init];
+    FILE *fp;
+
+    
+
     [h startup];
+
+    NSLog(@"Writing 1000 couchdb entries...\n");
+    for(int i = 0; i < 1000; i++) {
+        //NSLog(@"%d\n", i);
+        [h createTheDocument:i];
+    }
+
+
 
 }

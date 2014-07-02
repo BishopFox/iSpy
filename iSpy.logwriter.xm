@@ -58,7 +58,7 @@ static const unsigned int LOG_TCPIP    = 4;
 */
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
-static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log" "http.log", "tcpip.log", "global.log"};
+static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log"};
 static const char *LOG_SUBDIRECTORY = "/logs/";
 
 // If we use any hooked calls within the log writer, we must use the original (unhooked) versions.

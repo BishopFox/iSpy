@@ -20,10 +20,10 @@ extern void bf_MSHookFunction(void *func, void *repl, void **orig); // Tweak.xm
 // guaranteed to run only once
 static void make_key() {
 	pthread_key_create(&thr_key, NULL);
-	bf_logwrite(LOG_GENERAL, "Hooking Objective-C class create/dispose functions...");
+	ispy_log_debug(LOG_GENERAL, "Hooking Objective-C class create/dispose functions...");
 	bf_MSHookFunction((void *)class_createInstance, (void *)bf_class_createInstance, (void **)&orig_class_createInstance);
 	bf_MSHookFunction((void *)object_dispose, (void *)bf_object_dispose, (void **)&orig_object_dispose);
-	bf_logwrite(LOG_GENERAL, "Done. Instance tracking is not yet enabled...");
+	ispy_log_debug(LOG_GENERAL, "Done. Instance tracking is not yet enabled...");
 }
 
 extern void bf_init_instance_tracker() {
@@ -31,12 +31,12 @@ extern void bf_init_instance_tracker() {
 }
 
 EXPORT void bf_enable_instance_tracker() {
-	bf_logwrite(LOG_GENERAL, "Enabling instance tracker");
+	ispy_log_debug(LOG_GENERAL, "Enabling instance tracker");
 	instanceTrackingIsEnabled = true;
 }
 
 EXPORT void bf_disable_instance_tracker() {
-	bf_logwrite(LOG_GENERAL, "Disabling instance tracker");
+	ispy_log_debug(LOG_GENERAL, "Disabling instance tracker");
 	instanceTrackingIsEnabled = false;
 }
 

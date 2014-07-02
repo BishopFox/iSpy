@@ -339,7 +339,7 @@ id *appClassWhiteList = NULL;
 
 		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) != noErr)
 			continue;
-		
+
 		// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
 		for(j = 0; j < [keychainItems count]; j++) {
 			NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
@@ -354,7 +354,7 @@ id *appClassWhiteList = NULL;
 					if(str == nil)
 						str = @"";
 					[[keychainItems objectAtIndex:j] setObject:str forKey:key];
-				} 
+				}
 
 				// how about NSDate?
 				else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(isEqualToDate:)]) {
@@ -366,7 +366,7 @@ id *appClassWhiteList = NULL;
 		}
 		[keychainDict setObject:keychainItems forKey:[items objectAtIndex:i]];
 	} while(++i < count);
-	
+
 	return [keychainDict copy];
 }
 
@@ -401,7 +401,7 @@ Returns a NSDictionary like this:
 	return [self infoForMethod:selector inClass:cls isInstanceMethod:1];
 }
 
--(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls isInstanceMethod:(BOOL)isInstance {    
+-(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls isInstanceMethod:(BOOL)isInstance {
 	Method method = nil;
 	BOOL isInstanceMethod = true;
 	NSMutableArray *parameters = [[NSMutableArray alloc] init];
@@ -440,14 +440,14 @@ Returns a NSDictionary like this:
 
 		name = strsep(&methodName, ":");
 		if(!name) {
-			bf_logwrite(LOG_GENERAL, "um, so p=NULL in arg printer for class methods... weird.");
+			ispy_log_debug(LOG_GENERAL, "um, so p=NULL in arg printer for class methods... weird.");
 			continue;
 		}
 
 		method_getArgumentType(method, k, tmpBuf, 255);
 	
 		if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
-			bf_logwrite(LOG_GENERAL, "Out of mem");
+			ispy_log_debug(LOG_GENERAL, "Out of mem");
 			break;
 		}
 
@@ -946,14 +946,14 @@ Returns a NSDictionary like this:
 }
 
 /*-(void) bounceWebServer {
-    bf_logwrite(LOG_GENERAL, "Bouncing webserver...");
+    ispy_log_debug(LOG_GENERAL, "Bouncing webserver...");
     iSpyServer *selfHTTP = [self webServer];
     [selfHTTP dealloc];
     selfHTTP = nil;
     sleep(2);
     [[self webServer] configureWebServer];
     [[self webServer] startWebServices];
-    bf_logwrite(LOG_GENERAL, "Bounce done.");
+    ispy_log_debug(LOG_GENERAL, "Bounce done.");
 }*/
 
 @end
@@ -1088,7 +1088,7 @@ static void bf_enumerate_symbol_table() {
 
 	// Grab the ASLR slide info
 	vmAddrSlide = (unsigned int)_dyld_get_image_vmaddr_slide(0);
-	bf_logwrite(LOG_GENERAL, "ASLR slide = 0x%x", vmAddrSlide);
+	ispy_log_debug(LOG_GENERAL, "ASLR slide = 0x%x", vmAddrSlide);
 
 	// Find the __LINKEDIT segment of the Mach-O header in memory
 	mh = (struct mach_header *)_dyld_get_image_header(0);
@@ -1108,14 +1108,14 @@ static void bf_enumerate_symbol_table() {
 	if(strcmp(((struct segment_command *)lc)->segname, "__LINKEDIT"))
 		return;
 
-	bf_logwrite(LOG_GENERAL, "Found __LINKEDIT");
+	ispy_log_debug(LOG_GENERAL, "Found __LINKEDIT");
 
 	// Calculate the offset to the Load Commands
 	table_off =
 		((unsigned long)((struct segment_command *)lc)->vmaddr) -
 		((unsigned long)((struct segment_command *)lc)->fileoff) + vmAddrSlide;
 
-	bf_logwrite(LOG_GENERAL, "Table offset = 0x%x", table_off);
+	ispy_log_debug(LOG_GENERAL, "Table offset = 0x%x", table_off);
 
 	// Find the Load Command(s) for the symbol table(s)
 	lc = (struct load_command *)((char *)mh + sizeof(struct mach_header));

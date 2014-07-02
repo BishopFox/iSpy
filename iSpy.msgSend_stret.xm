@@ -114,7 +114,7 @@ namespace bf_msgSend_stret {
             stack = new std::stack<lr_node>;
             int err = pthread_setspecific(thr_key_stret, stack);
             if (err) {
-                bf_logwrite(LOG_GENERAL, "[msgSend_stret] Error: pthread_setspecific() Committing suicide.\n");
+                ispy_log_debug(LOG_GENERAL, "[msgSend_stret] Error: pthread_setspecific() Committing suicide.\n");
                 delete stack;
                 stack = NULL;
             }
@@ -160,7 +160,7 @@ namespace bf_msgSend_stret {
             
             // keep a local copy of the log in /tmp/bf_msgsend
             strcat(buf, "\n");
-            bf_logwrite_msgSend(LOG_MSGSEND, buf);
+            ispy_log_debug_msgSend(LOG_MSGSEND, buf);
         }
         
         return;
@@ -194,7 +194,7 @@ namespace bf_msgSend_stret {
     // This is a callback function designed to toggle the "ready-to-rock-n-roll" flag.
     // We can also use it to update the whitelist/blacklist of methods we want to monitor. 
     EXPORT void update_msgSend_checklists_stret(id *whiteListPtr, id *blackListPtr) {
-        bf_logwrite(LOG_GENERAL, "[update_msgSend_checklists_stret] Whistlist @ %p", whiteListPtr);
+        ispy_log_debug(LOG_GENERAL, "[update_msgSend_checklists_stret] Whistlist @ %p", whiteListPtr);
         appClassWhiteListIsReady = false;
         appClassWhiteList = whiteListPtr;   // We can update our whitelist as often as we want, just by flipping this pointer.
         appClassWhiteListIsReady = true;    

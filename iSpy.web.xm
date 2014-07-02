@@ -95,12 +95,12 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 } 
 
 -(void)bounceWebServer {
-    bf_logwrite(LOG_GENERAL, "Stopping mongoose...");
+    ispy_log_debug(LOG_GENERAL, "Stopping mongoose...");
     mg_stop([[self http] __ctx]);
     sleep(2);
-    bf_logwrite(LOG_GENERAL, "Starting webserver...");
+    ispy_log_debug(LOG_GENERAL, "Starting webserver...");
     [self startWebServices];
-    bf_logwrite(LOG_GENERAL, "Done.");
+    ispy_log_debug(LOG_GENERAL, "Done.");
 }
 
 -(BOOL) startWebServices {
@@ -109,7 +109,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     BOOL ret;
     
     ret = [[self http] listenOnPort:WEBSERVER_PORT onError:^(id reason) {
-        bf_logwrite(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
+        ispy_log_debug(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
     }];
     if(!ret) {
         return ret;
@@ -125,7 +125,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     [[self wsISpy] handleWebSocket:^id (HTTPConnection *connection) {
         if(!connection.isOpen) {
-            bf_logwrite(LOG_GENERAL, "Closed web socket.");
+            ispy_log_debug(LOG_GENERAL, "Closed web socket.");
             globalMsgSendWebSocketPtr = NULL;
             return nil;
         }
@@ -708,7 +708,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return [self renderStaticTemplate:@"404"];
     }];
 
-    bf_logwrite(LOG_GENERAL, "[iSpy] Started HTTP server on http://YOURDEVICE:%d/", WEBSERVER_PORT);
+    ispy_log_debug(LOG_GENERAL, "[iSpy] Started HTTP server on http://YOURDEVICE:%d/", WEBSERVER_PORT);
     return true;
 }
 

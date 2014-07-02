@@ -186,17 +186,17 @@ int (*orig_system)(const char *command);
  ***/
 
 DIR *bf_opendir(const char *dirname) {
-    bf_logwrite(LOG_STRACE, "opendir(%s)", dirname);
+    ispy_log_info(LOG_STRACE, "opendir(%s)", dirname);
     return orig_opendir(dirname);
 }
 
 struct dirent *bf_readdir(DIR *dirp) {
-    bf_logwrite(LOG_STRACE, "readdir(%p)", dirp);
+    ispy_log_info(LOG_STRACE, "readdir(%p)", dirp);
     return orig_readdir(dirp);
 }
 
 int bf_readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result) {
-    bf_logwrite(LOG_STRACE, "readdir_r(%p, %p, %p)", dirp, entry, result);
+    ispy_log_info(LOG_STRACE, "readdir_r(%p, %p, %p)", dirp, entry, result);
     return orig_readdir_r(dirp, entry, result);
 }
 
@@ -204,19 +204,19 @@ int bf_memcmp(const void *s1, const void *s2, size_t n) {
     int result;
 
     result = (int) orig_memcmp(s1, s2, n);
-    bf_logwrite(LOG_STRACE, "memcmp(%p, %p, %d) returned: %d", s1, s2, n, result);
-    //bf_logwrite(LOG_STRACE, "memcmp was called."); // less verbose version.
+    ispy_log_info(LOG_STRACE, "memcmp(%p, %p, %d) returned: %d", s1, s2, n, result);
+    //ispy_log_debug(LOG_STRACE, "memcmp was called."); // less verbose version.
 
     return result;
 }
 
 int bf_strcmp(const char *s1, const char *s2) {
-    bf_logwrite(LOG_STRACE, "strcmp('%s', '%s')", s1, s2);
+    ispy_log_info(LOG_STRACE, "strcmp('%s', '%s')", s1, s2);
     return orig_strcmp(s1, s2);
 }
 
 int bf_strncmp(const char *s1, const char *s2, size_t n) {
-    bf_logwrite(LOG_STRACE, "strncmp('%s', '%s', %d)", s1, s2, n);
+    ispy_log_info(LOG_STRACE, "strncmp('%s', '%s', %d)", s1, s2, n);
     return orig_strncmp(s1, s2, n);
 }
 
@@ -225,15 +225,15 @@ int bf_open(const char *path, int oflag, ...) {
     va_list argp;
     mode_t mode;
 
-    bf_logwrite(LOG_STRACE, "open: %s with mode %o", path, oflag);
+    ispy_log_info(LOG_STRACE, "open: %s with mode %o", path, oflag);
     
     // check to see if we should block the app from seeing this file
     // You probably want this if you're breaking an app's JB detection.
     if (shouldBlockPath(path)) {
-        bf_logwrite(LOG_STRACE, "open: Woooah, there. The app is looking for jailbreak files (%s)!", path);
+        ispy_log_info(LOG_STRACE, "open: Woooah, there. The app is looking for jailbreak files (%s)!", path);
         // We can pretend that this file simply does not exist...
         if (activelyBlock()) {
-            bf_logwrite(LOG_STRACE, "open: o0o0o0o REJECTED!");
+            ispy_log_info(LOG_STRACE, "open: o0o0o0o REJECTED!");
             errno = ENOENT;
             return -1; // these are not the droids you seek.
         }
@@ -251,7 +251,7 @@ int bf_open(const char *path, int oflag, ...) {
         fd = orig_open(path, oflag);
     }
 
-    bf_logwrite(LOG_STRACE, "open: returned fd=%d", fd);
+    ispy_log_info(LOG_STRACE, "open: returned fd=%d", fd);
     return fd;
 }
 
@@ -259,14 +259,14 @@ int bf_open(const char *path, int oflag, ...) {
 // On non-jailed devices, fork() will fail. The sandbox kicks in.
 // To bypass this check we can make fork() fail by returning -1.
 pid_t bf_fork(void) {
-    bf_logwrite(LOG_STRACE, "fork()");
+    ispy_log_info(LOG_STRACE, "fork()");
     if (activelyBlock()) {
-        bf_logwrite(LOG_STRACE, "   fork: returning -1 for failure.");
+        ispy_log_info(LOG_STRACE, "   fork: returning -1 for failure.");
         return -1;
     }
     pid_t pid;
     pid = orig_fork();
-    bf_logwrite(LOG_STRACE, "   fork() returned %d.", pid);
+    ispy_log_info(LOG_STRACE, "   fork() returned %d.", pid);
     return pid;
 }
 
@@ -274,7 +274,7 @@ pid_t bf_fork(void) {
 int bf_fstat(int fildes, struct stat *buf) {
     
     int ret = orig_fstat(fildes, buf);
-    bf_logwrite(LOG_STRACE, "fstat(%d, %p) returned %d", fildes, buf, ret);
+    ispy_log_info(LOG_STRACE, "fstat(%d, %p) returned %d", fildes, buf, ret);
     return ret;
 }
 
@@ -285,9 +285,9 @@ int bf_fstat(int fildes, struct stat *buf) {
 int bf_lstat(const char *path, struct stat *buf) {
     // check to see if we should block the app from seeing this file
     if (shouldBlockPath(path)) {
-        bf_logwrite(LOG_STRACE, "lstat: Woooah, there. The app is looking for jailbreak files (%s)!", path);
+        ispy_log_info(LOG_STRACE, "lstat: Woooah, there. The app is looking for jailbreak files (%s)!", path);
         if (activelyBlock()) {
-            bf_logwrite(LOG_STRACE, "lstat: DENIED!");
+            ispy_log_info(LOG_STRACE, "lstat: DENIED!");
             errno = ENOENT; // file not found
             return -1;
         }
@@ -300,16 +300,16 @@ int bf_lstat(const char *path, struct stat *buf) {
         buf->st_mode |= S_IFDIR;
     }
     // this can get really chatty and will spam your Console log
-    bf_logwrite(LOG_STRACE, "lstat(%s, %p) returned %d", path, buf, ret);
+    ispy_log_info(LOG_STRACE, "lstat(%s, %p) returned %d", path, buf, ret);
     return ret;
 }
 
 // More stat goodness.
 int bf_stat(const char *path, struct stat *buf) {
     if (shouldBlockPath(path)) {
-        bf_logwrite(LOG_STRACE, "stat: Woooah, there. The app is looking for jailbreak files (%s)!", path);
+        ispy_log_info(LOG_STRACE, "stat: Woooah, there. The app is looking for jailbreak files (%s)!", path);
         if (activelyBlock()) {
-            bf_logwrite(LOG_STRACE, "stat: DENIED!");
+            ispy_log_info(LOG_STRACE, "stat: DENIED!");
             errno = ENOENT; // file not found
             return -1;
         }
@@ -320,50 +320,50 @@ int bf_stat(const char *path, struct stat *buf) {
         buf->st_size = 80;
 
     if(strstr(path, "/var/www/iSpy") == NULL)
-        bf_logwrite(LOG_STRACE, "stat(%s, %p) returned %d", path, buf, ret);
+        ispy_log_info(LOG_STRACE, "stat(%s, %p) returned %d", path, buf, ret);
     return ret;
 }
 
 // access() does the same thing, pretty much. 
 int bf_access(const char *path, int amode) {
     if (shouldBlockPath(path)) {
-        bf_logwrite(LOG_STRACE, "access: Woooah, there. The app is looking for jailbreak files!");
+        ispy_log_info(LOG_STRACE, "access: Woooah, there. The app is looking for jailbreak files!");
         if (activelyBlock()) {
-            bf_logwrite(LOG_STRACE, "access: DENIED!");
+            ispy_log_info(LOG_STRACE, "access: DENIED!");
             errno = ENOENT; // file not found
             return -1;
         }
     }
     int ret = orig_access(path, amode);
-    bf_logwrite(LOG_STRACE, "access(%s, 0x%x) returned %d", path, amode, ret);
+    ispy_log_info(LOG_STRACE, "access(%s, 0x%x) returned %d", path, amode, ret);
     return ret;
 }
 
 // More stat-like stuff
 int bf_statfs(const char *path, struct statfs *buf) {
     if (shouldBlockPath(path)) {
-        bf_logwrite(LOG_STRACE, "statfs: Woooah, there. The app is looking for jailbreak files!");
+        ispy_log_info(LOG_STRACE, "statfs: Woooah, there. The app is looking for jailbreak files!");
         if (activelyBlock()) {
-            bf_logwrite(LOG_STRACE, "statfs: DENIED!");
+            ispy_log_info(LOG_STRACE, "statfs: DENIED!");
             errno = ENOENT; // file not found
             return -1;
         }
     }
     int ret = orig_statfs(path, buf);
-    bf_logwrite(LOG_STRACE, "statfs(%s, %p) returned %d", path, buf, ret);
+    ispy_log_info(LOG_STRACE, "statfs(%s, %p) returned %d", path, buf, ret);
     return ret;
 }
 
 // just calls the old func for now
 int bf_fstatfs(int fd, struct statfs *buf) {
     int ret = orig_fstatfs(fd, buf);
-    bf_logwrite(LOG_STRACE, "fstatfs(%d, %p) returned %d", fd, buf, ret);
+    ispy_log_info(LOG_STRACE, "fstatfs(%d, %p) returned %d", fd, buf, ret);
     return ret;
 }
 
 
 bool bf_dlopen_preflight(const char* path) {
-    //bf_logwrite(LOG_STRACE, "Blocking call to dlopen_preflight(%s)", path);
+    //ispy_log_info(LOG_STRACE, "Blocking call to dlopen_preflight(%s)", path);
     return 0;
 }
 
@@ -386,7 +386,7 @@ uint32_t bf_dyld_image_count(void) {
     } else {
         count = realCount;
     }
-    bf_logwrite(LOG_STRACE, "_dyld_image_count() actual return value was %d. We are returning %d.", realCount, count);
+    ispy_log_info(LOG_STRACE, "_dyld_image_count() actual return value was %d. We are returning %d.", realCount, count);
     [plist release];
     [preferenceFilePath release];
     return count;
@@ -412,7 +412,7 @@ const char* bf_dyld_get_image_name(uint32_t id) {
             returnedName = (char *)fakeName;
     }
 
-    bf_logwrite(LOG_STRACE, "_dyld_get_image_name(%d) would normally return '%s'. Actually returning '%s'", realName, returnedName);
+    ispy_log_info(LOG_STRACE, "_dyld_get_image_name(%d) would normally return '%s'. Actually returning '%s'", realName, returnedName);
     return returnedName;
 }
 
@@ -426,29 +426,29 @@ int bf_connect(int socket, const struct sockaddr *address, socklen_t address_len
     int port = -1;
     char host[1024];
 
-    bf_logwrite(LOG_STRACE, "connect(%d, %p, %d)", socket, address, address_len);
+    ispy_log_info(LOG_STRACE, "connect(%d, %p, %d)", socket, address, address_len);
     if (address->sa_family == AF_INET) {
         port = ntohs(((struct sockaddr_in *) address)->sin_port);
         strncpy(host, inet_ntoa(((struct sockaddr_in *) address)->sin_addr),
                 sizeof(host));
-        bf_logwrite(LOG_STRACE, "   IPv4 to %s:%d", host, port);
+        ispy_log_info(LOG_STRACE, "   IPv4 to %s:%d", host, port);
     } else if (address->sa_family == AF_INET6) {
         port = ntohs(((struct sockaddr_in6 *) address)->sin6_port);
         inet_ntop(address->sa_family,
                 (void *) &(((struct sockaddr_in6 *) address)->sin6_addr), host, 128);
-        bf_logwrite(LOG_STRACE, "   IPv6 to %s:%d", host, port);
+        ispy_log_info(LOG_STRACE, "   IPv6 to %s:%d", host, port);
     } else if (address->sa_family == AF_SYSTEM) {
-        bf_logwrite(LOG_STRACE, "   AF_SYSTEM: ss_sysaddr=%d, sc_id=%d, sc_unit=%d",
+        ispy_log_info(LOG_STRACE, "   AF_SYSTEM: ss_sysaddr=%d, sc_id=%d, sc_unit=%d",
                 ((struct sockaddr_ctl *) address)->ss_sysaddr,
                 ((struct sockaddr_ctl *) address)->sc_id,
                 ((struct sockaddr_ctl *) address)->sc_unit);
     } else {
-        bf_logwrite(LOG_STRACE, "   address family unknown: %d",
+        ispy_log_info(LOG_STRACE, "   address family unknown: %d",
                 address->sa_family);
     }
 
     int ret = orig_connect(socket, address, address_len);
-    bf_logwrite(LOG_STRACE, "   returned %d", ret);
+    ispy_log_info(LOG_STRACE, "   returned %d", ret);
     return ret;
 }
 
@@ -472,8 +472,8 @@ int bf_bind(int socket, const struct sockaddr *address, socklen_t address_len) {
     }
 
     ret = orig_bind(socket, address, address_len);
-    bf_logwrite(LOG_STRACE, "bind(%d, %p, %d) returned %d", socket, address, address_len, ret);
-    bf_logwrite(LOG_STRACE, "   bind: %s:%d (%s [0x%x])", host, port,
+    ispy_log_info(LOG_STRACE, "bind(%d, %p, %d) returned %d", socket, address, address_len, ret);
+    ispy_log_info(LOG_STRACE, "   bind: %s:%d (%s [0x%x])", host, port,
             (address->sa_family == AF_INET6) ? "IPv6" :
             (address->sa_family == AF_INET) ? "IPv4" : "Unknown family",
             (unsigned int) address->sa_family);
@@ -492,23 +492,23 @@ int bf_accept(int socket, struct sockaddr *address, socklen_t *address_len) {
     int retval;
 
     retval = orig_accept(socket, address, address_len);
-    bf_logwrite(LOG_STRACE, "accept(%d, %p, %d) returned %d", socket, address, address_len, retval);
+    ispy_log_info(LOG_STRACE, "accept(%d, %p, %d) returned %d", socket, address, address_len, retval);
     if (address->sa_family == AF_INET) {
         port = ntohs(((struct sockaddr_in *) address)->sin_port);
         strncpy(host, inet_ntoa(((struct sockaddr_in *) address)->sin_addr), sizeof(host));
-        bf_logwrite(LOG_STRACE, "   accept: IPv4 to %s: %d", host, port);
+        ispy_log_info(LOG_STRACE, "   accept: IPv4 to %s: %d", host, port);
     } else if (address->sa_family == AF_INET6) {
         port = ntohs(((struct sockaddr_in6 *) address)->sin6_port);
         inet_ntop(address->sa_family,
                 (void *) &(((struct sockaddr_in6 *) address)->sin6_addr), host, 128);
-        bf_logwrite(LOG_STRACE, "   accept: IPv6 to %s: %d", host, port);
+        ispy_log_info(LOG_STRACE, "   accept: IPv6 to %s: %d", host, port);
     } else if (address->sa_family == AF_SYSTEM) {
-        bf_logwrite(LOG_STRACE, "   accept: AF_SYSTEM: ss_sysaddr= %d, sc_id=%d, sc_unit=%d",
+        ispy_log_info(LOG_STRACE, "   accept: AF_SYSTEM: ss_sysaddr= %d, sc_id=%d, sc_unit=%d",
                 retval, ((struct sockaddr_ctl *) address)->ss_sysaddr,
                 ((struct sockaddr_ctl *) address)->sc_id,
                 ((struct sockaddr_ctl *) address)->sc_unit);
     } else {
-        bf_logwrite(LOG_STRACE, "   accept: address family unknown: %d", address->sa_family);
+        ispy_log_info(LOG_STRACE, "   accept: address family unknown: %d", address->sa_family);
     }
     return retval;
 }
@@ -517,7 +517,7 @@ ssize_t bf_recv(int socket, void *buffer, size_t length, int flags) {
     size_t retval;
 
     retval = orig_recv(socket, buffer, length, flags);
-    bf_logwrite(LOG_STRACE, "recv(%d, %p, %ld, 0x%x) returned %ld bytes", socket, buffer, length, flags, retval);
+    ispy_log_info(LOG_STRACE, "recv(%d, %p, %ld, 0x%x) returned %ld bytes", socket, buffer, length, flags, retval);
 
     return retval;
 }
@@ -527,7 +527,7 @@ ssize_t bf_recvfrom(int socket, void *buffer, size_t length, int flags,
     ssize_t retval;
 
     retval = orig_recvfrom(socket, buffer, length, flags, address, address_len);
-    bf_logwrite(LOG_STRACE, "recvfrom(%d, %p, %ld, 0x%x, %p, %d) returned %ld bytes", socket, buffer, length, flags, address, address_len, retval);
+    ispy_log_info(LOG_STRACE, "recvfrom(%d, %p, %ld, 0x%x, %p, %d) returned %ld bytes", socket, buffer, length, flags, address, address_len, retval);
     return retval;
 }
 
@@ -547,15 +547,15 @@ int bf_ioctl(int fildes, unsigned long request, ...) {
     }
     va_end(argp);
 
-    bf_logwrite(LOG_STRACE, "ioctl(%d, 0x%x)", fildes, request);
+    ispy_log_info(LOG_STRACE, "ioctl(%d, 0x%x)", fildes, request);
     if (request == CTLIOCGINFO) {
-        bf_logwrite(LOG_STRACE, "    ioctl: CTLIOCGINFO...");
+        ispy_log_info(LOG_STRACE, "    ioctl: CTLIOCGINFO...");
         ctlinfo = (struct ctl_info *) params[0];
         retval = orig_ioctl(fildes, request, ctlinfo);
-        bf_logwrite(LOG_STRACE, "    ioctl: CTLIOCGINFO: returned %d. fd=%d, '%s'",
+        ispy_log_info(LOG_STRACE, "    ioctl: CTLIOCGINFO: returned %d. fd=%d, '%s'",
                 retval, fildes, ctlinfo->ctl_name);
     } else {
-        bf_logwrite(LOG_STRACE, "    ioctl: passthru of %d args", i);
+        ispy_log_info(LOG_STRACE, "    ioctl: passthru of %d args", i);
         if (i == 0)
             retval = orig_ioctl(fildes, request);
         if (i == 1)
@@ -594,609 +594,609 @@ int bf_ioctl(int fildes, unsigned long request, ...) {
                     params[2], params[3], params[4], params[5], params[6],
                     params[7], params[8], params[9], params[10]); //surely this is enough??
     }
-    bf_logwrite(LOG_STRACE, "    ioctl: returned %d", retval);
+    ispy_log_info(LOG_STRACE, "    ioctl: returned %d", retval);
     return retval;
 }
 
 int bf_sysctl(int *name, u_int namelen, void *old, size_t *oldlenp, void *_new, size_t newlen) {
     int ret = orig_sysctl(name, namelen, old, oldlenp, _new, newlen);
-    bf_logwrite(LOG_STRACE, "sysctl(%p, %p, %p, %p, %p, %p) returned %d", name, namelen, old, oldlenp, _new, newlen, ret);
+    ispy_log_info(LOG_STRACE, "sysctl(%p, %p, %p, %p, %p, %p) returned %d", name, namelen, old, oldlenp, _new, newlen, ret);
     return ret;
 }
 
 int bf_acct(const char *path) {
     int ret = orig_acct(path);
-    bf_logwrite(LOG_STRACE, "acct(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "acct(%p) returned %d", path, ret);
     return ret;
 }
 int bf_adjtime(struct timeval *delta, struct timeval *olddelta) {
     int ret = orig_adjtime(delta, olddelta);
-    bf_logwrite(LOG_STRACE, "adjtime(%p, %p) returned %d", delta, olddelta, ret);
+    ispy_log_info(LOG_STRACE, "adjtime(%p, %p) returned %d", delta, olddelta, ret);
     return ret;
 }
 int bf_chdir(const char * path) {
     int ret = orig_chdir(path);
-    bf_logwrite(LOG_STRACE, "chdir(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "chdir(%p) returned %d", path, ret);
     return ret;
 }
 int bf_chflags(char *path, int flags) {
     int ret = orig_chflags(path, flags);
-    bf_logwrite(LOG_STRACE, "chflags(%p, %p) returned %d", path, flags, ret);
+    ispy_log_info(LOG_STRACE, "chflags(%p, %p) returned %d", path, flags, ret);
     return ret;
 }
 int bf_chmod(const char * path, mode_t mode) {
     int ret = orig_chmod(path, mode);
-    bf_logwrite(LOG_STRACE, "chmod(%p, %p) returned %d", path, mode, ret);
+    ispy_log_info(LOG_STRACE, "chmod(%p, %p) returned %d", path, mode, ret);
     return ret;
 }
 int bf_chown(const char * path, uid_t uid, gid_t gid) {
     int ret = orig_chown(path, uid, gid);
-    bf_logwrite(LOG_STRACE, "chown(%p, %p, %p) returned %d", path, uid, gid, ret);
+    ispy_log_info(LOG_STRACE, "chown(%p, %p, %p) returned %d", path, uid, gid, ret);
     return ret;
 }
 int bf_chroot(const char * path) {
     int ret = orig_chroot(path);
-    bf_logwrite(LOG_STRACE, "chroot(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "chroot(%p) returned %d", path, ret);
     return ret;
 }
 int bf_close(int fd) {
     int ret = orig_close(fd);
-    bf_logwrite(LOG_STRACE, "close(%p) returned %d", fd, ret);
+    ispy_log_info(LOG_STRACE, "close(%p) returned %d", fd, ret);
     return ret;
 }
 
 int bf_dup(u_int fd) {
     int newfd = orig_dup(fd);
-    bf_logwrite(LOG_STRACE, "dup(%d) returned %d\n", fd, newfd, newfd);
+    ispy_log_info(LOG_STRACE, "dup(%d) returned %d\n", fd, newfd, newfd);
     return newfd;
 }
 int bf_dup2(u_int from, u_int to) {
     int ret = orig_dup2(from, to);
-    bf_logwrite(LOG_STRACE, "dup2(%p, %p) returned %d", from, to, ret);
+    ispy_log_info(LOG_STRACE, "dup2(%p, %p) returned %d", from, to, ret);
     return ret;
 }
 int bf_execve(char *fname, char **argp, char **envp) {
     int ret = orig_execve(fname, argp, envp);
-    bf_logwrite(LOG_STRACE, "execve(%p, %p, %p) returned %d", fname, argp, envp, ret);
+    ispy_log_info(LOG_STRACE, "execve(%p, %p, %p) returned %d", fname, argp, envp, ret);
     return ret;
 }
 int bf_fchdir(int fd) {
     int ret = orig_fchdir(fd);
-    bf_logwrite(LOG_STRACE, "fchdir(%p) returned %d", fd, ret);
+    ispy_log_info(LOG_STRACE, "fchdir(%p) returned %d", fd, ret);
     return ret;
 }
 int bf_fchflags(int fd, int flags) {
     int ret = orig_fchflags(fd, flags);
-    bf_logwrite(LOG_STRACE, "fchflags(%p, %p) returned %d", fd, flags, ret);
+    ispy_log_info(LOG_STRACE, "fchflags(%p, %p) returned %d", fd, flags, ret);
     return ret;
 }
 int bf_fchmod(int fd, int mode) {
     int ret = orig_fchmod(fd, mode);
-    bf_logwrite(LOG_STRACE, "fchmod(%p, %p) returned %d", fd, mode, ret);
+    ispy_log_info(LOG_STRACE, "fchmod(%p, %p) returned %d", fd, mode, ret);
     return ret;
 }
 int bf_fchown(int fd, uid_t uid, gid_t gid) {
     int ret = orig_fchown(fd, uid, gid);
-    bf_logwrite(LOG_STRACE, "fchown(%p, %p, %p) returned %d", fd, uid, gid, ret);
+    ispy_log_info(LOG_STRACE, "fchown(%p, %p, %p) returned %d", fd, uid, gid, ret);
     return ret;
 }
 int bf_fcntl(int fd, int cmd, long arg) {
     int ret = orig_fcntl(fd, cmd, arg);
-    bf_logwrite(LOG_STRACE, "fcntl(%p, %p, %p) returned %d", fd, cmd, arg, ret);
+    ispy_log_info(LOG_STRACE, "fcntl(%p, %p, %p) returned %d", fd, cmd, arg, ret);
     return ret;
 }
 int bf_fdatasync(int fd) {
     int ret = orig_fdatasync(fd);
-    bf_logwrite(LOG_STRACE, "fdatasync(%p) returned %d", fd, ret);
+    ispy_log_info(LOG_STRACE, "fdatasync(%p) returned %d", fd, ret);
     return ret;
 }
 int bf_flock(int fd, int how) {
     int ret = orig_flock(fd, how);
-    bf_logwrite(LOG_STRACE, "flock(%p, %p) returned %d", fd, how, ret);
+    ispy_log_info(LOG_STRACE, "flock(%p, %p) returned %d", fd, how, ret);
     return ret;
 }
 int bf_fpathconf(int fd, int name) {
     int ret = orig_fpathconf(fd, name);
-    bf_logwrite(LOG_STRACE, "fpathconf(%p, %p) returned %d", fd, name, ret);
+    ispy_log_info(LOG_STRACE, "fpathconf(%p, %p) returned %d", fd, name, ret);
     return ret;
 }
 
 int bf_fsync(int fd) {
     int ret = orig_fsync(fd);
-    bf_logwrite(LOG_STRACE, "fsync(%p) returned %d", fd, ret);
+    ispy_log_info(LOG_STRACE, "fsync(%p) returned %d", fd, ret);
     return ret;
 }
 int bf_ftruncate(int fd, off_t length) {
     int ret = orig_ftruncate(fd, length);
-    bf_logwrite(LOG_STRACE, "ftruncate(%p, %p) returned %d", fd, length, ret);
+    ispy_log_info(LOG_STRACE, "ftruncate(%p, %p) returned %d", fd, length, ret);
     return ret;
 }
 int bf_futimes(int fd, struct timeval *tptr) {
     int ret = orig_futimes(fd, tptr);
-    bf_logwrite(LOG_STRACE, "futimes(%p, %p) returned %d", fd, tptr, ret);
+    ispy_log_info(LOG_STRACE, "futimes(%p, %p) returned %d", fd, tptr, ret);
     return ret;
 }
 int bf_getdtablesize(void) {
     int ret = orig_getdtablesize();
-    bf_logwrite(LOG_STRACE, "getdtablesize() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getdtablesize() returned %d", ret);
     return ret;
 }
 int bf_getegid(void) {
     int ret = orig_getegid();
-    bf_logwrite(LOG_STRACE, "getegid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getegid() returned %d", ret);
     return ret;
 }
 int bf_geteuid(void) {
     int ret = orig_geteuid();
-    bf_logwrite(LOG_STRACE, "geteuid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "geteuid() returned %d", ret);
     return ret;
 }
 int bf_getfh(char *fname, fhandle_t *fhp) {
     int ret = orig_getfh(fname, fhp);
-    bf_logwrite(LOG_STRACE, "getfh(%p, %p) returned %d", fname, fhp, ret);
+    ispy_log_info(LOG_STRACE, "getfh(%p, %p) returned %d", fname, fhp, ret);
     return ret;
 }
 int bf_getfsstat(struct statfs * buf, int bufsize, int flags) {
     int ret = orig_getfsstat(buf, bufsize, flags);
-    bf_logwrite(LOG_STRACE, "getfsstat(%p, %p, %p) returned %d", buf, bufsize, flags, ret);
+    ispy_log_info(LOG_STRACE, "getfsstat(%p, %p, %p) returned %d", buf, bufsize, flags, ret);
     return ret;
 }
 int bf_getgid(void) {
     int ret = orig_getgid();
-    bf_logwrite(LOG_STRACE, "getgid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getgid() returned %d", ret);
     return ret;
 }
 int bf_getgroups(u_int gidsetsize, gid_t *gidset) {
     int ret = orig_getgroups(gidsetsize, gidset);
-    bf_logwrite(LOG_STRACE, "getgroups(%p, %p) returned %d", gidsetsize, gidset, ret);
+    ispy_log_info(LOG_STRACE, "getgroups(%p, %p) returned %d", gidsetsize, gidset, ret);
     return ret;
 }
 int bf_gethostuuid(unsigned char *uuid_buf, const struct timespec *timeoutp) {
     int ret = orig_gethostuuid(uuid_buf, timeoutp);
-    bf_logwrite(LOG_STRACE, "gethostuuid(%p, %p) returned %d", uuid_buf, timeoutp, ret);
+    ispy_log_info(LOG_STRACE, "gethostuuid(%p, %p) returned %d", uuid_buf, timeoutp, ret);
     return ret;
 }
 int bf_getitimer(u_int which, struct itimerval *itv) {
     int ret = orig_getitimer(which, itv);
-    bf_logwrite(LOG_STRACE, "getitimer(%p, %p) returned %d", which, itv, ret);
+    ispy_log_info(LOG_STRACE, "getitimer(%p, %p) returned %d", which, itv, ret);
     return ret;
 }
 int bf_getlogin(char *namebuf, u_int namelen) {
     int ret = orig_getlogin(namebuf, namelen);
-    bf_logwrite(LOG_STRACE, "getlogin(%p, %p) returned %d", namebuf, namelen, ret);
+    ispy_log_info(LOG_STRACE, "getlogin(%p, %p) returned %d", namebuf, namelen, ret);
     return ret;
 }
 int bf_getpeername(int fdes, struct sockaddr * asa, socklen_t *alen) {
     int ret = orig_getpeername(fdes, asa, alen);
-    bf_logwrite(LOG_STRACE, "getpeername(%p, %p, %p) returned %d", fdes, asa, alen, ret);
+    ispy_log_info(LOG_STRACE, "getpeername(%p, %p, %p) returned %d", fdes, asa, alen, ret);
     return ret;
 }
 int bf_getpgid(pid_t pid) {
     int ret = orig_getpgid(pid);
-    bf_logwrite(LOG_STRACE, "getpgid(%p) returned %d", pid, ret);
+    ispy_log_info(LOG_STRACE, "getpgid(%p) returned %d", pid, ret);
     return ret;
 }
 int bf_getpgrp(void) {
     int ret = orig_getpgrp();
-    bf_logwrite(LOG_STRACE, "getpgrp() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getpgrp() returned %d", ret);
     return ret;
 }
 pid_t bf_getpid(void) {
     pid_t pid;
 
-    bf_logwrite(LOG_STRACE, "Calling old getpid()");
+    ispy_log_info(LOG_STRACE, "Calling old getpid()");
     pid=orig_getpid();
-    bf_logwrite(LOG_STRACE, "getpid() returned %d", pid);;
+    ispy_log_info(LOG_STRACE, "getpid() returned %d", pid);;
     return  pid;
 }
 int bf_getppid(void) {
     int ret = orig_getppid();
-    bf_logwrite(LOG_STRACE, "getppid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getppid() returned %d", ret);
     return ret;
 }
 int bf_getpriority(int which, id_t who) {
     int ret = orig_getpriority(which, who);
-    bf_logwrite(LOG_STRACE, "getpriority(%p, %p) returned %d", which, who, ret);
+    ispy_log_info(LOG_STRACE, "getpriority(%p, %p) returned %d", which, who, ret);
     return ret;
 }
 int bf_getrlimit(u_int which, struct rlimit *rlp) {
     int ret = orig_getrlimit(which, rlp);
-    bf_logwrite(LOG_STRACE, "getrlimit(%p, %p) returned %d", which, rlp, ret);
+    ispy_log_info(LOG_STRACE, "getrlimit(%p, %p) returned %d", which, rlp, ret);
     return ret;
 }
 int bf_getrusage(int who, struct rusage *rusage) {
     int ret = orig_getrusage(who, rusage);
-    bf_logwrite(LOG_STRACE, "getrusage(%p, %p) returned %d", who, rusage, ret);
+    ispy_log_info(LOG_STRACE, "getrusage(%p, %p) returned %d", who, rusage, ret);
     return ret;
 }
 int bf_getsockname(int fdes, struct sockaddr * asa, socklen_t *alen) {
     int ret = orig_getsockname(fdes, asa, alen);
-    bf_logwrite(LOG_STRACE, "getsockname(%p, %p, %p) returned %d", fdes, asa, alen, ret);
+    ispy_log_info(LOG_STRACE, "getsockname(%p, %p, %p) returned %d", fdes, asa, alen, ret);
     return ret;
 }
 int bf_getsockopt(int s, int level, int name, struct sockaddr * val, socklen_t *avalsize) {
     int ret = orig_getsockopt(s, level, name, val, avalsize);
-    bf_logwrite(LOG_STRACE, "getsockopt(%p, %p, %p, %p, %p) returned %d", s, level, name, val, avalsize, ret);
+    ispy_log_info(LOG_STRACE, "getsockopt(%p, %p, %p, %p, %p) returned %d", s, level, name, val, avalsize, ret);
     return ret;
 }
 int bf_gettimeofday(struct timeval *tp, struct timezone *tzp) {
     int ret = orig_gettimeofday(tp, tzp);
-    bf_logwrite(LOG_STRACE, "gettimeofday(%p, %p) returned %d", tp, tzp, ret);
+    ispy_log_info(LOG_STRACE, "gettimeofday(%p, %p) returned %d", tp, tzp, ret);
     return ret;
 }
 int bf_getuid(void) {
     int ret = orig_getuid();
-    bf_logwrite(LOG_STRACE, "getuid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "getuid() returned %d", ret);
     return ret;
 }
 int bf_kill(int pid, int signum, int posix) {
     int ret = orig_kill(pid, signum, posix);
-    bf_logwrite(LOG_STRACE, "kill(%p, %p, %p) returned %d", pid, signum, posix, ret);
+    ispy_log_info(LOG_STRACE, "kill(%p, %p, %p) returned %d", pid, signum, posix, ret);
     return ret;
 }
 int bf_link(const char * path, const char * link) {
     int ret = orig_link(path, link);
-    bf_logwrite(LOG_STRACE, "link(%p, %p) returned %d", path, link, ret);
+    ispy_log_info(LOG_STRACE, "link(%p, %p) returned %d", path, link, ret);
     return ret;
 }
 int bf_listen(int s, int backlog) {
     int ret = orig_listen(s, backlog);
-    bf_logwrite(LOG_STRACE, "listen(%p, %p) returned %d", s, backlog, ret);
+    ispy_log_info(LOG_STRACE, "listen(%p, %p) returned %d", s, backlog, ret);
     return ret;
 }
 
 int bf_madvise(struct sockaddr * addr, size_t len, int behav) {
     int ret = orig_madvise(addr, len, behav);
-    bf_logwrite(LOG_STRACE, "madvise(%p, %p, %p) returned %d", addr, len, behav, ret);
+    ispy_log_info(LOG_STRACE, "madvise(%p, %p, %p) returned %d", addr, len, behav, ret);
     return ret;
 }
 int bf_mincore(const char * addr, user_size_t len, const char * vec) {
     int ret = orig_mincore(addr, len, vec);
-    bf_logwrite(LOG_STRACE, "mincore(%p, %p, %p) returned %d", addr, len, vec, ret);
+    ispy_log_info(LOG_STRACE, "mincore(%p, %p, %p) returned %d", addr, len, vec, ret);
     return ret;
 }
 int bf_mkdir(const char * path, int mode) {
     int ret = orig_mkdir(path, mode);
-    bf_logwrite(LOG_STRACE, "mkdir(%p, %p) returned %d", path, mode, ret);
+    ispy_log_info(LOG_STRACE, "mkdir(%p, %p) returned %d", path, mode, ret);
     return ret;
 }
 int bf_mkfifo(const char * path, int mode) {
     int ret = orig_mkfifo(path, mode);
-    bf_logwrite(LOG_STRACE, "mkfifo(%p, %p) returned %d", path, mode, ret);
+    ispy_log_info(LOG_STRACE, "mkfifo(%p, %p) returned %d", path, mode, ret);
     return ret;
 }
 int bf_mknod(const char * path, int mode, int dev) {
     int ret = orig_mknod(path, mode, dev);
-    bf_logwrite(LOG_STRACE, "mknod(%p, %p, %p) returned %d", path, mode, dev, ret);
+    ispy_log_info(LOG_STRACE, "mknod(%p, %p, %p) returned %d", path, mode, dev, ret);
     return ret;
 }
 int bf_mlock(struct sockaddr * addr, size_t len) {
     int ret = orig_mlock(addr, len);
-    bf_logwrite(LOG_STRACE, "mlock(%p, %p) returned %d", addr, len, ret);
+    ispy_log_info(LOG_STRACE, "mlock(%p, %p) returned %d", addr, len, ret);
     return ret;
 }
 int bf_mount(char *type, char *path, int flags, struct sockaddr * data) {
     int ret = orig_mount(type, path, flags, data);
-    bf_logwrite(LOG_STRACE, "mount(%p, %p, %p, %p) returned %d", type, path, flags, data, ret);
+    ispy_log_info(LOG_STRACE, "mount(%p, %p, %p, %p) returned %d", type, path, flags, data, ret);
     return ret;
 }
 int bf_mprotect(struct sockaddr * addr, size_t len, int prot) {
     int ret = orig_mprotect(addr, len, prot);
-    bf_logwrite(LOG_STRACE, "mprotect(%p, %p, %p) returned %d", addr, len, prot, ret);
+    ispy_log_info(LOG_STRACE, "mprotect(%p, %p, %p) returned %d", addr, len, prot, ret);
     return ret;
 }
 int bf_msync(struct sockaddr * addr, size_t len, int flags) {
     int ret = orig_msync(addr, len, flags);
-    bf_logwrite(LOG_STRACE, "msync(%p, %p, %p) returned %d", addr, len, flags, ret);
+    ispy_log_info(LOG_STRACE, "msync(%p, %p, %p) returned %d", addr, len, flags, ret);
     return ret;
 }
 int bf_munlock(struct sockaddr * addr, size_t len) {
     int ret = orig_munlock(addr, len);
-    bf_logwrite(LOG_STRACE, "munlock(%p, %p) returned %d", addr, len, ret);
+    ispy_log_info(LOG_STRACE, "munlock(%p, %p) returned %d", addr, len, ret);
     return ret;
 }
 int bf_munmap(struct sockaddr * addr, size_t len) {
     int ret = orig_munmap(addr, len);
-    bf_logwrite(LOG_STRACE, "munmap(%p, %p) returned %d", addr, len, ret);
+    ispy_log_info(LOG_STRACE, "munmap(%p, %p) returned %d", addr, len, ret);
     return ret;
 }
 int bf_nfssvc(int flag, struct sockaddr * argp) {
     int ret = orig_nfssvc(flag, argp);
-    bf_logwrite(LOG_STRACE, "nfssvc(%p, %p) returned %d", flag, argp, ret);
+    ispy_log_info(LOG_STRACE, "nfssvc(%p, %p) returned %d", flag, argp, ret);
     return ret;
 }
 int bf_pathconf(char *path, int name) {
     int ret = orig_pathconf(path, name);
-    bf_logwrite(LOG_STRACE, "pathconf(%p, %p) returned %d", path, name, ret);
+    ispy_log_info(LOG_STRACE, "pathconf(%p, %p) returned %d", path, name, ret);
     return ret;
 }
 int bf_pipe(void) {
     int ret = orig_pipe();
-    bf_logwrite(LOG_STRACE, "pipe() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "pipe() returned %d", ret);
     return ret;
 }
 int bf_ptrace(int req, pid_t pid, struct sockaddr * addr, int data) {
     int ret = orig_ptrace(req, pid, addr, data);
-    bf_logwrite(LOG_STRACE, "ptrace(%p, %p, %p, %p) returned %d", req, pid, addr, data, ret);
+    ispy_log_info(LOG_STRACE, "ptrace(%p, %p, %p, %p) returned %d", req, pid, addr, data, ret);
     return ret;
 }
 
 int ptrace(int req, pid_t pid, struct sockaddr * addr, int data) {
     int ret = orig_ptrace(req, pid, addr, data);
-    bf_logwrite(LOG_STRACE, "ptrace(%p, %p, %p, %p) returned %d", req, pid, addr, data, ret);
+    ispy_log_info(LOG_STRACE, "ptrace(%p, %p, %p, %p) returned %d", req, pid, addr, data, ret);
     return ret;
 }
 int bf_quotactl(const char *path, int cmd, int uid, struct sockaddr * arg) {
     int ret = orig_quotactl(path, cmd, uid, arg);
-    bf_logwrite(LOG_STRACE, "quotactl(%p, %p, %p, %p) returned %d", path, cmd, uid, arg, ret);
+    ispy_log_info(LOG_STRACE, "quotactl(%p, %p, %p, %p) returned %d", path, cmd, uid, arg, ret);
     return ret;
 }
 int bf_readlink(char *path, char *buf, int count) {
     int ret = orig_readlink(path, buf, count);
-    bf_logwrite(LOG_STRACE, "readlink(%p, %p, %p) returned %d", path, buf, count, ret);
+    ispy_log_info(LOG_STRACE, "readlink(%p, %p, %p) returned %d", path, buf, count, ret);
     return ret;
 }
 int bf_reboot(int opt, char *command) {
     int ret = orig_reboot(opt, command);
-    bf_logwrite(LOG_STRACE, "reboot(%p, %p) returned %d", opt, command, ret);
+    ispy_log_info(LOG_STRACE, "reboot(%p, %p) returned %d", opt, command, ret);
     return ret;
 }
 
 int bf_recvmsg(int s, struct msghdr *msg, int flags) {
     int ret = orig_recvmsg(s, msg, flags);
-    bf_logwrite(LOG_STRACE, "recvmsg(%p, %p, %p) returned %d", s, msg, flags, ret);
+    ispy_log_info(LOG_STRACE, "recvmsg(%p, %p, %p) returned %d", s, msg, flags, ret);
     return ret;
 }
 int bf_rename(char *from, char *to) {
     int ret = orig_rename(from, to);
-    bf_logwrite(LOG_STRACE, "rename(%p, %p) returned %d", from, to, ret);
+    ispy_log_info(LOG_STRACE, "rename(%p, %p) returned %d", from, to, ret);
     return ret;
 }
 int bf_revoke(char *path) {
     int ret = orig_revoke(path);
-    bf_logwrite(LOG_STRACE, "revoke(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "revoke(%p) returned %d", path, ret);
     return ret;
 }
 int bf_rmdir(char *path) {
     int ret = orig_rmdir(path);
-    bf_logwrite(LOG_STRACE, "rmdir(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "rmdir(%p) returned %d", path, ret);
     return ret;
 }
 int bf_select(int nd, u_int32_t *in, u_int32_t *ou, u_int32_t *ex, struct timeval *tv) {
     int ret = orig_select(nd, in, ou, ex, tv);
-    bf_logwrite(LOG_STRACE, "select(%p, %p, %p, %p, %p) returned %d", nd, in, ou, ex, tv, ret);
+    ispy_log_info(LOG_STRACE, "select(%p, %p, %p, %p, %p) returned %d", nd, in, ou, ex, tv, ret);
     return ret;
 }
 int bf_sendmsg(int s, struct sockaddr * msg, int flags) {
     int ret = orig_sendmsg(s, msg, flags);
-    bf_logwrite(LOG_STRACE, "sendmsg(%p, %p, %p) returned %d", s, msg, flags, ret);
+    ispy_log_info(LOG_STRACE, "sendmsg(%p, %p, %p) returned %d", s, msg, flags, ret);
     return ret;
 }
 int bf_sendto(int s, struct sockaddr * buf, size_t len, int flags, struct sockaddr * to, socklen_t tolen) {
     int ret = orig_sendto(s, buf, len, flags, to, tolen);
-    bf_logwrite(LOG_STRACE, "sendto(%p, %p, %p, %p, %p, %p) returned %d", s, buf, len, flags, to, tolen, ret);
+    ispy_log_info(LOG_STRACE, "sendto(%p, %p, %p, %p, %p, %p) returned %d", s, buf, len, flags, to, tolen, ret);
     return ret;
 }
 int bf_setegid(gid_t egid) {
     int ret = orig_setegid(egid);
-    bf_logwrite(LOG_STRACE, "setegid(%p) returned %d", egid, ret);
+    ispy_log_info(LOG_STRACE, "setegid(%p) returned %d", egid, ret);
     return ret;
 }
 int bf_seteuid(uid_t euid) {
     int ret = orig_seteuid(euid);
-    bf_logwrite(LOG_STRACE, "seteuid(%p) returned %d", euid, ret);
+    ispy_log_info(LOG_STRACE, "seteuid(%p) returned %d", euid, ret);
     return ret;
 }
 int bf_setgid(gid_t gid) {
     int ret = orig_setgid(gid);
-    bf_logwrite(LOG_STRACE, "setgid(%p) returned %d", gid, ret);
+    ispy_log_info(LOG_STRACE, "setgid(%p) returned %d", gid, ret);
     return ret;
 }
 int bf_setgroups(u_int gidsetsize, gid_t *gidset) {
     int ret = orig_setgroups(gidsetsize, gidset);
-    bf_logwrite(LOG_STRACE, "setgroups(%p, %p) returned %d", gidsetsize, gidset, ret);
+    ispy_log_info(LOG_STRACE, "setgroups(%p, %p) returned %d", gidsetsize, gidset, ret);
     return ret;
 }
 int bf_setitimer(u_int which, struct itimerval *itv, struct itimerval *oitv) {
     int ret = orig_setitimer(which, itv, oitv);
-    bf_logwrite(LOG_STRACE, "setitimer(%p, %p, %p) returned %d", which, itv, oitv, ret);
+    ispy_log_info(LOG_STRACE, "setitimer(%p, %p, %p) returned %d", which, itv, oitv, ret);
     return ret;
 }
 int bf_setlogin(char *namebuf) {
     int ret = orig_setlogin(namebuf);
-    bf_logwrite(LOG_STRACE, "setlogin(%p) returned %d", namebuf, ret);
+    ispy_log_info(LOG_STRACE, "setlogin(%p) returned %d", namebuf, ret);
     return ret;
 }
 int bf_setpgid(int pid, int pgid) {
     int ret = orig_setpgid(pid, pgid);
-    bf_logwrite(LOG_STRACE, "setpgid(%p, %p) returned %d", pid, pgid, ret);
+    ispy_log_info(LOG_STRACE, "setpgid(%p, %p) returned %d", pid, pgid, ret);
     return ret;
 }
 int bf_setpriority(int which, id_t who, int prio) {
     int ret = orig_setpriority(which, who, prio);
-    bf_logwrite(LOG_STRACE, "setpriority(%p, %p, %p) returned %d", which, who, prio, ret);
+    ispy_log_info(LOG_STRACE, "setpriority(%p, %p, %p) returned %d", which, who, prio, ret);
     return ret;
 }
 int bf_setregid(gid_t rgid, gid_t egid) {
     int ret = orig_setregid(rgid, egid);
-    bf_logwrite(LOG_STRACE, "setregid(%p, %p) returned %d", rgid, egid, ret);
+    ispy_log_info(LOG_STRACE, "setregid(%p, %p) returned %d", rgid, egid, ret);
     return ret;
 }
 int bf_setreuid(uid_t ruid, uid_t euid) {
     int ret = orig_setreuid(ruid, euid);
-    bf_logwrite(LOG_STRACE, "setreuid(%p, %p) returned %d", ruid, euid, ret);
+    ispy_log_info(LOG_STRACE, "setreuid(%p, %p) returned %d", ruid, euid, ret);
     return ret;
 }
 int bf_setrlimit(u_int which, struct rlimit *rlp) {
     int ret = orig_setrlimit(which, rlp);
-    bf_logwrite(LOG_STRACE, "setrlimit(%p, %p) returned %d", which, rlp, ret);
+    ispy_log_info(LOG_STRACE, "setrlimit(%p, %p) returned %d", which, rlp, ret);
     return ret;
 }
 int bf_setsid(void) {
     int ret = orig_setsid();
-    bf_logwrite(LOG_STRACE, "setsid() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "setsid() returned %d", ret);
     return ret;
 }
 int bf_setsockopt(int s, int level, int name, struct sockaddr * val, socklen_t valsize) {
     int ret = orig_setsockopt(s, level, name, val, valsize);
-    bf_logwrite(LOG_STRACE, "setsockopt(%p, %p, %p, %p, %p) returned %d", s, level, name, val, valsize, ret);
+    ispy_log_info(LOG_STRACE, "setsockopt(%p, %p, %p, %p, %p) returned %d", s, level, name, val, valsize, ret);
     return ret;
 }
 int bf_settimeofday(struct timeval *tv, struct timezone *tzp) {
     int ret = orig_settimeofday(tv, tzp);
-    bf_logwrite(LOG_STRACE, "settimeofday(%p, %p) returned %d", tv, tzp, ret);
+    ispy_log_info(LOG_STRACE, "settimeofday(%p, %p) returned %d", tv, tzp, ret);
     return ret;
 }
 int bf_setuid(uid_t uid) {
     int ret = orig_setuid(uid);
-    bf_logwrite(LOG_STRACE, "setuid(%p) returned %d", uid, ret);
+    ispy_log_info(LOG_STRACE, "setuid(%p) returned %d", uid, ret);
     return ret;
 }
 int bf_shutdown(int s, int how) {
     int ret = orig_shutdown(s, how);
-    bf_logwrite(LOG_STRACE, "shutdown(%p, %p) returned %d", s, how, ret);
+    ispy_log_info(LOG_STRACE, "shutdown(%p, %p) returned %d", s, how, ret);
     return ret;
 }
 int bf_sigaction(int signum, struct __sigaction *nsa, struct sigaction *osa) {
     int ret = orig_sigaction(signum, nsa, osa);
-    bf_logwrite(LOG_STRACE, "sigaction(%p, %p, %p) returned %d", signum, nsa, osa, ret);
+    ispy_log_info(LOG_STRACE, "sigaction(%p, %p, %p) returned %d", signum, nsa, osa, ret);
     return ret;
 }
 int bf_sigpending(struct sigvec *osv) {
     int ret = orig_sigpending(osv);
-    bf_logwrite(LOG_STRACE, "sigpending(%p) returned %d", osv, ret);
+    ispy_log_info(LOG_STRACE, "sigpending(%p) returned %d", osv, ret);
     return ret;
 }
 int bf_sigprocmask(int how, const char * mask, const char * omask) {
     int ret = orig_sigprocmask(how, mask, omask);
-    bf_logwrite(LOG_STRACE, "sigprocmask(%p, %p, %p) returned %d", how, mask, omask, ret);
+    ispy_log_info(LOG_STRACE, "sigprocmask(%p, %p, %p) returned %d", how, mask, omask, ret);
     return ret;
 }
 int bf_sigsuspend(sigset_t mask) {
     int ret = orig_sigsuspend(mask);
-    bf_logwrite(LOG_STRACE, "sigsuspend(%p) returned %d", mask, ret);
+    ispy_log_info(LOG_STRACE, "sigsuspend(%p) returned %d", mask, ret);
     return ret;
 }
 int bf_socket(int domain, int type, int protocol) {
     int ret = orig_socket(domain, type, protocol);
-    bf_logwrite(LOG_STRACE, "socket(%p, %p, %p) returned %d", domain, type, protocol, ret);
+    ispy_log_info(LOG_STRACE, "socket(%p, %p, %p) returned %d", domain, type, protocol, ret);
     return ret;
 }
 int bf_socketpair(int domain, int type, int protocol, int *rsv) {
     int ret = orig_socketpair(domain, type, protocol, rsv);
-    bf_logwrite(LOG_STRACE, "socketpair(%p, %p, %p, %p) returned %d", domain, type, protocol, rsv, ret);
+    ispy_log_info(LOG_STRACE, "socketpair(%p, %p, %p, %p) returned %d", domain, type, protocol, rsv, ret);
     return ret;
 }
 
 int bf_swapon(void) {
     int ret = orig_swapon();
-    bf_logwrite(LOG_STRACE, "swapon() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "swapon() returned %d", ret);
     return ret;
 }
 int bf_symlink(char *path, char *link) {
     int ret = orig_symlink(path, link);
-    bf_logwrite(LOG_STRACE, "symlink(%p, %p) returned %d", path, link, ret);
+    ispy_log_info(LOG_STRACE, "symlink(%p, %p) returned %d", path, link, ret);
     return ret;
 }
 void bf_sync(void) {
     orig_sync();
-    bf_logwrite(LOG_STRACE, "sync() was called");
+    ispy_log_info(LOG_STRACE, "sync() was called");
     return;
 }
 int bf_truncate(char *path, off_t length) {
     int ret = orig_truncate(path, length);
-    bf_logwrite(LOG_STRACE, "truncate(%p, %p) returned %d", path, length, ret);
+    ispy_log_info(LOG_STRACE, "truncate(%p, %p) returned %d", path, length, ret);
     return ret;
 }
 int bf_umask(int newmask) {
     int ret = orig_umask(newmask);
-    bf_logwrite(LOG_STRACE, "umask(%p) returned %d", newmask, ret);
+    ispy_log_info(LOG_STRACE, "umask(%p) returned %d", newmask, ret);
     return ret;
 }
 int bf_undelete(const char * path) {
     int ret = orig_undelete(path);
-    bf_logwrite(LOG_STRACE, "undelete(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "undelete(%p) returned %d", path, ret);
     return ret;
 }
 int bf_unlink(const char * path) {
     int ret = orig_unlink(path);
-    bf_logwrite(LOG_STRACE, "unlink(%p) returned %d", path, ret);
+    ispy_log_info(LOG_STRACE, "unlink(%p) returned %d", path, ret);
     return ret;
 }
 int bf_unmount(const char * path, int flags) {
     int ret = orig_unmount(path, flags);
-    bf_logwrite(LOG_STRACE, "unmount(%p, %p) returned %d", path, flags, ret);
+    ispy_log_info(LOG_STRACE, "unmount(%p, %p) returned %d", path, flags, ret);
     return ret;
 }
 int bf_utimes(char *path, struct timeval *tptr) {
     int ret = orig_utimes(path, tptr);
-    bf_logwrite(LOG_STRACE, "utimes(%p, %p) returned %d", path, tptr, ret);
+    ispy_log_info(LOG_STRACE, "utimes(%p, %p) returned %d", path, tptr, ret);
     return ret;
 }
 int bf_vfork(void) {
     int ret = orig_vfork();
-    bf_logwrite(LOG_STRACE, "vfork() returned %d", ret);
+    ispy_log_info(LOG_STRACE, "vfork() returned %d", ret);
     return ret;
 }
 int bf_wait4(int pid, const char * status, int options, const char * rusage) {
     int ret = orig_wait4(pid, status, options, rusage);
-    bf_logwrite(LOG_STRACE, "wait4(%p, %p, %p, %p) returned %d", pid, status, options, rusage, ret);
+    ispy_log_info(LOG_STRACE, "wait4(%p, %p, %p, %p) returned %d", pid, status, options, rusage, ret);
     return ret;
 }
 int bf_waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options) {
     int ret = orig_waitid(idtype, id, infop, options);
-    bf_logwrite(LOG_STRACE, "waitid(%p, %p, %p, %p) returned %d", idtype, id, infop, options, ret);
+    ispy_log_info(LOG_STRACE, "waitid(%p, %p, %p, %p) returned %d", idtype, id, infop, options, ret);
     return ret;
 }
 off_t bf_lseek(int fd, off_t offset, int whence) {
     int ret = orig_lseek(fd, offset, whence);
-    bf_logwrite(LOG_STRACE, "lseek(%p, %p, %p) returned %d", fd, offset, whence, ret);
+    ispy_log_info(LOG_STRACE, "lseek(%p, %p, %p) returned %d", fd, offset, whence, ret);
     return ret;
 }
 void * bf_mmap(struct sockaddr * addr, size_t len, int prot, int flags, int fd, off_t pos) {
     pthread_mutex_lock(&mutex_mmap);
     void *ret = orig_mmap(addr, len, prot, flags, fd, pos);
     pthread_mutex_unlock(&mutex_mmap);
-    bf_logwrite(LOG_STRACE, "mmap(%p, %p, %p, %p, %p, %p) returned %p", addr, len, prot, flags, fd, pos, ret);
+    ispy_log_info(LOG_STRACE, "mmap(%p, %p, %p, %p, %p, %p) returned %p", addr, len, prot, flags, fd, pos, ret);
     return ret;
 }
 user_ssize_t bf_pread(int fd, const char * buf, user_size_t nbyte, off_t offset) {
     int ret = orig_pread(fd, buf, nbyte, offset);
-    bf_logwrite(LOG_STRACE, "pread(%p, %p, %p, %p) returned %d", fd, buf, nbyte, offset, ret);
+    ispy_log_info(LOG_STRACE, "pread(%p, %p, %p, %p) returned %d", fd, buf, nbyte, offset, ret);
     return ret;
 }
 user_ssize_t bf_pwrite(int fd, const char * buf, user_size_t nbyte, off_t offset) {
     int ret = orig_pwrite(fd, buf, nbyte, offset);
-    bf_logwrite(LOG_STRACE, "pwrite(%p, %p, %p, %p) returned %d", fd, buf, nbyte, offset, ret);
+    ispy_log_info(LOG_STRACE, "pwrite(%p, %p, %p, %p) returned %d", fd, buf, nbyte, offset, ret);
     return ret;
 }
 user_ssize_t bf_read(int fd, const char * cbuf, user_size_t nbyte) {
     int ret = orig_read(fd, cbuf, nbyte);
-    bf_logwrite(LOG_STRACE, "read(%p, %p, %p) returned %d", fd, cbuf, nbyte, ret);
+    ispy_log_info(LOG_STRACE, "read(%p, %p, %p) returned %d", fd, cbuf, nbyte, ret);
     return ret;
 }
 user_ssize_t bf_readv(int fd, struct iovec *iovp, u_int iovcnt) {
     int ret = orig_readv(fd, iovp, iovcnt);
-    bf_logwrite(LOG_STRACE, "readv(%p, %p, %p) returned %d", fd, iovp, iovcnt, ret);
+    ispy_log_info(LOG_STRACE, "readv(%p, %p, %p) returned %d", fd, iovp, iovcnt, ret);
     return ret;
 }
 user_ssize_t bf_write(int fd, const char * cbuf, user_size_t nbyte) {
     int ret = orig_write(fd, cbuf, nbyte);
-    bf_logwrite(LOG_STRACE, "write(%p, %p, %p) returned %d", fd, cbuf, nbyte, ret);
+    ispy_log_info(LOG_STRACE, "write(%p, %p, %p) returned %d", fd, cbuf, nbyte, ret);
     return ret;
 }
 user_ssize_t bf_writev(int fd, struct iovec *iovp, u_int iovcnt) {
     int ret = orig_writev(fd, iovp, iovcnt);
-    bf_logwrite(LOG_STRACE, "writev(%p, %p, %p) returned %d", fd, iovp, iovcnt, ret);
+    ispy_log_info(LOG_STRACE, "writev(%p, %p, %p) returned %d", fd, iovp, iovcnt, ret);
     return ret;
-}   
+}
 void bf_exit(int rval) {
-    bf_logwrite(LOG_STRACE, "exit(%p)", rval);
+    ispy_log_info(LOG_STRACE, "exit(%p)", rval);
     orig_exit(rval);
 }
 
 int bf_system(const char *command) {
-    bf_logwrite(LOG_STRACE, "Got system(%p), blocking!", command);
+    ispy_log_info(LOG_STRACE, "Got system(%p), blocking!", command);
     return 0;
 }
 
@@ -1226,7 +1226,7 @@ BOOL activelyBlock() {
  All of these are regular expressions, matching is not case sensitive.
 
  This list is far from exhaustive. Add as you see fit.
- TODO: Add ability to extend via Settings 
+ TODO: Add ability to extend via Settings
 
  Call this whenever you want to see if *path contains a jailbreak check string (denyPatterns).
 
@@ -1268,7 +1268,7 @@ BOOL shouldBlockPath(const char *fpath) {
     for (NSString *regex in denyPatterns) {
         NSRange range = [path rangeOfString:regex options:NSRegularExpressionSearch|NSCaseInsensitiveSearch];
         if (range.location != NSNotFound) {
-            bf_logwrite(LOG_GENERAL, "[iSpy] shouldBlockPath: Found match %s with %@", fpath, regex);
+            ispy_log_info(LOG_GENERAL, "[iSpy] shouldBlockPath: Found match %s with %s", fpath, [regex UTF8String]);
             matched = YES;
             break;
         }

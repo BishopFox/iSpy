@@ -24,6 +24,12 @@
 #define SYSPROTO_CONTROL       	2	/* kernel control protocol */
 #define AF_SYS_CONTROL		2	/* corresponding sub address type */
 
+static const unsigned int LOG_STRACE   = 0;
+static const unsigned int LOG_MSGSEND  = 1;
+static const unsigned int LOG_GENERAL  = 2;
+static const unsigned int LOG_HTTP     = 3;
+static const unsigned int LOG_TCPIP    = 4;
+
 /* 
  This where the all the preferences end up, from the 'Settings' app
  The dictionary keys, and ui are defined in layout/Library/PreferenceLoader/Preferences/iSpy.plist
@@ -34,18 +40,6 @@
 
 #define WEBSERVER_PORT 31337
 
-#define LOG_STRACE	0
-#define LOG_MSGSEND	1
-#define LOG_GENERAL	2
-#define LOG_HTTP	3
-#define LOG_TCPIP	4
-#define MAX_LOG		4	// this must be equal to the last number in the list of LOG_* numbers, above.
-
-#define BF_LOGFILE_MSGSEND	"/tmp/bf_msgsend.log"
-#define BF_LOGFILE_GENERAL	"/tmp/bf_general.log"
-#define BF_LOGFILE_STRACE	"/tmp/bf_strace.log"
-#define BF_LOGFILE_HTTP		"/tmp/bf_http.log"
-#define BF_LOGFILE_TCPIP	"/tmp/bf_tcpip.log"
 
 /* System family socket address */
 struct sockaddr_sys {
@@ -80,7 +74,7 @@ EXPORT void bf_disable_msgSend();
 EXPORT void bf_set_msgSend_log_filename(const char *fname);
 EXPORT int bf_get_msgSend_state();
 EXPORT void bf_init_logwriter();
-EXPORT void bf_logwrite(int facility, const char *msg, ...);
+EXPORT void ispy_log_debug(int facility, const char *msg, ...);
 EXPORT void bf_init_substrate_replacement();
 EXPORT int return_false();
 EXPORT int return_true();
@@ -98,7 +92,7 @@ EXPORT NSDictionary *getNetworkInfo(void);
 EXPORT void update_msgSend_checklists(id *whiteListPtr, id *blackListPtr);
 EXPORT void update_msgSend_checklists_stret(id *whiteListPtr, id *blackListPtr);
 EXPORT bool bf_has_msgSend_initialized_yet();
-EXPORT void bf_logwrite_msgSend(int facility, const char *msg, ...);
+EXPORT void ispy_log_debug_msgSend(int facility, const char *msg, ...);
 EXPORT NSString *base64forData(NSData *theData);
 
 // These funcrions are a hacked-up way of using pure C code to send data down Web Sockets.

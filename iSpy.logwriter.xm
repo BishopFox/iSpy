@@ -37,126 +37,119 @@
 #include "iSpy.common.h"
 #include "hooks_C_system_calls.h"
 
-#define ACTUALLY_WRITE_LOGS 
+
+static const unsigned int DEBUG   = 0;
+static const unsigned int INFO    = 1;
+static const unsigned int WARNING = 2;
+static const unsigned int ERROR   = 3;
+static const unsigned int FATAL   = 4;
+static const char* STR_LEVELS[] = ["[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"];
+
+static const unsigned int LOG_STRACE   = 0;
+static const unsigned int LOG_MSGSEND  = 1;
+static const unsigned int LOG_GENERAL  = 2;
+static const unsigned int LOG_HTTP     = 3;
+static const unsigned int LOG_TCPIP    = 4;
+static const unsigned int LOG_GLOBAL   = 5;
+static const unsigned int MAX_LOG      = LOG_GLOBAL;	// this must be equal to the last number in the list of LOG_* numbers, above.
+static const char* FACILITY_FILES[] = ["strace.log", "msgsend.log", "general.log" "http.log", "tcpip.log", "global.log"];
+
+static const char *LOG_SUBDIRECTORY = "/logs/";
 
 // If we use any hooked calls within the log writer, we must use the original (unhooked) versions.
 // Simply declare them extern and copy from hook_C_system_calls.xm
 // MAKE ABSOLUTELY SURE that orig_funcname = funcname in hook_C_system_calls.xm
 // See the following functions in hook_C_system_calls.xm for examples.
 extern int (*orig_gettimeofday)(struct timeval *tp, void *tzp);
-extern size_t (*orig_write)(int fd, const void * cbuf, user_size_t nbyte);
+extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
 
-static pthread_mutex_t mutex_log_writer = PTHREAD_MUTEX_INITIALIZER;
-static int logFile[MAX_LOG+1];
-static BOOL logIsEnabled[MAX_LOG+1];
+static int logFiles[MAX_LOG + 1];
 
-EXPORT void bf_clear_log(int facility) {
-	if(facility < 0 || facility > MAX_LOG)
-		return;
 
-	close(logFile[facility]);
-	switch(facility) {
-		case LOG_STRACE:
-			logFile[LOG_STRACE] = open(BF_LOGFILE_STRACE, O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-			break;
-		case LOG_MSGSEND:
-			logFile[LOG_MSGSEND] = open(BF_LOGFILE_MSGSEND, O_RDWR | O_TRUNC  | O_CREAT);
-			break;
-		case LOG_GENERAL:
-			logFile[LOG_GENERAL] = open(BF_LOGFILE_GENERAL, O_RDWR | O_TRUNC  | O_CREAT);
-			break;
-		case LOG_HTTP:
-			logFile[LOG_HTTP] = open(BF_LOGFILE_HTTP, O_RDWR | O_TRUNC  | O_CREAT);
-			break;
-		case LOG_TCPIP:
-			logFile[LOG_TCPIP] = open(BF_LOGFILE_TCPIP, O_RDWR | O_TRUNC  | O_CREAT);
-			break;
-	}
+void (^log_write)(int) = ^(int facility, int level, const char *msg, va_list args) {
+
+    char *buf, *buf2, *p;
+    unsigned int len;
+    struct timeval tv;
+
+    orig_gettimeofday(&tv, NULL);    // we use the original syscall so that we don't get a race when hooking this syscall
+    time_t ticks = tv.tv_sec;
+
+    va_start(args, msg);
+    vasprintf(&buf, msg, args);
+    va_end(args);
+    len = strlen(buf) + 3 + strlen(ctime(&ticks));
+    buf2 = (char *) malloc(len);
+    snprintf(buf2, len, "%s %s\n", ctime(&ticks), buf);
+
+    // this is so dumb that we need to do this. Stupid ctime() puts a newline at the end of its string :-(
+    p = buf2;
+    while(*p && *p != '\n')
+        p++;
+    if(*p == '\n')
+        *p=':';
+
+    switch(facility) {
+        case LOG:
+    }
+    orig_write(logFiles[facility], buf2, len-1);    // use original syscall
+
+    free(buf);
+    free(buf2);
 }
 
-EXPORT void bf_set_log_state(bool state, int facility) {
-	if(facility < 0 || facility > MAX_LOG)
-		return;
-	logIsEnabled[facility] = state;
+/*
+ * iSpyDirectory is where we setup shop - must have a trailing '/'
+ */
+EXPORT void ispy_init_logwriter(const char *iSpyDirectory) {
+
+    NSLog(@"[iSpy][Logging] iSpyDirectory = %s", iSpyDirectory);
+
+    /* First we build the log directory, which will contain all of our log files */
+    unsigned int logDirectoryLength = strlen(iSpyDirectory) + strlen(LOG_SUBDIRECTORY);
+    char *logDirectory = malloc(logDirectoryLength + 1);
+    strncpy(logDirectory, iSpyDirectory, strlen(iSpyDirectory));
+    strncat(logDirectory, FACILITY_FILES[index], strlen(FACILITY_FILES[index]));
+    logDirectory[logDirectoryLength + 1] = '\0';
+
+    NSLog(@"[iSpy][Logging] logDirectory = %s", logDirectory);
+
+    /* Next we create each log file, and store the FD in an array */
+    for(unsigned int index = 0; index < MAX_LOG; ++index) {
+        unsigned int filePathLength = strlen(logDirectory) + strlen(FACILITY_FILES[index]);
+        char *filePath = (char *) malloc(filePathLength + 1);
+        strncpy(filePath, logDirectory, strlen(logDirectory));
+        strncat(filePath, FACILITY_FILES[index], strlen(FACILITY_FILES[index]));
+        filePath[filePathLength + 1] = '\0';
+        logFiles[facility] = open(filePath, O_WRONLY | O_CREAT);
+
+        NSLog(@"[iSpy][Logging] Create file -> %s", filePath);
+
+    }
 }
 
-EXPORT int bf_get_log_fd(int facility) {
-	return logFile[facility];
+/* Non-blocking logging calls */
+EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...) {
+    va_list args;
+
 }
 
-EXPORT bool bf_get_log_state(int facility) {
-	if(facility < 0 || facility > MAX_LOG)
-			return 0; // we should probably handle this better...
-	return logIsEnabled[facility];
+EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...) {
+    va_list args;
+
 }
 
-EXPORT void bf_logwrite(int facility, const char *msg, ...) {
-	va_list argp;
-	char *buf, *buf2, *p;
-	int len;
-	struct timeval tv;
-	
-	if(facility < 0 || facility > MAX_LOG || logIsEnabled[facility] == 0)
-		return;
+EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...) {
+    va_list args;
 
-	pthread_mutex_lock(&mutex_log_writer);        // we lock to avoid corrupt logs from multiple threads
-
-	orig_gettimeofday(&tv, NULL);	// we use the original syscall so that we don't get a race when hooking this syscall
-  	time_t ticks = tv.tv_sec;
-
-	va_start(argp, msg);
-	vasprintf(&buf, msg, argp);
-	va_end(argp);
-	len = strlen(buf) + 3 + strlen(ctime(&ticks)); 
-	buf2=(char *)malloc(len);
-	snprintf(buf2, len, "%s %s\n", ctime(&ticks), buf);
-	
-	// this is so dumb that we need to do this. Stupid ctime() puts a newline at the end of its string :-(
-	p=buf2;
-	while(*p && *p != '\n')
-		p++;
-	if(*p == '\n')
-		*p=':';
-
-	orig_write(logFile[facility], buf2, len-1);	// use original syscall
-
-	free(buf);
-	free(buf2);
-
-	pthread_mutex_unlock(&mutex_log_writer); // and we unlock 
 }
 
-EXPORT void bf_logwrite_msgSend(int facility, const char *msg, ...) {
-	va_list argp;
-	char *buf;
-	int len;
-	
-	if(facility < 0 || facility > MAX_LOG || logIsEnabled[facility] == 0)
-		return;
+EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...) {
+    va_list args;
 
-	pthread_mutex_lock(&mutex_log_writer);        // we lock to avoid corrupt logs from multiple threads
-
-	va_start(argp, msg);
-	vasprintf(&buf, msg, argp);
-	va_end(argp);
-	len = strlen(buf); 
-	
-	orig_write(logFile[facility], buf, len);	// use original syscall
-
-	pthread_mutex_unlock(&mutex_log_writer); // and we unlock 
 }
 
-EXPORT void bf_init_logwriter() {
-	int i;
+EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...) {
+    va_list args;
 
-	for(i=0;i<=MAX_LOG;i++)
-    	logIsEnabled[i]=1;
-    logFile[LOG_STRACE]		= open(BF_LOGFILE_STRACE,	O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-    logFile[LOG_MSGSEND]	= open(BF_LOGFILE_MSGSEND,	O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-    logFile[LOG_GENERAL]	= open(BF_LOGFILE_GENERAL,	O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-    logFile[LOG_HTTP]		= open(BF_LOGFILE_HTTP,		O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-    logFile[LOG_TCPIP]		= open(BF_LOGFILE_TCPIP,	O_RDWR | O_TRUNC  | O_CREAT); // yay error checking
-    for(i=0;i<=MAX_LOG;i++)
-    	fchmod(logFile[i], 0666); // we are teh secure
 }
-

@@ -369,17 +369,17 @@ void bf_init_msgSend_logging() {
 // You'll get one line per call, like this:
 //        -[className methodName:withParam:foo:bar]
 void bf_enable_msgSend_logging() {
-	bf_logwrite(LOG_GENERAL, "[iSpy] turning on objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
+	ispy_log_debug(LOG_GENERAL, "[iSpy] turning on objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
 	bf_enable_msgSend();
-	bf_logwrite(LOG_GENERAL, "[iSpy] Turning on _stret, too");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Turning on _stret, too");
 	bf_enable_msgSend_stret();
-	bf_logwrite(LOG_GENERAL, "[iSpy] Done.");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Done.");
 }
 
 // Switch off logging. Calls to objc_msgSend will not be logged after this.
 // You can call bf_enable_msgSend_logging() again to re-enable logging.
 void bf_disable_msgSend_logging() {
-	bf_logwrite(LOG_GENERAL, "[iSpy] turning off objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
+	ispy_log_debug(LOG_GENERAL, "[iSpy] turning off objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
 	bf_disable_msgSend();
 	bf_disable_msgSend_stret();
 }
@@ -411,7 +411,7 @@ void hijack_on(NSMutableDictionary *plist) {
 
 	/* Std C Hooks */
 	if ([[plist objectForKey:@"hijack_CFHTTPMessageCreateRequest"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFHTTPMessageCreateRequest() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFHTTPMessageCreateRequest() ");
 		bf_MSHookFunction((void *) CFHTTPMessageCreateRequest, (void *) bf_CFHTTPMessageCreateRequest,
 				(void **) &orig_CFHTTPMessageCreateRequest);
 	}else {
@@ -420,7 +420,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFNetworkCopySystemProxySettings"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFNetworkCopySystemProxySettings() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFNetworkCopySystemProxySettings() ");
 		bf_MSHookFunction((void *) CFNetworkCopySystemProxySettings, (void *) bf_CFNetworkCopySystemProxySettings,
 				(void **) &orig_CFNetworkCopySystemProxySettings);
 	}else {
@@ -429,7 +429,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFReadStreamCreateWithBytesNoCopy"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamCreateWithBytesNoCopy() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamCreateWithBytesNoCopy() ");
 		bf_MSHookFunction((void *) CFReadStreamCreateWithBytesNoCopy, (void *) bf_CFReadStreamCreateWithBytesNoCopy,
 				(void **) &orig_CFReadStreamCreateWithBytesNoCopy);
 	}else {
@@ -438,7 +438,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFReadStreamOpen"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamOpen() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamOpen() ");
 		bf_MSHookFunction((void *) CFReadStreamOpen, (void *) bf_CFReadStreamOpen,
 				(void **) &orig_CFReadStreamOpen);
 	}else {
@@ -447,7 +447,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFReadStreamRead"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamRead() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamRead() ");
 		bf_MSHookFunction((void *) CFReadStreamRead, (void *) bf_CFReadStreamRead,
 				(void **) &orig_CFReadStreamRead);
 	}else {
@@ -456,7 +456,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFReadStreamSetProperty"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamSetProperty() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFReadStreamSetProperty() ");
 		bf_MSHookFunction((void *) CFReadStreamSetProperty, (void *) bf_CFReadStreamSetProperty,
 				(void **) &orig_CFReadStreamSetProperty);
 	}else {
@@ -465,7 +465,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFStreamCreatePairWithPeerSocketSignature"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithPeerSocketSignature() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithPeerSocketSignature() ");
 		bf_MSHookFunction((void *) CFStreamCreatePairWithPeerSocketSignature, (void *) bf_CFStreamCreatePairWithPeerSocketSignature,
 				(void **) &orig_CFStreamCreatePairWithPeerSocketSignature);
 	}else {
@@ -474,7 +474,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFStreamCreatePairWithSocket"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithSocket() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithSocket() ");
 		bf_MSHookFunction((void *) CFStreamCreatePairWithSocket, (void *) bf_CFStreamCreatePairWithSocket,
 				(void **) &orig_CFStreamCreatePairWithSocket);
 	}else {
@@ -483,7 +483,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFStreamCreatePairWithSocketToHost"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithSocketToHost() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFStreamCreatePairWithSocketToHost() ");
 		bf_MSHookFunction((void *) CFStreamCreatePairWithSocketToHost, (void *) bf_CFStreamCreatePairWithSocketToHost,
 				(void **) &orig_CFStreamCreatePairWithSocketToHost);
 	}else {
@@ -492,7 +492,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFURLCreateWithString"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFURLCreateWithString() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFURLCreateWithString() ");
 		bf_MSHookFunction((void *) CFURLCreateWithString, (void *) bf_CFURLCreateWithString,
 				(void **) &orig_CFURLCreateWithString);
 	}else {
@@ -501,7 +501,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFWriteStreamOpen"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamOpen() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamOpen() ");
 		bf_MSHookFunction((void *) CFWriteStreamOpen, (void *) bf_CFWriteStreamOpen,
 				(void **) &orig_CFWriteStreamOpen);
 	}else {
@@ -510,7 +510,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFWriteStreamSetProperty"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamSetProperty() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamSetProperty() ");
 		bf_MSHookFunction((void *) CFWriteStreamSetProperty, (void *) bf_CFWriteStreamSetProperty,
 				(void **) &orig_CFWriteStreamSetProperty);
 	}else {
@@ -519,7 +519,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_CFWriteStreamWrite"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamWrite() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: CFWriteStreamWrite() ");
 		bf_MSHookFunction((void *) CFWriteStreamWrite, (void *) bf_CFWriteStreamWrite,
 				(void **) &orig_CFWriteStreamWrite);
 	}else {
@@ -528,7 +528,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_SecCertificateCreateWithData"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: SecCertificateCreateWithData() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: SecCertificateCreateWithData() ");
 		bf_MSHookFunction((void *) SecCertificateCreateWithData, (void *) bf_SecCertificateCreateWithData,
 				(void **) &orig_SecCertificateCreateWithData);
 	}else {
@@ -537,7 +537,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sysctl"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sysctl() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sysctl() ");
 		bf_MSHookFunction((void *) sysctl, (void *) bf_sysctl,
 				(void **) &orig_sysctl);
 	}else {
@@ -546,7 +546,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_accept"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: accept() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: accept() ");
 		bf_MSHookFunction((void *) accept, (void *) bf_accept,
 				(void **) &orig_accept);
 	}else {
@@ -555,7 +555,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_access"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: access() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: access() ");
 		bf_MSHookFunction((void *) access, (void *) bf_access,
 				(void **) &orig_access);
 	}else {
@@ -564,7 +564,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_acct"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: acct() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: acct() ");
 		bf_MSHookFunction((void *) acct, (void *) bf_acct,
 				(void **) &orig_acct);
 	}else {
@@ -573,7 +573,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_adjtime"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: adjtime() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: adjtime() ");
 		bf_MSHookFunction((void *) adjtime, (void *) bf_adjtime,
 				(void **) &orig_adjtime);
 	}else {
@@ -582,7 +582,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_bind"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: bind() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: bind() ");
 		bf_MSHookFunction((void *) bind, (void *) bf_bind,
 				(void **) &orig_bind);
 	}else {
@@ -591,7 +591,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_chdir"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: chdir() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: chdir() ");
 		bf_MSHookFunction((void *) chdir, (void *) bf_chdir,
 				(void **) &orig_chdir);
 	}else {
@@ -600,7 +600,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_chflags"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: chflags() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: chflags() ");
 		bf_MSHookFunction((void *) chflags, (void *) bf_chflags,
 				(void **) &orig_chflags);
 	}else {
@@ -609,7 +609,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_chmod"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: chmod() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: chmod() ");
 		bf_MSHookFunction((void *) chmod, (void *) bf_chmod,
 				(void **) &orig_chmod);
 	}else {
@@ -618,7 +618,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_chown"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: chown() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: chown() ");
 		bf_MSHookFunction((void *) chown, (void *) bf_chown,
 				(void **) &orig_chown);
 	}else {
@@ -627,7 +627,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_chroot"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: chroot() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: chroot() ");
 		bf_MSHookFunction((void *) chroot, (void *) bf_chroot,
 				(void **) &orig_chroot);
 	}else {
@@ -636,7 +636,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_close"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: close() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: close() ");
 		bf_MSHookFunction((void *) close, (void *) bf_close,
 				(void **) &orig_close);
 	}else {
@@ -645,7 +645,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_dup"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: dup() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: dup() ");
 		bf_MSHookFunction((void *) dup, (void *) bf_dup,
 				(void **) &orig_dup);
 	}else {
@@ -654,7 +654,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_dup2"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: dup2() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: dup2() ");
 		bf_MSHookFunction((void *) dup2, (void *) bf_dup2,
 				(void **) &orig_dup2);
 	}else {
@@ -663,7 +663,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_execve"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: execve() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: execve() ");
 		bf_MSHookFunction((void *) execve, (void *) bf_execve,
 				(void **) &orig_execve);
 	}else {
@@ -672,7 +672,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_exit"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: exit() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: exit() ");
 		bf_MSHookFunction((void *) exit, (void *) bf_exit,
 				(void **) &orig_exit);
 	}else {
@@ -681,7 +681,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fchdir"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fchdir() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fchdir() ");
 		bf_MSHookFunction((void *) fchdir, (void *) bf_fchdir,
 				(void **) &orig_fchdir);
 	}else {
@@ -690,7 +690,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fchflags"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fchflags() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fchflags() ");
 		bf_MSHookFunction((void *) fchflags, (void *) bf_fchflags,
 				(void **) &orig_fchflags);
 	}else {
@@ -699,7 +699,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fchmod"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fchmod() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fchmod() ");
 		bf_MSHookFunction((void *) fchmod, (void *) bf_fchmod,
 				(void **) &orig_fchmod);
 	}else {
@@ -708,7 +708,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fchown"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fchown() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fchown() ");
 		bf_MSHookFunction((void *) fchown, (void *) bf_fchown,
 				(void **) &orig_fchown);
 	}else {
@@ -717,7 +717,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fcntl"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fcntl() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fcntl() ");
 		bf_MSHookFunction((void *) fcntl, (void *) bf_fcntl,
 				(void **) &orig_fcntl);
 	}else {
@@ -726,7 +726,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_flock"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: flock() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: flock() ");
 		bf_MSHookFunction((void *) flock, (void *) bf_flock,
 				(void **) &orig_flock);
 	}else {
@@ -735,7 +735,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fork"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fork() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fork() ");
 		bf_MSHookFunction((void *) fork, (void *) bf_fork,
 				(void **) &orig_fork);
 	}else {
@@ -744,7 +744,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fpathconf"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fpathconf() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fpathconf() ");
 		bf_MSHookFunction((void *) fpathconf, (void *) bf_fpathconf,
 				(void **) &orig_fpathconf);
 	}else {
@@ -753,7 +753,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fstat"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fstat() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fstat() ");
 		bf_MSHookFunction((void *) fstat, (void *) bf_fstat,
 				(void **) &orig_fstat);
 	}else {
@@ -762,7 +762,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fstatfs"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fstatfs() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fstatfs() ");
 		bf_MSHookFunction((void *) fstatfs, (void *) bf_fstatfs,
 				(void **) &orig_fstatfs);
 	}else {
@@ -771,7 +771,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_fsync"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: fsync() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: fsync() ");
 		bf_MSHookFunction((void *) fsync, (void *) bf_fsync,
 				(void **) &orig_fsync);
 	}else {
@@ -780,7 +780,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_ftruncate"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: ftruncate() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: ftruncate() ");
 		bf_MSHookFunction((void *) ftruncate, (void *) bf_ftruncate,
 				(void **) &orig_ftruncate);
 	}else {
@@ -789,7 +789,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_futimes"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: futimes() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: futimes() ");
 		bf_MSHookFunction((void *) futimes, (void *) bf_futimes,
 				(void **) &orig_futimes);
 	}else {
@@ -798,7 +798,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getdtablesize"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getdtablesize() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getdtablesize() ");
 		bf_MSHookFunction((void *) getdtablesize, (void *) bf_getdtablesize,
 				(void **) &orig_getdtablesize);
 	}else {
@@ -807,7 +807,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getegid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getegid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getegid() ");
 		bf_MSHookFunction((void *) getegid, (void *) bf_getegid,
 				(void **) &orig_getegid);
 	}else {
@@ -816,7 +816,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_geteuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: geteuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: geteuid() ");
 		bf_MSHookFunction((void *) geteuid, (void *) bf_geteuid,
 				(void **) &orig_geteuid);
 	}else {
@@ -825,7 +825,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getfh"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getfh() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getfh() ");
 		bf_MSHookFunction((void *) getfh, (void *) bf_getfh,
 				(void **) &orig_getfh);
 	}else {
@@ -834,7 +834,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getfsstat"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getfsstat() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getfsstat() ");
 		bf_MSHookFunction((void *) getfsstat, (void *) bf_getfsstat,
 				(void **) &orig_getfsstat);
 	}else {
@@ -843,7 +843,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getgid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getgid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getgid() ");
 		bf_MSHookFunction((void *) getgid, (void *) bf_getgid,
 				(void **) &orig_getgid);
 	}else {
@@ -852,7 +852,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getgroups"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getgroups() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getgroups() ");
 		bf_MSHookFunction((void *) getgroups, (void *) bf_getgroups,
 				(void **) &orig_getgroups);
 	}else {
@@ -861,7 +861,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_gethostuuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: gethostuuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: gethostuuid() ");
 		bf_MSHookFunction((void *) gethostuuid, (void *) bf_gethostuuid,
 				(void **) &orig_gethostuuid);
 	}else {
@@ -870,7 +870,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getitimer"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getitimer() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getitimer() ");
 		bf_MSHookFunction((void *) getitimer, (void *) bf_getitimer,
 				(void **) &orig_getitimer);
 	}else {
@@ -879,7 +879,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getlogin"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getlogin() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getlogin() ");
 		bf_MSHookFunction((void *) getlogin, (void *) bf_getlogin,
 				(void **) &orig_getlogin);
 	}else {
@@ -888,7 +888,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getpeername"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getpeername() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getpeername() ");
 		bf_MSHookFunction((void *) getpeername, (void *) bf_getpeername,
 				(void **) &orig_getpeername);
 	}else {
@@ -897,7 +897,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getpgid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getpgid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getpgid() ");
 		bf_MSHookFunction((void *) getpgid, (void *) bf_getpgid,
 				(void **) &orig_getpgid);
 	}else {
@@ -906,7 +906,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getpgrp"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getpgrp() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getpgrp() ");
 		bf_MSHookFunction((void *) getpgrp, (void *) bf_getpgrp,
 				(void **) &orig_getpgrp);
 	}else {
@@ -915,7 +915,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 /*
 	if ([[plist objectForKey:@"hijack_getpid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getpid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getpid() ");
 		bf_MSHookFunction((void *) getpid, (void *) bf_getpid,
 				(void **) &orig_getpid);
 	}else {
@@ -924,7 +924,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_getppid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getppid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getppid() ");
 		bf_MSHookFunction((void *) getppid, (void *) bf_getppid,
 				(void **) &orig_getppid);
 	}else {
@@ -933,7 +933,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getpriority"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getpriority() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getpriority() ");
 		bf_MSHookFunction((void *) getpriority, (void *) bf_getpriority,
 				(void **) &orig_getpriority);
 	}else {
@@ -942,7 +942,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 /*
 	if ([[plist objectForKey:@"hijack_getrlimit"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getrlimit() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getrlimit() ");
 		bf_MSHookFunction((void *) getrlimit, (void *) bf_getrlimit,
 				(void **) &orig_getrlimit);
 	}else {
@@ -951,7 +951,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_getrusage"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getrusage() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getrusage() ");
 		bf_MSHookFunction((void *) getrusage, (void *) bf_getrusage,
 				(void **) &orig_getrusage);
 	}else {
@@ -960,7 +960,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getsockname"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getsockname() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getsockname() ");
 		bf_MSHookFunction((void *) getsockname, (void *) bf_getsockname,
 				(void **) &orig_getsockname);
 	}else {
@@ -969,7 +969,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getsockopt"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getsockopt() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getsockopt() ");
 		bf_MSHookFunction((void *) getsockopt, (void *) bf_getsockopt,
 				(void **) &orig_getsockopt);
 	}else {
@@ -978,7 +978,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_gettimeofday"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: gettimeofday() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: gettimeofday() ");
 		bf_MSHookFunction((void *) gettimeofday, (void *) bf_gettimeofday,
 				(void **) &orig_gettimeofday);
 	}else {
@@ -987,7 +987,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_getuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: getuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: getuid() ");
 		bf_MSHookFunction((void *) getuid, (void *) bf_getuid,
 				(void **) &orig_getuid);
 	}else {
@@ -996,7 +996,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_ioctl"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: ioctl() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: ioctl() ");
 		bf_MSHookFunction((void *) ioctl, (void *) bf_ioctl,
 				(void **) &orig_ioctl);
 	}else {
@@ -1005,7 +1005,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_kill"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: kill() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: kill() ");
 		bf_MSHookFunction((void *) kill, (void *) bf_kill,
 				(void **) &orig_kill);
 	}else {
@@ -1014,7 +1014,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_link"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: link() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: link() ");
 		bf_MSHookFunction((void *) link, (void *) bf_link,
 				(void **) &orig_link);
 	}else {
@@ -1023,7 +1023,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_listen"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: listen() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: listen() ");
 		bf_MSHookFunction((void *) listen, (void *) bf_listen,
 				(void **) &orig_listen);
 	}else {
@@ -1032,7 +1032,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_lseek"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: lseek() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: lseek() ");
 		bf_MSHookFunction((void *) lseek, (void *) bf_lseek,
 				(void **) &orig_lseek);
 	}else {
@@ -1041,7 +1041,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_lstat"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: lstat() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: lstat() ");
 		bf_MSHookFunction((void *) lstat, (void *) bf_lstat,
 				(void **) &orig_lstat);
 	}else {
@@ -1050,7 +1050,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_madvise"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: madvise() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: madvise() ");
 		bf_MSHookFunction((void *) madvise, (void *) bf_madvise,
 				(void **) &orig_madvise);
 	}else {
@@ -1059,7 +1059,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_memcmp"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: memcmp() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: memcmp() ");
 		bf_MSHookFunction((void *) memcmp, (void *) bf_memcmp,
 				(void **) &orig_memcmp);
 	}else {
@@ -1068,7 +1068,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mincore"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mincore() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mincore() ");
 		bf_MSHookFunction((void *) mincore, (void *) bf_mincore,
 				(void **) &orig_mincore);
 	}else {
@@ -1077,7 +1077,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mkdir"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mkdir() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mkdir() ");
 		bf_MSHookFunction((void *) mkdir, (void *) bf_mkdir,
 				(void **) &orig_mkdir);
 	}else {
@@ -1086,7 +1086,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mkfifo"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mkfifo() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mkfifo() ");
 		bf_MSHookFunction((void *) mkfifo, (void *) bf_mkfifo,
 				(void **) &orig_mkfifo);
 	}else {
@@ -1095,7 +1095,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mknod"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mknod() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mknod() ");
 		bf_MSHookFunction((void *) mknod, (void *) bf_mknod,
 				(void **) &orig_mknod);
 	}else {
@@ -1104,7 +1104,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mlock"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mlock() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mlock() ");
 		bf_MSHookFunction((void *) mlock, (void *) bf_mlock,
 				(void **) &orig_mlock);
 	}else {
@@ -1113,7 +1113,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mmap"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mmap() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mmap() ");
 		bf_MSHookFunction((void *) mmap, (void *) bf_mmap,
 				(void **) &orig_mmap);
 	}else {
@@ -1122,7 +1122,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mount"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mount() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mount() ");
 		bf_MSHookFunction((void *) mount, (void *) bf_mount,
 				(void **) &orig_mount);
 	}else {
@@ -1131,7 +1131,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_mprotect"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: mprotect() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: mprotect() ");
 		bf_MSHookFunction((void *) mprotect, (void *) bf_mprotect,
 				(void **) &orig_mprotect);
 	}else {
@@ -1140,7 +1140,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_msync"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: msync() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: msync() ");
 		bf_MSHookFunction((void *) msync, (void *) bf_msync,
 				(void **) &orig_msync);
 	}else {
@@ -1149,7 +1149,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_munlock"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: munlock() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: munlock() ");
 		bf_MSHookFunction((void *) munlock, (void *) bf_munlock,
 				(void **) &orig_munlock);
 	}else {
@@ -1158,7 +1158,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_munmap"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: munmap() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: munmap() ");
 		bf_MSHookFunction((void *) munmap, (void *) bf_munmap,
 				(void **) &orig_munmap);
 	}else {
@@ -1167,7 +1167,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_nfssvc"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: nfssvc() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: nfssvc() ");
 		bf_MSHookFunction((void *) nfssvc, (void *) bf_nfssvc,
 				(void **) &orig_nfssvc);
 	}else {
@@ -1176,7 +1176,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_open"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: open() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: open() ");
 		bf_MSHookFunction((void *) open, (void *) bf_open,
 				(void **) &orig_open);
 	}else {
@@ -1185,7 +1185,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_pathconf"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: pathconf() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: pathconf() ");
 		bf_MSHookFunction((void *) pathconf, (void *) bf_pathconf,
 				(void **) &orig_pathconf);
 	}else {
@@ -1194,7 +1194,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_pipe"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: pipe() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: pipe() ");
 		bf_MSHookFunction((void *) pipe, (void *) bf_pipe,
 				(void **) &orig_pipe);
 	}else {
@@ -1203,7 +1203,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_pread"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: pread() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: pread() ");
 		bf_MSHookFunction((void *) pread, (void *) bf_pread,
 				(void **) &orig_pread);
 	}else {
@@ -1212,7 +1212,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 /*    if ([[plist objectForKey:@"hijack_ptrace"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: ptrace() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: ptrace() ");
 		bf_MSHookFunction((void *) ptrace, (void *) bf_ptrace,
 				(void **) &orig_ptrace);
 	}else {
@@ -1221,7 +1221,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_pwrite"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: pwrite() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: pwrite() ");
 		bf_MSHookFunction((void *) pwrite, (void *) bf_pwrite,
 				(void **) &orig_pwrite);
 	}else {
@@ -1230,7 +1230,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_read"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: read() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: read() ");
 		bf_MSHookFunction((void *) read, (void *) bf_read,
 				(void **) &orig_read);
 	}else {
@@ -1239,7 +1239,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_readlink"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: readlink() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: readlink() ");
 		bf_MSHookFunction((void *) readlink, (void *) bf_readlink,
 				(void **) &orig_readlink);
 	}else {
@@ -1248,7 +1248,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_readv"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: readv() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: readv() ");
 		bf_MSHookFunction((void *) readv, (void *) bf_readv,
 				(void **) &orig_readv);
 	}else {
@@ -1257,7 +1257,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_reboot"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: reboot() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: reboot() ");
 		bf_MSHookFunction((void *) reboot, (void *) bf_reboot,
 				(void **) &orig_reboot);
 	}else {
@@ -1266,7 +1266,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_recv"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: recv() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: recv() ");
 		bf_MSHookFunction((void *) recv, (void *) bf_recv,
 				(void **) &orig_recv);
 	}else {
@@ -1275,7 +1275,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_recvmsg"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: recvmsg() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: recvmsg() ");
 		bf_MSHookFunction((void *) recvmsg, (void *) bf_recvmsg,
 				(void **) &orig_recvmsg);
 	}else {
@@ -1284,7 +1284,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_rename"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: rename() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: rename() ");
 		bf_MSHookFunction((void *) rename, (void *) bf_rename,
 				(void **) &orig_rename);
 	}else {
@@ -1293,7 +1293,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_revoke"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: revoke() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: revoke() ");
 		bf_MSHookFunction((void *) revoke, (void *) bf_revoke,
 				(void **) &orig_revoke);
 	}else {
@@ -1302,7 +1302,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_rmdir"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: rmdir() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: rmdir() ");
 		bf_MSHookFunction((void *) rmdir, (void *) bf_rmdir,
 				(void **) &orig_rmdir);
 	}else {
@@ -1311,7 +1311,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_select"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: select() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: select() ");
 		bf_MSHookFunction((void *) select, (void *) bf_select,
 				(void **) &orig_select);
 	}else {
@@ -1320,7 +1320,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sendmsg"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sendmsg() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sendmsg() ");
 		bf_MSHookFunction((void *) sendmsg, (void *) bf_sendmsg,
 				(void **) &orig_sendmsg);
 	}else {
@@ -1329,7 +1329,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sendto"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sendto() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sendto() ");
 		bf_MSHookFunction((void *) sendto, (void *) bf_sendto,
 				(void **) &orig_sendto);
 	}else {
@@ -1338,7 +1338,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setegid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setegid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setegid() ");
 		bf_MSHookFunction((void *) setegid, (void *) bf_setegid,
 				(void **) &orig_setegid);
 	}else {
@@ -1347,7 +1347,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_seteuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: seteuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: seteuid() ");
 		bf_MSHookFunction((void *) seteuid, (void *) bf_seteuid,
 				(void **) &orig_seteuid);
 	}else {
@@ -1356,7 +1356,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setgid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setgid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setgid() ");
 		bf_MSHookFunction((void *) setgid, (void *) bf_setgid,
 				(void **) &orig_setgid);
 	}else {
@@ -1365,7 +1365,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setgroups"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setgroups() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setgroups() ");
 		bf_MSHookFunction((void *) setgroups, (void *) bf_setgroups,
 				(void **) &orig_setgroups);
 	}else {
@@ -1374,7 +1374,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setitimer"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setitimer() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setitimer() ");
 		bf_MSHookFunction((void *) setitimer, (void *) bf_setitimer,
 				(void **) &orig_setitimer);
 	}else {
@@ -1383,7 +1383,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setlogin"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setlogin() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setlogin() ");
 		bf_MSHookFunction((void *) setlogin, (void *) bf_setlogin,
 				(void **) &orig_setlogin);
 	}else {
@@ -1392,7 +1392,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setpgid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setpgid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setpgid() ");
 		bf_MSHookFunction((void *) setpgid, (void *) bf_setpgid,
 				(void **) &orig_setpgid);
 	}else {
@@ -1401,7 +1401,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setpriority"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setpriority() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setpriority() ");
 		bf_MSHookFunction((void *) setpriority, (void *) bf_setpriority,
 				(void **) &orig_setpriority);
 	}else {
@@ -1410,7 +1410,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setregid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setregid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setregid() ");
 		bf_MSHookFunction((void *) setregid, (void *) bf_setregid,
 				(void **) &orig_setregid);
 	}else {
@@ -1419,7 +1419,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setreuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setreuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setreuid() ");
 		bf_MSHookFunction((void *) setreuid, (void *) bf_setreuid,
 				(void **) &orig_setreuid);
 	}else {
@@ -1428,7 +1428,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setrlimit"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setrlimit() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setrlimit() ");
 		bf_MSHookFunction((void *) setrlimit, (void *) bf_setrlimit,
 				(void **) &orig_setrlimit);
 	}else {
@@ -1437,7 +1437,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 /*
 	if ([[plist objectForKey:@"hijack_setsid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setsid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setsid() ");
 		bf_MSHookFunction((void *) setsid, (void *) bf_setsid,
 				(void **) &orig_setsid);
 	}else {
@@ -1446,7 +1446,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_setsockopt"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setsockopt() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setsockopt() ");
 		bf_MSHookFunction((void *) setsockopt, (void *) bf_setsockopt,
 				(void **) &orig_setsockopt);
 	}else {
@@ -1455,7 +1455,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_settimeofday"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: settimeofday() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: settimeofday() ");
 		bf_MSHookFunction((void *) settimeofday, (void *) bf_settimeofday,
 				(void **) &orig_settimeofday);
 	}else {
@@ -1464,7 +1464,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_setuid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: setuid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: setuid() ");
 		bf_MSHookFunction((void *) setuid, (void *) bf_setuid,
 				(void **) &orig_setuid);
 	}else {
@@ -1473,7 +1473,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_shutdown"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: shutdown() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: shutdown() ");
 		bf_MSHookFunction((void *) shutdown, (void *) bf_shutdown,
 				(void **) &orig_shutdown);
 	}else {
@@ -1482,7 +1482,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sigaction"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sigaction() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sigaction() ");
 		bf_MSHookFunction((void *) sigaction, (void *) bf_sigaction,
 				(void **) &orig_sigaction);
 	}else {
@@ -1491,7 +1491,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sigpending"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sigpending() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sigpending() ");
 		bf_MSHookFunction((void *) sigpending, (void *) bf_sigpending,
 				(void **) &orig_sigpending);
 	}else {
@@ -1500,7 +1500,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sigprocmask"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sigprocmask() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sigprocmask() ");
 		bf_MSHookFunction((void *) sigprocmask, (void *) bf_sigprocmask,
 				(void **) &orig_sigprocmask);
 	}else {
@@ -1509,7 +1509,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sigsuspend"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sigsuspend() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sigsuspend() ");
 		bf_MSHookFunction((void *) sigsuspend, (void *) bf_sigsuspend,
 				(void **) &orig_sigsuspend);
 	}else {
@@ -1518,7 +1518,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_socket"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: socket() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: socket() ");
 		bf_MSHookFunction((void *) socket, (void *) bf_socket,
 				(void **) &orig_socket);
 	}else {
@@ -1527,7 +1527,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_socketpair"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: socketpair() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: socketpair() ");
 		bf_MSHookFunction((void *) socketpair, (void *) bf_socketpair,
 				(void **) &orig_socketpair);
 	}else {
@@ -1536,7 +1536,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_stat"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: stat() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: stat() ");
 		bf_MSHookFunction((void *) stat, (void *) bf_stat,
 				(void **) &orig_stat);
 	}else {
@@ -1545,7 +1545,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_statfs"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: statfs() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: statfs() ");
 		bf_MSHookFunction((void *) statfs, (void *) bf_statfs,
 				(void **) &orig_statfs);
 	}else {
@@ -1554,7 +1554,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_strcmp"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: strcmp(). If you experience crashes try turning this off. It can *really* slow down your app!");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: strcmp(). If you experience crashes try turning this off. It can *really* slow down your app!");
 		bf_MSHookFunction((void *) strcmp, (void *) bf_strcmp,
 				(void **) &orig_strcmp);
 	}else {
@@ -1563,7 +1563,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 /*    if ([[plist objectForKey:@"hijack_strncmp"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: strncmp() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: strncmp() ");
 		bf_MSHookFunction((void *) strncmp, (void *) bf_strncmp,
 				(void **) &orig_strncmp);
 	}else {
@@ -1572,7 +1572,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_swapon"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: swapon() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: swapon() ");
 		bf_MSHookFunction((void *) swapon, (void *) bf_swapon,
 				(void **) &orig_swapon);
 	}else {
@@ -1581,7 +1581,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_symlink"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: symlink() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: symlink() ");
 		bf_MSHookFunction((void *) symlink, (void *) bf_symlink,
 				(void **) &orig_symlink);
 	}else {
@@ -1590,7 +1590,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_sync"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: sync() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: sync() ");
 		bf_MSHookFunction((void *) sync, (void *) bf_sync,
 				(void **) &orig_sync);
 	}else {
@@ -1599,7 +1599,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_truncate"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: truncate() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: truncate() ");
 		bf_MSHookFunction((void *) truncate, (void *) bf_truncate,
 				(void **) &orig_truncate);
 	}else {
@@ -1608,7 +1608,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_umask"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: umask() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: umask() ");
 		bf_MSHookFunction((void *) umask, (void *) bf_umask,
 				(void **) &orig_umask);
 	}else {
@@ -1617,7 +1617,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_undelete"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: undelete() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: undelete() ");
 		bf_MSHookFunction((void *) undelete, (void *) bf_undelete,
 				(void **) &orig_undelete);
 	}else {
@@ -1626,7 +1626,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_unlink"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: unlink() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: unlink() ");
 		bf_MSHookFunction((void *) unlink, (void *) bf_unlink,
 				(void **) &orig_unlink);
 	}else {
@@ -1635,7 +1635,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_unmount"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: unmount() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: unmount() ");
 		bf_MSHookFunction((void *) unmount, (void *) bf_unmount,
 				(void **) &orig_unmount);
 	}else {
@@ -1644,7 +1644,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_utimes"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: utimes() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: utimes() ");
 		bf_MSHookFunction((void *) utimes, (void *) bf_utimes,
 				(void **) &orig_utimes);
 	}else {
@@ -1653,7 +1653,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_vfork"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: vfork() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: vfork() ");
 		bf_MSHookFunction((void *) vfork, (void *) bf_vfork,
 				(void **) &orig_vfork);
 	}else {
@@ -1662,7 +1662,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_wait4"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: wait4() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: wait4() ");
 		bf_MSHookFunction((void *) wait4, (void *) bf_wait4,
 				(void **) &orig_wait4);
 	}else {
@@ -1671,7 +1671,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 
 	if ([[plist objectForKey:@"hijack_waitid"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: waitid() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: waitid() ");
 		bf_MSHookFunction((void *) waitid, (void *) bf_waitid,
 				(void **) &orig_waitid);
 	}else {
@@ -1681,7 +1681,7 @@ void hijack_on(NSMutableDictionary *plist) {
 
 /*
 	if ([[plist objectForKey:@"hijack_write"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: write() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: write() ");
 		bf_MSHookFunction((void *) write, (void *) bf_write,
 				(void **) &orig_write);
 	}else {
@@ -1690,7 +1690,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	}
 */
 	if ([[plist objectForKey:@"hijack_writev"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: writev() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: writev() ");
 		bf_MSHookFunction((void *) writev, (void *) bf_writev,
 				(void **) &orig_writev);
 	}else {
@@ -1701,7 +1701,7 @@ void hijack_on(NSMutableDictionary *plist) {
 
 	/* User Input Hooks */
 	if ([[plist objectForKey:@"hijack_dyld_image_count"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: _dyld_image_count() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: _dyld_image_count() ");
 		bf_MSHookFunction((void *) _dyld_image_count, (void *) bf_dyld_image_count,
 				(void **) &orig_dyld_image_count);
 	}else {
@@ -1709,7 +1709,7 @@ void hijack_on(NSMutableDictionary *plist) {
 				(void **) &orig_dyld_image_count);
 	}
 	if ([[plist objectForKey:@"hijack_dyld_get_image_name"] boolValue] || enableAll) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] hijack function: _dyld_get_image_name() ");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] hijack function: _dyld_get_image_name() ");
 		bf_MSHookFunction((void *) _dyld_get_image_name,
 				(void *) bf_dyld_get_image_name, (void **) &orig_dyld_get_image_name);
 	} else {
@@ -1717,7 +1717,7 @@ void hijack_on(NSMutableDictionary *plist) {
 				(void *) bf_dyld_get_image_name, (void **) &orig_dyld_get_image_name);
 	}
 
-	bf_logwrite(LOG_GENERAL, "[iSpy] hijack_on: Successfully placed hooks!");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] hijack_on: Successfully placed hooks!");
 }
 
 %end // end of UIApplication class extension.
@@ -1789,7 +1789,7 @@ void hijack_on(NSMutableDictionary *plist) {
 	Define the new SecTrustEvaluate function
  */
 OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result) {
-	bf_logwrite(LOG_GENERAL, "[iSpy] trustme: Intercepting SecTrustEvaluate() call");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: Intercepting SecTrustEvaluate() call");
 	*result = kSecTrustResultProceed;
 	return errSecSuccess;
 }
@@ -1878,11 +1878,11 @@ EXPORT int return_true() {
 	bf_init_logwriter();
 
 	NSLog(@"[iSpy] Done! Logging will continue in /tmp/bf_general.log");
-	bf_logwrite(LOG_GENERAL, "================================================================");
-	bf_logwrite(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
-	bf_logwrite(LOG_GENERAL, "================================================================");
-	bf_logwrite(LOG_GENERAL, "[iSpy] Logging initialized!");
-	bf_logwrite(LOG_GENERAL, "[iSpy] sqlite_config() returned %d (success=0)", configresult);
+	ispy_log_debug(LOG_GENERAL, "================================================================");
+	ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
+	ispy_log_debug(LOG_GENERAL, "================================================================");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Logging initialized!");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] sqlite_config() returned %d (success=0)", configresult);
 
 	// Ok, this needs some explanation.
 	// There seems to be some weird intermittent crash that occurs when hijack_on() collides with
@@ -1896,7 +1896,7 @@ EXPORT int return_true() {
 	
 	// Replace MSMessageHookEx with the iSpy variant if configured to do so
 	if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
 		bf_init_substrate_replacement(); 
 	}
 
@@ -1904,18 +1904,18 @@ EXPORT int return_true() {
 	// Call bf_disable_msgSend_logging() or [[iSpy sharedInstance] msgSend_disableLogging] or /api/whateveritis to turn it off.
 	// Or turn it off in the prefs panel. Or the web GUI.
 	if ([[plist objectForKey:@"settings_MsgSendLogging"] boolValue]) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now! Check " BF_LOGFILE_MSGSEND " on your device.");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now! Check " BF_LOGFILE_MSGSEND " on your device.");
 		bf_enable_msgSend_logging(); 
 	} else {
-		bf_logwrite(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
 	}
 
 	// SSL pinning bypass?
 	if ([[plist objectForKey:@"settings_TrustMeBypass"] boolValue]) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - ENABLED");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - ENABLED");
 		bf_MSHookFunction((void *)SecTrustEvaluate, (void *)new_SecTrustEvaluate, (void **)&original_SecTrustEvaluate);
 	} else {
-		bf_logwrite(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
 	}
 
 	// open up the log files for read access by iSpy web clients
@@ -1929,7 +1929,7 @@ EXPORT int return_true() {
 	// The log is controlled with bf_enable_msgSend_logging() and bf_disable_msgSend_logging(),
 	// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging] 
 	// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
-	bf_logwrite(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
 	bf_init_msgSend_logging();
 
 	// Start the iSpy web server
@@ -1937,13 +1937,13 @@ EXPORT int return_true() {
 	[[mySpy webServer] startWebServices];
 
 	// Enable instance tracking if configured to do so
-	bf_logwrite(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
 	bf_init_instance_tracker();
 	if ([[plist objectForKey:@"settings_InstanceTracking"] boolValue]) {
-		bf_logwrite(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
 		bf_enable_instance_tracker();
 	} else {
-		bf_logwrite(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
 	}
 
 	// Load our own custom Theos hooks.            
@@ -1953,7 +1953,7 @@ EXPORT int return_true() {
 	bf_setup_msgSend_whitelist();
 	[plist release];
 	[appPlist release];
-	bf_logwrite(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
+	ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 }
 
 static bool bf_setup_msgSend_whitelist() {
@@ -1969,11 +1969,11 @@ static bool bf_setup_msgSend_whitelist() {
     for(i = 0; i < numClasses; i++) {
     	NSString *name = [classes objectAtIndex:i];
         appClassWhiteList[i] = objc_getClass([name UTF8String]);
-        bf_logwrite(LOG_GENERAL, "[Whitelist] adding %s (%p)", [name UTF8String], appClassWhiteList[i]);
+        ispy_log_debug(LOG_GENERAL, "[Whitelist] adding %s (%p)", [name UTF8String], appClassWhiteList[i]);
     }
     appClassWhiteList[i] = (id)0;
 
-    bf_logwrite(LOG_GENERAL, "[whitelist] Added %d classes to the whitelist. All done!", i);
+    ispy_log_debug(LOG_GENERAL, "[whitelist] Added %d classes to the whitelist. All done!", i);
     
     // Trigger the "everything worked" callback into the objc_msgSend logging code.
     // We pass a pointer to the static array of whitelisted classes initialized above; these are the classes

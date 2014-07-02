@@ -73,14 +73,14 @@ Boolean bf_CFReadStreamSetProperty(CFReadStreamRef stream,
     Boolean retval;
 
     // Log event
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamSetProperty was called.");
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamSetProperty was called.");
     retval = orig_CFReadStreamSetProperty(stream, propertyName, propertyValue);
 
     // You probably want this UNLESS you're testing SSL cert pinning. Maybe... untested.
     /*if(strcmp((char *)propertyName, (char *)kCFStreamPropertySSLSettings)==0) {
      // override SSL settings
      foo=(NSDictionary *)CFReadStreamCopyProperty(stream, kCFStreamPropertySSLSettings);
-     bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamSetProperty: hijacking SSL checks. Orig: %@", foo);
+     ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamSetProperty: hijacking SSL checks. Orig: %@", foo);
      orig_CFReadStreamSetProperty(stream, kCFStreamPropertySSLSettings, (CFTypeRef) settings);    
      } */
 
@@ -106,15 +106,15 @@ Boolean bf_CFWriteStreamSetProperty(CFWriteStreamRef stream,
     Boolean retval;
 
     // Log event
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFWriteStreamSetProperty was called.");
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFWriteStreamSetProperty was called.");
     retval = orig_CFWriteStreamSetProperty(stream, propertyName, propertyValue);
 
     // You probably want this UNLESS you're testing SSL cert pinning. Or not. Pls test.
     /*if(strcmp((char *)propertyName, (char *)kCFStreamPropertySSLSettings)==0) {
      // override SSL settings
      foo=(NSDictionary *)CFWriteStreamCopyProperty(stream, kCFStreamPropertySSLSettings);
-     bf_logwrite(LOG_TCPIP, "[iSpy] CFWriteStreamSetProperty: hijacking SSL checks. Orig: %@", foo);
-     orig_CFWriteStreamSetProperty(stream, kCFStreamPropertySSLSettings, (CFTypeRef) settings);    
+     ispy_log_info(LOG_TCPIP, "[iSpy] CFWriteStreamSetProperty: hijacking SSL checks. Orig: %@", foo);
+     orig_CFWriteStreamSetProperty(stream, kCFStreamPropertySSLSettings, (CFTypeRef) settings);
      }*/
     return retval;
 }
@@ -126,8 +126,7 @@ CFIndex bf_CFReadStreamRead(CFReadStreamRef stream, UInt8 *buffer, CFIndex buffe
     retval = orig_CFReadStreamRead(stream, buffer, bufferLength);
 
     // Log event and the data read from the stream
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamRead(%@): Buf(%ld)", stream, bufferLength);
-    
+    // ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamRead(%@): Buf(%ld)", stream, bufferLength);
     return retval;
 }
 
@@ -143,23 +142,23 @@ CFIndex bf_CFWriteStreamWrite(CFWriteStreamRef stream, const UInt8 *buffer,
 
 CFURLRef bf_CFURLCreateWithString(CFAllocatorRef allocator,
         CFStringRef URLString, CFURLRef baseURL) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFURLCreateWithString: %@", URLString);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFURLCreateWithString: %@", URLString);
     return orig_CFURLCreateWithString(allocator, URLString, baseURL);
 }
 
 Boolean bf_CFReadStreamOpen(CFReadStreamRef stream) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamOpen: %@", stream);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamOpen: %@", stream);
     return orig_CFReadStreamOpen(stream);
 }
 
 Boolean bf_CFWriteStreamOpen(CFWriteStreamRef stream) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFWriteStreamOpen: %@", stream);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFWriteStreamOpen: %@", stream);
     return orig_CFWriteStreamOpen(stream);
 }
 
 CFHTTPMessageRef bf_CFHTTPMessageCreateRequest(CFAllocatorRef alloc,
         CFStringRef requestMethod, CFURLRef url, CFStringRef httpVersion) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFHTTPMessageCreateRequest: %@ %@ %@", requestMethod,
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFHTTPMessageCreateRequest: %@ %@ %@", requestMethod,
             url, httpVersion);
     return orig_CFHTTPMessageCreateRequest(alloc, requestMethod, url,
             httpVersion);
@@ -167,7 +166,7 @@ CFHTTPMessageRef bf_CFHTTPMessageCreateRequest(CFAllocatorRef alloc,
 
 CFReadStreamRef CFReadStreamCreateForHTTPRequest(CFAllocatorRef alloc,
         CFHTTPMessageRef request) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamCreateForHTTPRequest: %@",
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamCreateForHTTPRequest: %@",
             (CFHTTPMessageRef) request);
     return orig_CFReadStreamCreateForHTTPRequest(alloc, request);
 }
@@ -175,42 +174,42 @@ CFReadStreamRef CFReadStreamCreateForHTTPRequest(CFAllocatorRef alloc,
 void bf_CFStreamCreatePairWithSocketToHost( CFAllocatorRef alloc,
                                             CFStringRef host, UInt32 port, CFReadStreamRef *readStream,
                                             CFWriteStreamRef *writeStream) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithSocketToHost: %s:%d", (char *)host, (unsigned int)port);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithSocketToHost: %s:%d", (char *)host, (unsigned int)port);
     orig_CFStreamCreatePairWithSocketToHost(alloc, host, port, readStream, writeStream);
 }
 
 CFReadStreamRef bf_CFReadStreamCreateForHTTPRequest(CFAllocatorRef alloc, CFHTTPMessageRef request) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamCreateForHTTPRequest(%@)", request);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamCreateForHTTPRequest(%@)", request);
     return orig_CFReadStreamCreateForHTTPRequest(alloc, request);
 }
 
 void bf_CFStreamCreatePairWithPeerSocketSignature(  CFAllocatorRef alloc,
                                                     const CFSocketSignature *signature, CFReadStreamRef *readStream,
                                                     CFWriteStreamRef *writeStream) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithPeerSocketSignature");
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithPeerSocketSignature");
     orig_CFStreamCreatePairWithPeerSocketSignature(alloc, signature, readStream, writeStream);
 }
 
 void bf_CFStreamCreatePairWithSocket(   CFAllocatorRef alloc,
                                         CFSocketNativeHandle sock, CFReadStreamRef *readStream,
                                         CFWriteStreamRef *writeStream) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithSocket: %d", (int) sock);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFStreamCreatePairWithSocket: %d", (int) sock);
     orig_CFStreamCreatePairWithSocket(alloc, sock, readStream, writeStream);
 }
 
 CFReadStreamRef bf_CFReadStreamCreateWithBytesNoCopy(   CFAllocatorRef alloc,
                                                         const UInt8 *bytes, CFIndex length, CFAllocatorRef bytesDeallocator) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFReadStreamCreateWithBytesNoCopy: 0x%x", (unsigned int)bytes);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFReadStreamCreateWithBytesNoCopy: 0x%x", (unsigned int)bytes);
     return orig_CFReadStreamCreateWithBytesNoCopy(alloc, bytes, length, bytesDeallocator);
 }
 
 SecCertificateRef bf_SecCertificateCreateWithData(CFAllocatorRef allocator, CFDataRef data) {
-    bf_logwrite(LOG_TCPIP, "[iSpy] SecCertificateCreateWithData: called!");
+    ispy_log_info(LOG_TCPIP, "[iSpy] SecCertificateCreateWithData: called!");
     return orig_SecCertificateCreateWithData(allocator, data);
 }
 
 CFDictionaryRef bf_CFNetworkCopySystemProxySettings(void) {
     static CFMutableDictionaryRef proxySettings = (CFMutableDictionaryRef) orig_CFNetworkCopySystemProxySettings();
-    bf_logwrite(LOG_TCPIP, "[iSpy] CFNetworkCopySystemProxySettings: Got dict: %@", proxySettings);
+    ispy_log_info(LOG_TCPIP, "[iSpy] CFNetworkCopySystemProxySettings: Got dict: %@", proxySettings);
     return proxySettings;
 }

@@ -1873,11 +1873,13 @@ EXPORT int return_true() {
 
 	// Initialize the BF log writing system
 	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
-	NSLog(@"[iSpy] Showtime!");
-	NSLog(@"[iSpy] Initializing logwriter.");
-	ispy_init_logwriter(".ispy");
 
-	NSLog(@"[iSpy] Done! Logging will continue in /tmp/bf_general.log");
+
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
+	ispy_init_logwriter(documentsDirectory);
+
 	ispy_log_debug(LOG_GENERAL, "================================================================");
 	ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
 	ispy_log_debug(LOG_GENERAL, "================================================================");

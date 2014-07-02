@@ -63,7 +63,7 @@ static const unsigned int LOG_MSGSEND  = 1;
 static const unsigned int LOG_GENERAL  = 2;
 static const unsigned int LOG_HTTP     = 3;
 static const unsigned int LOG_TCPIP    = 4;
-EXPORT void ispy_init_logwriter(const char *directory);
+EXPORT void ispy_init_logwriter(NSString *documents);
 EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...);

@@ -57,7 +57,7 @@ static const unsigned int LOG_TCPIP    = 4;
 
 */
 static const unsigned int LOG_GLOBAL   = 5;
-static const unsigned int MAX_LOG      = LOG_GLOBAL;	// this must be equal to the last number in the list of LOG_* numbers, above.
+static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
 static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log" "http.log", "tcpip.log", "global.log"};
 static const char *LOG_SUBDIRECTORY = "/logs/";
 
@@ -67,10 +67,12 @@ static const char *LOG_SUBDIRECTORY = "/logs/";
 // See the following functions in hook_C_system_calls.xm for examples.
 extern int (*orig_gettimeofday)(struct timeval *tp, void *tzp);
 extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
+extern int (*orig_mkdir)(const char * path, int mode);
 
 /* Log file descriptors */
 static int logFiles[MAX_LOG + 1];
 static dispatch_queue_t logQueue;
+static BOOL logIsInitialized = NO;
 
 void ispy_log_write(int facility, int level, char *msg) {
 
@@ -100,36 +102,47 @@ void ispy_log_write(int facility, int level, char *msg) {
 }
 
 /*
- * iSpyDirectory is where we setup shop - must have a trailing '/'
+ * We can use Objc here because we havn't hooked everything yet
  */
-EXPORT void ispy_init_logwriter(const char *iSpyDirectory) {
+EXPORT void ispy_init_logwriter(NSString *documents) {
+    NSError *error = nil;
 
-    NSLog(@"[iSpy][Logging] iSpyDirectory = %s", iSpyDirectory);
+    NSString *iSpyDirectory = [documents stringByAppendingPathComponent:@"/.ispy/"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:iSpyDirectory]) {
+        NSLog(@"Making directory at: %@", iSpyDirectory);
+        [[NSFileManager defaultManager] createDirectoryAtPath:iSpyDirectory
+            withIntermediateDirectories:NO
+            attributes:nil
+            error:&error];
+    }
+    if (error != nil) {
+        NSLog(@"[iSpy][ERROR] %@", error);
+    }
 
-    /* First we build the log directory, which will contain all of our log files */
-    unsigned int logDirectoryLength = strlen(iSpyDirectory) + strlen(LOG_SUBDIRECTORY);
-    char *logDirectory = (char *) malloc(logDirectoryLength + 1);
-    strncpy(logDirectory, iSpyDirectory, strlen(iSpyDirectory));
-    strncat(logDirectory, LOG_SUBDIRECTORY, strlen(LOG_SUBDIRECTORY));
-    logDirectory[logDirectoryLength + 1] = '\0';
-
-    NSLog(@"[iSpy][Logging] logDirectory = %s", logDirectory);
+    NSString *logsDirectory = [iSpyDirectory stringByAppendingPathComponent:@"/logs/"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:logsDirectory]) {
+        NSLog(@"Making directory at: %@", logsDirectory);
+        [[NSFileManager defaultManager] createDirectoryAtPath:logsDirectory
+            withIntermediateDirectories:NO
+            attributes:nil
+            error:&error];
+    }
+    if (error != nil) {
+        NSLog(@"[iSpy][ERROR] %@", error);
+    }
 
     /* Next we create each log file, and store the FD in an array */
     for(unsigned int index = 0; index < MAX_LOG; ++index) {
-        unsigned int filePathLength = strlen(logDirectory) + strlen(FACILITY_FILES[index]);
-        char *filePath = (char *) malloc(filePathLength + 1);
-        strncpy(filePath, logDirectory, strlen(logDirectory));
-        strncat(filePath, FACILITY_FILES[index], strlen(FACILITY_FILES[index]));
-        filePath[filePathLength + 1] = '\0';
-        logFiles[index] = open(filePath, O_WRONLY | O_CREAT);
-
-        NSLog(@"[iSpy][Logging] Create file -> %s", filePath);
+        NSString *fileName = [NSString stringWithFormat:@"%s", FACILITY_FILES[index]];
+        NSString *filePath = [NSString stringWithFormat:@"%@/%@", logsDirectory, fileName];
+        logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT);
+        NSLog(@"[iSpy][Logging] Create file -> %@", filePath);
 
     }
 
     /* Initialize GCD queue */
     logQueue = dispatch_queue_create("com.bishopfox.iSpy.logger", NULL);
+    logIsInitialized = YES;
 }
 
 /* Non-blocking logging calls */

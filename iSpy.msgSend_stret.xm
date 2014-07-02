@@ -160,7 +160,7 @@ namespace bf_msgSend_stret {
             
             // keep a local copy of the log in /tmp/bf_msgsend
             strcat(buf, "\n");
-            ispy_log_debug_msgSend(LOG_MSGSEND, buf);
+            ispy_log_info(LOG_MSGSEND, buf);
         }
         
         return;

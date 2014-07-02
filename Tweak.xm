@@ -1853,13 +1853,13 @@ EXPORT int return_true() {
 		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
 		return;
 	}
-	
+
 	NSString *appKey = [NSString stringWithFormat:@"targets_%@", [mySpy bundleId]];
 	if ( ! [[appPlist objectForKey:appKey] boolValue]) {
 		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
 		return;
 	}
-	
+
 	NSLog(@"iSpy: checking for running iSpy...");
 	// Test to see if iSpy is already loaded in another running app. Abandon ship if so.
 	/*NSError* error = nil;
@@ -1875,7 +1875,7 @@ EXPORT int return_true() {
 	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
 	NSLog(@"[iSpy] Showtime!");
 	NSLog(@"[iSpy] Initializing logwriter.");
-	bf_init_logwriter();
+	ispy_init_logwriter(".ispy");
 
 	NSLog(@"[iSpy] Done! Logging will continue in /tmp/bf_general.log");
 	ispy_log_debug(LOG_GENERAL, "================================================================");

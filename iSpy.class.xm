@@ -226,76 +226,9 @@ id *appClassWhiteList = NULL;
 	return bf_get_instance_tracking_state();
 }
 
-// Turn on objc_msgSend logging
--(void) msgSend_enableLogging {
-	bf_enable_msgSend_logging();
-}
-
-// Turn off objc_msgSend logging
--(void) msgSend_disableLogging {
-	bf_disable_msgSend_logging();
-}
-
-// Return true/false depending on whether or not objc_msgSend logging is on or off
--(BOOL) msgSend_getLoggingState {
-	return bf_get_msgSend_state();
-}
-
 // is the msgSend logging system ready to roll?
 -(BOOL) msgSend_isInitialized {
 	return bf_has_msgSend_initialized_yet();
-}
-
--(void) strace_enableLogging {
-	bf_set_log_state(true, LOG_STRACE);
-}
-
--(void) strace_disableLogging {
-	bf_set_log_state(false, LOG_STRACE);
-}
-
--(BOOL) strace_getLoggingState {
-	return bf_get_log_state(LOG_STRACE);
-}
-
--(void) http_enableLogging {
-	bf_set_log_state(true, LOG_HTTP);
-}
-
--(void) http_disableLogging {
-	bf_set_log_state(false, LOG_HTTP);
-}
-
--(void) tcpip_enableLogging {
-	bf_set_log_state(true, LOG_TCPIP);
-}
-
--(void) tcpip_disableLogging {
-	bf_set_log_state(false, LOG_TCPIP);
-}
-
--(void) log_setGeneralLogState:(BOOL)state {
-	bf_set_log_state(state, LOG_GENERAL);
-}
-
--(void) log_setStraceLogState:(BOOL)state {
-	bf_set_log_state(state, LOG_STRACE);
-}
-
--(void) log_setHTTPLogState:(BOOL)state {
-	bf_set_log_state(state, LOG_HTTP);
-}
-
--(void) log_setTCPIPLogState:(BOOL)state {
-	bf_set_log_state(state, LOG_TCPIP);
-}
-
--(void) log_setMsgSendLogState:(BOOL)state {
-	bf_set_log_state(state, LOG_MSGSEND);
-}
-
--(void) log_setLogState:(BOOL)state forLog:(int)facility {
-	bf_set_log_state(state, facility);   
 }
 
 -(NSDictionary *) getSymbolTable {
@@ -447,7 +380,7 @@ Returns a NSDictionary like this:
 		method_getArgumentType(method, k, tmpBuf, 255);
 	
 		if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
-			ispy_log_debug(LOG_GENERAL, "Out of mem");
+			ispy_log_fatal(LOG_GENERAL, "Out of mem");
 			break;
 		}
 

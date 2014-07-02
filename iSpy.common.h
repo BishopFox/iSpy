@@ -57,47 +57,43 @@ struct ctl_info {
 	char ctl_name[96]; /* Kernel Controller Name (a C string) */
 };
 
-/* Logging stuffs */
+/* iSpy Logging Stuffs */
 static const unsigned int LOG_STRACE   = 0;
 static const unsigned int LOG_MSGSEND  = 1;
 static const unsigned int LOG_GENERAL  = 2;
 static const unsigned int LOG_HTTP     = 3;
 static const unsigned int LOG_TCPIP    = 4;
+EXPORT void ispy_init_logwriter(const char *directory);
 EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...);
 
-
+/* Other */
 EXPORT OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result);
 EXPORT void bf_hook_msgSend();
 EXPORT void bf_hook_msgSend_stret();
 EXPORT void bf_enable_msgSend_stret();
 EXPORT void bf_disable_msgSend_stret();
-EXPORT void bf_set_msgSend_log_filename_stret(const char *fname);
+//EXPORT void bf_set_msgSend_log_filename_stret(const char *fname);
 EXPORT void bf_enable_msgSend();
 EXPORT void bf_disable_msgSend();
-EXPORT void bf_set_msgSend_log_filename(const char *fname);
+//EXPORT void bf_set_msgSend_log_filename(const char *fname);
 EXPORT int bf_get_msgSend_state();
 EXPORT void bf_init_substrate_replacement();
 EXPORT int return_false();
 EXPORT int return_true();
-EXPORT void bf_set_log_state(bool state, int facility);
-EXPORT int bf_get_log_fd(int facility);
 EXPORT id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 EXPORT bool bf_get_instance_tracking_state();
 EXPORT void bf_disable_instance_tracker();
 EXPORT void bf_enable_instance_tracker();
-EXPORT bool bf_get_log_state(int facility);
-EXPORT void bf_clear_log(int facility);
 EXPORT bool bf_msgSend_should_we_log_this_call(id Cls, SEL selector);
 EXPORT bool startWebServices();
 EXPORT NSDictionary *getNetworkInfo(void);
 EXPORT void update_msgSend_checklists(id *whiteListPtr, id *blackListPtr);
 EXPORT void update_msgSend_checklists_stret(id *whiteListPtr, id *blackListPtr);
 EXPORT bool bf_has_msgSend_initialized_yet();
-EXPORT void ispy_log_debug_msgSend(int facility, const char *msg, ...);
 EXPORT NSString *base64forData(NSData *theData);
 
 // These funcrions are a hacked-up way of using pure C code to send data down Web Sockets.

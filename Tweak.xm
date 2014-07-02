@@ -221,7 +221,7 @@ extern int (*orig_dup)(u_int fd);
 // The FILE pointers are used to deliver logs to the browser. 
 // Defined in iSpy.web.xm
 //
-extern FILE *logReadFP[MAX_LOG+1];
+
 
 static id *appClassWhiteList = NULL;
 int VERBOSE_LEVEL=1;
@@ -365,11 +365,11 @@ void bf_init_msgSend_logging() {
 	bf_hook_msgSend_stret();
 }
 
-// Turn on logging of calls to objc_msgSend (by default to  BF_LOGFILE "/tmp/iSpy.log". 
+// Turn on logging of calls to objc_msgSend (by default to  BF_LOGFILE "/tmp/iSpy.log".
 // You'll get one line per call, like this:
 //        -[className methodName:withParam:foo:bar]
 void bf_enable_msgSend_logging() {
-	ispy_log_debug(LOG_GENERAL, "[iSpy] turning on objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
+	ispy_log_debug(LOG_GENERAL, "[iSpy] turning on objc_msgSend() logging");
 	bf_enable_msgSend();
 	ispy_log_debug(LOG_GENERAL, "[iSpy] Turning on _stret, too");
 	bf_enable_msgSend_stret();
@@ -379,7 +379,7 @@ void bf_enable_msgSend_logging() {
 // Switch off logging. Calls to objc_msgSend will not be logged after this.
 // You can call bf_enable_msgSend_logging() again to re-enable logging.
 void bf_disable_msgSend_logging() {
-	ispy_log_debug(LOG_GENERAL, "[iSpy] turning off objc_msgSend() logging to %s", BF_LOGFILE_MSGSEND);
+	ispy_log_debug(LOG_GENERAL, "[iSpy] turning off objc_msgSend() logging");
 	bf_disable_msgSend();
 	bf_disable_msgSend_stret();
 }
@@ -1897,15 +1897,15 @@ EXPORT int return_true() {
 	// Replace MSMessageHookEx with the iSpy variant if configured to do so
 	if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
-		bf_init_substrate_replacement(); 
+		bf_init_substrate_replacement();
 	}
 
 	// If configured in the prefs panel on iOS, enable objc_msgSend logging at app startup.
 	// Call bf_disable_msgSend_logging() or [[iSpy sharedInstance] msgSend_disableLogging] or /api/whateveritis to turn it off.
 	// Or turn it off in the prefs panel. Or the web GUI.
 	if ([[plist objectForKey:@"settings_MsgSendLogging"] boolValue]) {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now! Check " BF_LOGFILE_MSGSEND " on your device.");
-		bf_enable_msgSend_logging(); 
+		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now!");
+		bf_enable_msgSend_logging();
 	} else {
 		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
 	}
@@ -1918,19 +1918,12 @@ EXPORT int return_true() {
 		ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
 	}
 
-	// open up the log files for read access by iSpy web clients
-	logReadFP[LOG_STRACE] = fopen(BF_LOGFILE_STRACE, "r");
-	logReadFP[LOG_GENERAL] = fopen(BF_LOGFILE_GENERAL, "r");
-	logReadFP[LOG_HTTP] = fopen(BF_LOGFILE_HTTP, "r");
-	logReadFP[LOG_MSGSEND] = fopen(BF_LOGFILE_MSGSEND, "r");
-	logReadFP[LOG_TCPIP] = fopen(BF_LOGFILE_TCPIP, "r");
-
 	// Load the objc_msgSend logging interface. This does NOT start logging objc_msgSend calls!
 	// The log is controlled with bf_enable_msgSend_logging() and bf_disable_msgSend_logging(),
-	// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging] 
+	// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging]
 	// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
 	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
-	bf_init_msgSend_logging();
+	// bf_init_msgSend_logging();
 
 	// Start the iSpy web server
 	%init(pre_init_group);
@@ -1946,8 +1939,8 @@ EXPORT int return_true() {
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
 	}
 
-	// Load our own custom Theos hooks.            
-	%init(bf_group);   
+	// Load our own custom Theos hooks.
+	%init(bf_group);
 
 	// Lastly, initialize objc_msgSend logging
 	bf_setup_msgSend_whitelist();
@@ -1982,8 +1975,6 @@ static bool bf_setup_msgSend_whitelist() {
     // allocate enough memory to store them all
     update_msgSend_checklists(appClassWhiteList, NULL);
     update_msgSend_checklists_stret(appClassWhiteList, NULL);
-    return true; 
+    return true;
 
 }
-
-

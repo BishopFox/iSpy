@@ -14,7 +14,6 @@
 #include <string.h>
 #include <dirent.h>
 #include <stdbool.h>
-#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -27,6 +26,7 @@
 #include <arpa/inet.h>
 #include <mach-o/dyld.h>
 #include <netinet/in.h>
+#include <dispatch/dispatch.h>
 #import  <Security/Security.h>
 #import  <Security/SecCertificate.h>
 #include <CFNetwork/CFNetwork.h>
@@ -43,17 +43,22 @@ static const unsigned int INFO    = 1;
 static const unsigned int WARNING = 2;
 static const unsigned int ERROR   = 3;
 static const unsigned int FATAL   = 4;
-static const char* STR_LEVELS[] = ["[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"];
+// static const char* STR_LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"};
+
+/*
+
+>>> These come from iSpy.common.h
 
 static const unsigned int LOG_STRACE   = 0;
 static const unsigned int LOG_MSGSEND  = 1;
 static const unsigned int LOG_GENERAL  = 2;
 static const unsigned int LOG_HTTP     = 3;
 static const unsigned int LOG_TCPIP    = 4;
+
+*/
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;	// this must be equal to the last number in the list of LOG_* numbers, above.
-static const char* FACILITY_FILES[] = ["strace.log", "msgsend.log", "general.log" "http.log", "tcpip.log", "global.log"];
-
+static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log" "http.log", "tcpip.log", "global.log"};
 static const char *LOG_SUBDIRECTORY = "/logs/";
 
 // If we use any hooked calls within the log writer, we must use the original (unhooked) versions.
@@ -63,24 +68,23 @@ static const char *LOG_SUBDIRECTORY = "/logs/";
 extern int (*orig_gettimeofday)(struct timeval *tp, void *tzp);
 extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
 
+/* Log file descriptors */
 static int logFiles[MAX_LOG + 1];
+static dispatch_queue_t logQueue;
 
+void ispy_log_write(int facility, int level, char *msg) {
 
-void (^log_write)(int) = ^(int facility, int level, const char *msg, va_list args) {
-
-    char *buf, *buf2, *p;
+    char *buf2, *p;
     unsigned int len;
     struct timeval tv;
 
     orig_gettimeofday(&tv, NULL);    // we use the original syscall so that we don't get a race when hooking this syscall
     time_t ticks = tv.tv_sec;
 
-    va_start(args, msg);
-    vasprintf(&buf, msg, args);
-    va_end(args);
-    len = strlen(buf) + 3 + strlen(ctime(&ticks));
+
+    len = strlen(msg) + 3 + strlen(ctime(&ticks));
     buf2 = (char *) malloc(len);
-    snprintf(buf2, len, "%s %s\n", ctime(&ticks), buf);
+    snprintf(buf2, len, "%s %s\n", ctime(&ticks), msg);
 
     // this is so dumb that we need to do this. Stupid ctime() puts a newline at the end of its string :-(
     p = buf2;
@@ -89,12 +93,9 @@ void (^log_write)(int) = ^(int facility, int level, const char *msg, va_list arg
     if(*p == '\n')
         *p=':';
 
-    switch(facility) {
-        case LOG:
-    }
     orig_write(logFiles[facility], buf2, len-1);    // use original syscall
 
-    free(buf);
+    free(msg);
     free(buf2);
 }
 
@@ -107,9 +108,9 @@ EXPORT void ispy_init_logwriter(const char *iSpyDirectory) {
 
     /* First we build the log directory, which will contain all of our log files */
     unsigned int logDirectoryLength = strlen(iSpyDirectory) + strlen(LOG_SUBDIRECTORY);
-    char *logDirectory = malloc(logDirectoryLength + 1);
+    char *logDirectory = (char *) malloc(logDirectoryLength + 1);
     strncpy(logDirectory, iSpyDirectory, strlen(iSpyDirectory));
-    strncat(logDirectory, FACILITY_FILES[index], strlen(FACILITY_FILES[index]));
+    strncat(logDirectory, LOG_SUBDIRECTORY, strlen(LOG_SUBDIRECTORY));
     logDirectory[logDirectoryLength + 1] = '\0';
 
     NSLog(@"[iSpy][Logging] logDirectory = %s", logDirectory);
@@ -121,35 +122,73 @@ EXPORT void ispy_init_logwriter(const char *iSpyDirectory) {
         strncpy(filePath, logDirectory, strlen(logDirectory));
         strncat(filePath, FACILITY_FILES[index], strlen(FACILITY_FILES[index]));
         filePath[filePathLength + 1] = '\0';
-        logFiles[facility] = open(filePath, O_WRONLY | O_CREAT);
+        logFiles[index] = open(filePath, O_WRONLY | O_CREAT);
 
         NSLog(@"[iSpy][Logging] Create file -> %s", filePath);
 
     }
+
+    /* Initialize GCD queue */
+    logQueue = dispatch_queue_create("com.bishopfox.iSpy.logger", NULL);
 }
 
 /* Non-blocking logging calls */
 EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...) {
+    char *msgBuffer;
     va_list args;
+    va_start(args, msg);
+    vasprintf(&msgBuffer, msg, args);
+    va_end(args);
 
+    dispatch_async(logQueue, ^{
+        ispy_log_write(facility, DEBUG, msgBuffer);
+    });
 }
 
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...) {
+    char *msgBuffer;
     va_list args;
+    va_start(args, msg);
+    vasprintf(&msgBuffer, msg, args);
+    va_end(args);
 
+    dispatch_async(logQueue, ^{
+        ispy_log_write(facility, INFO, msgBuffer);
+    });
 }
 
 EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...) {
+    char *msgBuffer;
     va_list args;
+    va_start(args, msg);
+    vasprintf(&msgBuffer, msg, args);
+    va_end(args);
 
+    dispatch_async(logQueue, ^{
+        ispy_log_write(facility, WARNING, msgBuffer);
+    });
 }
 
 EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...) {
+    char *msgBuffer;
     va_list args;
+    va_start(args, msg);
+    vasprintf(&msgBuffer, msg, args);
+    va_end(args);
 
+    dispatch_async(logQueue, ^{
+        ispy_log_write(facility, ERROR, msgBuffer);
+    });
 }
 
 EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...) {
+    char *msgBuffer;
     va_list args;
+    va_start(args, msg);
+    vasprintf(&msgBuffer, msg, args);
+    va_end(args);
 
+    dispatch_async(logQueue, ^{
+        ispy_log_write(facility, FATAL, msgBuffer);
+    });
 }

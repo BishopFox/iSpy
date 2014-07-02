@@ -24,12 +24,6 @@
 #define SYSPROTO_CONTROL       	2	/* kernel control protocol */
 #define AF_SYS_CONTROL		2	/* corresponding sub address type */
 
-static const unsigned int LOG_STRACE   = 0;
-static const unsigned int LOG_MSGSEND  = 1;
-static const unsigned int LOG_GENERAL  = 2;
-static const unsigned int LOG_HTTP     = 3;
-static const unsigned int LOG_TCPIP    = 4;
-
 /* 
  This where the all the preferences end up, from the 'Settings' app
  The dictionary keys, and ui are defined in layout/Library/PreferenceLoader/Preferences/iSpy.plist
@@ -63,6 +57,19 @@ struct ctl_info {
 	char ctl_name[96]; /* Kernel Controller Name (a C string) */
 };
 
+/* Logging stuffs */
+static const unsigned int LOG_STRACE   = 0;
+static const unsigned int LOG_MSGSEND  = 1;
+static const unsigned int LOG_GENERAL  = 2;
+static const unsigned int LOG_HTTP     = 3;
+static const unsigned int LOG_TCPIP    = 4;
+EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...);
+EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...);
+EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...);
+EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...);
+EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...);
+
+
 EXPORT OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result);
 EXPORT void bf_hook_msgSend();
 EXPORT void bf_hook_msgSend_stret();
@@ -73,8 +80,6 @@ EXPORT void bf_enable_msgSend();
 EXPORT void bf_disable_msgSend();
 EXPORT void bf_set_msgSend_log_filename(const char *fname);
 EXPORT int bf_get_msgSend_state();
-EXPORT void bf_init_logwriter();
-EXPORT void ispy_log_debug(int facility, const char *msg, ...);
 EXPORT void bf_init_substrate_replacement();
 EXPORT int return_false();
 EXPORT int return_true();

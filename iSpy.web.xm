@@ -46,8 +46,6 @@
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
-FILE *logReadFP[MAX_LOG+1];
-
 NSString *templatesPath = @"/var/www/iSpy/templates";   // Path to the Mustache HTML templates
 GRMustacheTemplateRepository *templatesRepo;                // Template repository class
 static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection is (was) a private struct in HTTPKit
@@ -109,7 +107,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     BOOL ret;
     
     ret = [[self http] listenOnPort:WEBSERVER_PORT onError:^(id reason) {
-        ispy_log_debug(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
+        ispy_log_error(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
     }];
     if(!ret) {
         return ret;
@@ -120,7 +118,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     // Setup the HTTP endpoint handlers
     [[self wsISpy] listenOnPort:31338 onError:^(id reason) {
-        NSLog(@"[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
+        ispy_log_error(LOG_GENERAL, "[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
     }];
 
     [[self wsISpy] handleWebSocket:^id (HTTPConnection *connection) {
@@ -457,119 +455,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 content = [[[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding] autorelease];
             }
 
-            /*
-             /api/strace/readlog
-             Returns any unread log entires.
-             For this we need our own dedicated filehandles for reading the logs. This way we keep track of
-             our location independent of where the log writer is. 
-             Arbitrarily truncates lines at 1024 characters.
-             Uses very simplistic locking to prevent readlog racing with readentirelog.
-            */
-            else if([args containsString:@"strace/readlog"]) {
-                char buf[1026];
-                NSMutableString *mString;
-                long oldpos;
-
-                if(![self straceReadLock]) {
-                    [self setStraceReadLock:1];
-                    mString = [[NSMutableString alloc] init];
-                    oldpos = ftell(logReadFP[LOG_STRACE]);
-                    fclose(logReadFP[LOG_STRACE]);
-                    logReadFP[LOG_STRACE] = fopen(BF_LOGFILE_STRACE, "r");
-                    fseek(logReadFP[LOG_STRACE], oldpos, SEEK_SET);
-                    while(!feof(logReadFP[LOG_STRACE])) {
-                        if(!fgets(buf, 1024, logReadFP[LOG_STRACE]))
-                            break;
-                        [mString appendString:[NSString stringWithUTF8String:buf]];
-                    }
-                    content = [[NSString alloc] initWithString:mString];
-                    [self setStraceReadLock:0];
-                }
-            }
-
-            /*
-             /api/msgSend/readlog
-             Returns any unread log entires for objc_msgSend logging.
-             For this we need our own dedicated filehandles for reading the logs. This way we keep track of
-             our location independent of where the log writer is. 
-             Arbitrarily truncates lines at 1024 characters.
-             Uses very simplistic locking to prevent readlog conflicting with readentirelog.
-            */
-            else if([args containsString:@"msgSend/readlog"]) {
-                char buf[1026];
-                char prevLine[1026]="\0";
-                int lineCount;
-                NSMutableString *mString;
-                long oldpos;
-
-                if(![self msgSendReadLock]) {
-                    [self setMsgSendReadLock:1];
-                    lineCount=0;
-                    mString = [[NSMutableString alloc] init];
-                    oldpos = ftell(logReadFP[LOG_MSGSEND]); // save position in file
-                    logReadFP[LOG_MSGSEND] = freopen(BF_LOGFILE_MSGSEND, "r", logReadFP[LOG_MSGSEND]); // reopen to take account of any new entries
-                    fseek(logReadFP[LOG_MSGSEND], oldpos, SEEK_SET); // restore position in file
-
-                    [mString appendString:@"{\"logs\":["];
-                    // read new entries
-                    while(!feof(logReadFP[LOG_MSGSEND])) {
-                        if(!fgets(buf, 1024, logReadFP[LOG_MSGSEND])) // 1024 characters is an arbitrary line length limit
-                            break;
-                        //buf[strlen(buf)-1] = ',';
-                        if(strcmp(prevLine, buf) != 0) {
-                            if(lineCount) {
-                                //[mString appendString:[NSString stringWithFormat:@"Last line repeated %d times\n", lineCount]];
-                                lineCount=0;
-                            }
-                            strcpy(prevLine, buf);
-                            [mString appendString:[NSString stringWithUTF8String:buf]];
-                        } else {
-                            lineCount++;
-                        }
-                    }
-                    [mString appendString:@"[]]}"];
-                    content = [[NSString alloc] initWithString:mString];
-                    [self setMsgSendReadLock:0];
-                }
-            }
-
-            // Reads the general iSpy log.
-            else if([args containsString:@"general/readlog"]) {
-                char buf[1026];
-                NSMutableString *mString = [[NSMutableString alloc] init];
-                long oldpos;
-
-                NSLog(@"[iSpy] Reading logfile... %d", [self generalReadLock]);
-
-                if(![self generalReadLock]) {
-                    [self setGeneralReadLock:1];
-                    oldpos = ftell(logReadFP[LOG_GENERAL]);
-                    fclose(logReadFP[LOG_GENERAL]);
-                    logReadFP[LOG_GENERAL] = fopen(BF_LOGFILE_GENERAL, "r");
-                    fseek(logReadFP[LOG_GENERAL], oldpos, SEEK_SET);
-                    while(!feof(logReadFP[LOG_GENERAL])) {
-                        if(!fgets(buf, 1024, logReadFP[LOG_GENERAL]))
-                            break;
-                        [mString appendString:[NSString stringWithCString:buf encoding:NSUTF8StringEncoding]];
-                    }
-                    content = [mString copy];
-                    [self setGeneralReadLock:0];
-                }
-                NSLog(@"[iSpy] done reading logfile");
-            }
-
-            // The user can elect to reload an entire log from the beginning
-            else if([args containsString:@"general/readentirelog"]) {
-                rewind(logReadFP[LOG_GENERAL]);
-            }
-            else if([args containsString:@"strace/readentirelog"]) {
-                rewind(logReadFP[LOG_STRACE]);
-            }
-            else if([args containsString:@"msgSend/readentirelog"]) {
-                rewind(logReadFP[LOG_MSGSEND]);
-            }
-
-
             // return the content to the caller
             return content;
     }];
@@ -679,26 +564,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
             }
 
-            /*
-                /api/msgSend/clearLog
-                Does what it says on the tin.
-            */
-            else if([args containsString:@"msgSend/clearLog"]) {
-                fclose(logReadFP[LOG_MSGSEND]);
-                bf_clear_log(LOG_MSGSEND);
-                logReadFP[LOG_MSGSEND] = fopen(BF_LOGFILE_MSGSEND, "r");
-            }
-
-            /*
-                /api/strace/clearLog
-                Does what it says on the tin.
-            */
-            else if([args containsString:@"strace/clearLog"]) {
-                fclose(logReadFP[LOG_MSGSEND]);
-                bf_clear_log(LOG_MSGSEND);
-                logReadFP[LOG_MSGSEND] = fopen(BF_LOGFILE_MSGSEND, "r");
-            }
-
             return content;
     }];
 
@@ -708,7 +573,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return [self renderStaticTemplate:@"404"];
     }];
 
-    ispy_log_debug(LOG_GENERAL, "[iSpy] Started HTTP server on http://YOURDEVICE:%d/", WEBSERVER_PORT);
+    ispy_log_info(LOG_GENERAL, "[iSpy] Started HTTP server on http://YOURDEVICE:%d/", WEBSERVER_PORT);
     return true;
 }
 

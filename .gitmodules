@@ -19,6 +19,3 @@
 [submodule "theosfork"]
 	path = theos
 	url = https://github.com/moloch--/theos
-[submodule "couchbase-lite-ios"]
-	path = couchbase-lite-ios
-	url = https://github.com/couchbase/couchbase-lite-ios.git

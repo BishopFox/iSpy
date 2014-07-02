@@ -8,8 +8,8 @@
 #import <Foundation/Foundation.h>
 #import "HCAppDelegate.h"
 
-#import "CouchbaseLite/CouchbaseLite.h"
-#import "CouchbaseLite/CBLDocument.h"
+#import "couchbase-lite-ios/Source/API/CouchbaseLite.h"
+#import "couchbase-lite-ios/Source/API/CBLDocument.h"
 
 @interface HCAppDelegate ()
 
@@ -28,18 +28,8 @@
 
 @implementation HCAppDelegate
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (BOOL)startup
 {
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    
-    // Override point for customization after application launch.
-    self.window.backgroundColor = [UIColor whiteColor];
-    [self.window makeKeyAndVisible];
-    
-    // create a view controller so the app doesn't complain about not having one
-    // (we are not doing a UI here, so we don't really need one)
-    self.window.rootViewController = [[UIViewController alloc] init];
-    
     // create a shared instance of CBLManager
     if (![self createTheManager]) return NO;
     
@@ -48,37 +38,8 @@
     NSLog (@"This Hello Couchbase Lite run was a %@!", (result ? @"total success" : @"dismal failure"));
     
     return YES;
-    
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application
-{
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
-}
-
-- (void)applicationDidEnterBackground:(UIApplication *)application
-{
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-}
-
-- (void)applicationWillEnterForeground:(UIApplication *)application
-{
-    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-}
-
-- (void)applicationDidBecomeActive:(UIApplication *)application
-{
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application
-{
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-}
-
-#pragma mark Main Method
 
 /*
 The sayHello method controls the tutorial app. It first creates a manager and a database
@@ -147,7 +108,7 @@ updating the document, and deleting the document.
     }
     
     // log the database location
-    NSString *databaseLocation = [[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByAppendingString: @"/Library/Application Support/CouchbaseLite"];
+    NSString *databaseLocation = @"CouchbaseLite"];
     NSLog(@"Database %@ created at %@", dbname, [NSString stringWithFormat:@"%@/%@%@", databaseLocation, dbname, @".cblite"]);
     
     return YES;
@@ -254,3 +215,9 @@ updating the document, and deleting the document.
 }
 
 @end
+
+int main() {
+    HCAppDelegate *h = [[HCAppDelegate alloc] init];
+    [h startup];
+
+}

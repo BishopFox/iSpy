@@ -60,7 +60,6 @@
 -(id)instance_dumpInstanceAtAddress:(NSString *)addr;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
--(BOOL) msgSend_isInitialized;
 -(BOOL) msgSend_getLoggingState;
 -(void) strace_enableLogging;
 -(void) strace_disableLogging;

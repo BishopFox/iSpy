@@ -45,6 +45,7 @@
 #include "hooks_CoreFoundation.h"
 #include "HTTPKit/HTTP.h"
 #import  "GRMustache/include/GRMustache.h"
+#include "iSpy.msgSend.whitelist.h"
 
 // This will become a linked list of pointers to instantiated classes
 //id (*orig_class_createInstance)(Class cls, size_t extraBytes);
@@ -223,10 +224,7 @@ extern int (*orig_dup)(u_int fd);
 //
 extern FILE *logReadFP[MAX_LOG+1];
 
-static id *appClassWhiteList = NULL;
-int VERBOSE_LEVEL=1;
 
-static bool bf_setup_msgSend_whitelist();
 
 
 /*************************************************************
@@ -1949,41 +1947,12 @@ EXPORT int return_true() {
 	// Load our own custom Theos hooks.            
 	%init(bf_group);   
 
-	// Lastly, initialize objc_msgSend logging
-	bf_setup_msgSend_whitelist();
+	// Lastly, initialize objc_msgSend logging whitelist
+	bf_objc_msgSend_whitelist_startup();
+
 	[plist release];
 	[appPlist release];
 	bf_logwrite(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
-}
-
-static bool bf_setup_msgSend_whitelist() {
-    int i, numClasses;
-    
-    NSArray *classes = [[iSpy sharedInstance] classes];
-	numClasses = [classes count];
-
-    // allocate enough memory to store them all
-    appClassWhiteList = (id *)malloc(sizeof(id) * (numClasses+1));
-    
-    // Iterate through all the class names, adding each one to our lookup table
-    for(i = 0; i < numClasses; i++) {
-    	NSString *name = [classes objectAtIndex:i];
-        appClassWhiteList[i] = objc_getClass([name UTF8String]);
-        bf_logwrite(LOG_GENERAL, "[Whitelist] adding %s (%p)", [name UTF8String], appClassWhiteList[i]);
-    }
-    appClassWhiteList[i] = (id)0;
-
-    bf_logwrite(LOG_GENERAL, "[whitelist] Added %d classes to the whitelist. All done!", i);
-    
-    // Trigger the "everything worked" callback into the objc_msgSend logging code.
-    // We pass a pointer to the static array of whitelisted classes initialized above; these are the classes
-    // that will be logged by the objc_msgSend logger.
-
-    // allocate enough memory to store them all
-    update_msgSend_checklists(appClassWhiteList, NULL);
-    update_msgSend_checklists_stret(appClassWhiteList, NULL);
-    return true; 
-
 }
 
 

@@ -51,14 +51,13 @@
 #include <stdbool.h>
 #include <objc/objc.h>
 #include "iSpy.common.h"
+#include "iSpy.msgSend.whitelist.h"
 #include <stack>
 #include <pthread.h>
 
 namespace bf_msgSend {  
 
     id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
-    static id *appClassWhiteList = NULL;
-    static bool appClassWhiteListIsReady = false;    
     static pthread_once_t key_once = PTHREAD_ONCE_INIT;
     static pthread_key_t thr_key;
     static pthread_mutex_t mutex_objc_msgSend = PTHREAD_MUTEX_INITIALIZER;
@@ -67,36 +66,8 @@ namespace bf_msgSend {
     USED static void *original_objc_msgSend __asm__("_original_objc_msgSend");
     __attribute__((used)) __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
 
-    extern "C" int is_object_from_app_bundle(id Cls, SEL selector) {
-        int j = 0; 
-        
-        // don't do shit if we ain't ready
-        if( ! appClassWhiteListIsReady )
-            return false;
-        if( ! appClassWhiteList)
-            return false;
-        if(!Cls || !selector)
-            return false;
-
-        while(appClassWhiteList[j]) {
-            id theClass = nil;
-
-            if(appClassWhiteList[j] == Cls->isa) { // Class method?
-                theClass = Cls->isa;
-                if(class_getClassMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            } else if(appClassWhiteList[j] == Cls->isa->isa) { // Instance method?
-                theClass = Cls->isa->isa;
-                if(class_getInstanceMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            }
-            j++;
-        }
-        return false;
+    extern "C" int is_this_method_on_whitelist(id Cls, SEL selector) {
+        return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
     }
 
     static void lr_list_destructor(void* value) {
@@ -202,19 +173,6 @@ namespace bf_msgSend {
         orig_objc_msgSend = (id (*)(id, SEL, ...))original_objc_msgSend;
     }
 
-    // This is a callback function designed to toggle the "ready-to-rock-n-roll" flag.
-    // We can also use it to update the whitelist/blacklist of methods we want to monitor. 
-    EXPORT void update_msgSend_checklists(id *whiteListPtr, id *blackListPtr) {
-        bf_logwrite(LOG_MSGSEND, "[update_msgSend_checklists] Whistlist @ %p", whiteListPtr);
-        appClassWhiteListIsReady = false;
-        appClassWhiteList = whiteListPtr;   // We can update our whitelist as often as we want, just by flipping this pointer.
-        appClassWhiteListIsReady = true;    
-    }
-
-    EXPORT bool bf_has_msgSend_initialized_yet() {
-        return appClassWhiteListIsReady;
-    }
-
 // This is ripped from Subjective-C and bastardized like a mofo.
 #pragma mark _replaced_objc_msgSend (ARM)
     __asm__ (".arm\n"
@@ -230,7 +188,7 @@ namespace bf_msgSend {
 
                 // is this method on the whitelist?
                 "push {r0-r11,lr}\n"
-                "bl _is_object_from_app_bundle\n"
+                "bl _is_this_method_on_whitelist\n"
                 "mov r12, r0\n" 
                 "pop {r0-r11,lr}\n"
                 "teq r12, #0\n"

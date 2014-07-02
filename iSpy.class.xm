@@ -241,11 +241,6 @@ id *appClassWhiteList = NULL;
 	return bf_get_msgSend_state();
 }
 
-// is the msgSend logging system ready to roll?
--(BOOL) msgSend_isInitialized {
-	return bf_has_msgSend_initialized_yet();
-}
-
 -(void) strace_enableLogging {
 	bf_set_log_state(true, LOG_STRACE);
 }

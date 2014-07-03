@@ -44,7 +44,7 @@ static const unsigned int INFO    = 1;
 static const unsigned int WARNING = 2;
 static const unsigned int ERROR   = 3;
 static const unsigned int FATAL   = 4;
-static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"};
+static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[WTF]"};
 
 /*
 >>> These come from iSpy.common.h

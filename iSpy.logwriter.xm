@@ -43,7 +43,7 @@ static const unsigned int DEBUG   = 0;
 static const unsigned int INFO    = 1;
 static const unsigned int WARNING = 2;
 static const unsigned int ERROR   = 3;
-static const unsigned int FATAL   = 4;
+static const unsigned int WTF   = 4;
 static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[WTF]"};
 
 /*
@@ -218,7 +218,7 @@ EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...) {
 }
 
 /* We always log fatal */
-EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...) {
+EXPORT void ispy_log_wtf(unsigned int facility, const char *msg, ...) {
     char *msgBuffer;
     va_list args;
     va_start(args, msg);
@@ -226,6 +226,6 @@ EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...) {
     va_end(args);
 
     dispatch_async(logQueue, ^{
-        ispy_log_write(facility, FATAL, msgBuffer);
+        ispy_log_write(facility, WTF, msgBuffer);
     });
 }

@@ -373,7 +373,7 @@ Returns a NSDictionary like this:
 		method_getArgumentType(method, k, tmpBuf, 255);
 	
 		if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
-			ispy_log_fatal(LOG_GENERAL, "Out of mem");
+			ispy_log_wtf(LOG_GENERAL, "Out of mem?");
 			break;
 		}
 

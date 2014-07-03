@@ -68,7 +68,7 @@ EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...);
-EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...);
+EXPORT void ispy_log_wtf(unsigned int facility, const char *msg, ...);
 
 /* Other */
 EXPORT OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result);

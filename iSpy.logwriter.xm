@@ -1,7 +1,8 @@
 /*
     iSpy - Bishop Fox iOS hooking framework.
 
-    Crappy logging framework. More complex version TBD.
+    Async logging framework.
+    Logs are written to <app>/Documents/.ispy/logs/<facility>.log
 
  */
 
@@ -43,7 +44,7 @@ static const unsigned int INFO    = 1;
 static const unsigned int WARNING = 2;
 static const unsigned int ERROR   = 3;
 static const unsigned int FATAL   = 4;
-// static const char* STR_LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"};
+static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"};
 
 /*
 
@@ -73,71 +74,83 @@ static int logFiles[MAX_LOG + 1];
 static dispatch_queue_t logQueue;
 static BOOL logIsInitialized = NO;
 
-void ispy_log_write(int facility, int level, char *msg) {
 
-    char *buf2, *p;
-    unsigned int len;
+/*
+  This function is dispatched to GCD for execution
+ */
+void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
+
+    char *line, *p;
+    unsigned int lineLength;
     struct timeval tv;
 
     orig_gettimeofday(&tv, NULL);    // we use the original syscall so that we don't get a race when hooking this syscall
     time_t ticks = tv.tv_sec;
 
+    lineLength = strlen(LEVELS[level]) + strlen(msg) + 5 + strlen(ctime(&ticks));
+    line = (char *) malloc(lineLength);
 
-    len = strlen(msg) + 3 + strlen(ctime(&ticks));
-    buf2 = (char *) malloc(len);
-    snprintf(buf2, len, "%s %s\n", ctime(&ticks), msg);
+    /* The closing ] is added to the ctime string below */
+    snprintf(line, lineLength, "%s[%s %s\n", LEVELS[level], ctime(&ticks), msg);
 
     // this is so dumb that we need to do this. Stupid ctime() puts a newline at the end of its string :-(
-    p = buf2;
+    p = line;
     while(*p && *p != '\n')
         p++;
     if(*p == '\n')
-        *p=':';
+        *p=']';
 
-    orig_write(logFiles[facility], buf2, len-1);    // use original syscall
+    /* Make sure to use the un-hooked write() */
+    orig_write(logFiles[facility], line, lineLength - 1);
+    orig_write(logFiles[LOG_GLOBAL], line, lineLength - 1);
 
     free(msg);
-    free(buf2);
+    free(line);
 }
 
 /*
  * We can use Objc here because we havn't hooked everything yet
  */
 EXPORT void ispy_init_logwriter(NSString *documents) {
-    NSError *error = nil;
+    if (!logIsInitialized) {
 
-    NSString *iSpyDirectory = [documents stringByAppendingPathComponent:@"/.ispy/"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:iSpyDirectory]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:iSpyDirectory
-            withIntermediateDirectories:NO
-            attributes:nil
-            error:&error];
-    }
-    if (error != nil) {
-        NSLog(@"[iSpy][ERROR] %@", error);
-    }
+        NSError *error = nil;
 
-    NSString *logsDirectory = [iSpyDirectory stringByAppendingPathComponent:@"/logs/"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:logsDirectory]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:logsDirectory
-            withIntermediateDirectories:NO
-            attributes:nil
-            error:&error];
-    }
-    if (error != nil) {
-        NSLog(@"[iSpy][ERROR] %@", error);
-    }
+        /* Check to see if our home directory exists, and create it if not */
+        NSString *iSpyDirectory = [documents stringByAppendingPathComponent:@"/.ispy/"];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:iSpyDirectory]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:iSpyDirectory
+                withIntermediateDirectories:NO
+                attributes:nil
+                error:&error];
+        }
+        if (error != nil) {
+            NSLog(@"[iSpy][ERROR] %@", error);
+        }
 
-    /* Next we create each log file, and store the FD in an array */
-    for(unsigned int index = 0; index < MAX_LOG; ++index) {
-        NSString *fileName = [NSString stringWithFormat:@"%s", FACILITY_FILES[index]];
-        NSString *filePath = [NSString stringWithFormat:@"%@/%@", logsDirectory, fileName];
-        logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT);
-    }
+        /* Check to see if the ~/logs/ directory exists, and create it if not */
+        NSString *logsDirectory = [iSpyDirectory stringByAppendingPathComponent:@"/logs/"];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:logsDirectory]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:logsDirectory
+                withIntermediateDirectories:NO
+                attributes:nil
+                error:&error];
+        }
+        if (error != nil) {
+            NSLog(@"[iSpy][ERROR] %@", error);
+        }
 
-    /* Initialize GCD queue */
-    logQueue = dispatch_queue_create("com.bishopfox.iSpy.logger", NULL);
-    logIsInitialized = YES;
+        /* Next we create each log file, and store the FD in the static fileLogs array */
+        for(unsigned int index = 0; index <= MAX_LOG; ++index) {
+            NSString *fileName = [NSString stringWithFormat:@"%s", FACILITY_FILES[index]];
+            NSString *filePath = [NSString stringWithFormat:@"%@/%@", logsDirectory, fileName];
+            logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT);
+        }
+
+        /* Initialize GCD serial queue */
+        logQueue = dispatch_queue_create("com.bishopfox.iSpy.logger", NULL);
+        logIsInitialized = YES;
+    }
 }
 
 /* Non-blocking logging calls */

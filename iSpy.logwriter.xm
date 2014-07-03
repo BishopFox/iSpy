@@ -144,7 +144,11 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
         for(unsigned int index = 0; index <= MAX_LOG; ++index) {
             NSString *fileName = [NSString stringWithFormat:@"%s", FACILITY_FILES[index]];
             NSString *filePath = [NSString stringWithFormat:@"%@/%@", logsDirectory, fileName];
-            logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT);
+            if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+                logFiles[index] = open([filePath UTF8String], O_WRONLY | O_APPEND);
+            } else {
+                logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT, 644);
+            }
         }
 
         /* Initialize GCD serial queue */

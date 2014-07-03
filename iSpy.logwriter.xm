@@ -47,19 +47,24 @@ static const unsigned int FATAL   = 4;
 static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[FATAL]"};
 
 /*
-
 >>> These come from iSpy.common.h
-
 static const unsigned int LOG_STRACE   = 0;
 static const unsigned int LOG_MSGSEND  = 1;
 static const unsigned int LOG_GENERAL  = 2;
 static const unsigned int LOG_HTTP     = 3;
 static const unsigned int LOG_TCPIP    = 4;
-
 */
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
 static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log"};
+static const int LOG_UMASK = 644;
+static int logFiles[MAX_LOG + 1];
+static BOOL logIsInitialized = NO;
+static unsigned int minLogLevel = DEBUG;
+
+static dispatch_queue_t logQueue;
+static const char *LOG_QUEUE = "com.bishopfox.iSpy.logger";
+
 
 // If we use any hooked calls within the log writer, we must use the original (unhooked) versions.
 // Simply declare them extern and copy from hook_C_system_calls.xm
@@ -67,16 +72,9 @@ static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log
 // See the following functions in hook_C_system_calls.xm for examples.
 extern int (*orig_gettimeofday)(struct timeval *tp, void *tzp);
 extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
-extern int (*orig_mkdir)(const char * path, int mode);
-
-/* Log file descriptors */
-static int logFiles[MAX_LOG + 1];
-static dispatch_queue_t logQueue;
-static BOOL logIsInitialized = NO;
-
 
 /*
-  This function is dispatched to GCD for execution
+ * This function is dispatched to GCD for execution
  */
 void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
 
@@ -87,18 +85,19 @@ void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
     orig_gettimeofday(&tv, NULL);    // we use the original syscall so that we don't get a race when hooking this syscall
     time_t ticks = tv.tv_sec;
 
-    lineLength = strlen(LEVELS[level]) + strlen(msg) + 5 + strlen(ctime(&ticks));
+    /* Don't forget the extra chars for formatting! */
+    lineLength = strlen(LEVELS[level]) + strlen(msg) + strlen(ctime(&ticks)) + 5;
     line = (char *) malloc(lineLength);
 
     /* The closing ] is added to the ctime string below */
-    snprintf(line, lineLength, "%s[%s %s\n", LEVELS[level], ctime(&ticks), msg);
+    snprintf(line, lineLength, "%s [%s %s\n", LEVELS[level], ctime(&ticks), msg);
 
     // this is so dumb that we need to do this. Stupid ctime() puts a newline at the end of its string :-(
     p = line;
     while(*p && *p != '\n')
         p++;
     if(*p == '\n')
-        *p=']';
+        *p = ']';
 
     /* Make sure to use the un-hooked write() */
     orig_write(logFiles[facility], line, lineLength - 1);
@@ -147,65 +146,74 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
             if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
                 logFiles[index] = open([filePath UTF8String], O_WRONLY | O_APPEND);
             } else {
-                logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT, 644);
+                logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT, LOG_UMASK);
             }
         }
 
         /* Initialize GCD serial queue */
-        logQueue = dispatch_queue_create("com.bishopfox.iSpy.logger", NULL);
+        logQueue = dispatch_queue_create(LOG_QUEUE, NULL);
         logIsInitialized = YES;
     }
 }
 
 /* Non-blocking logging calls */
 EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...) {
-    char *msgBuffer;
-    va_list args;
-    va_start(args, msg);
-    vasprintf(&msgBuffer, msg, args);
-    va_end(args);
+    if (minLogLevel <= DEBUG) {
+        char *msgBuffer;
+        va_list args;
+        va_start(args, msg);
+        vasprintf(&msgBuffer, msg, args);
+        va_end(args);
 
-    dispatch_async(logQueue, ^{
-        ispy_log_write(facility, DEBUG, msgBuffer);
-    });
+        dispatch_async(logQueue, ^{
+            ispy_log_write(facility, DEBUG, msgBuffer);
+        });
+    }
 }
 
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...) {
-    char *msgBuffer;
-    va_list args;
-    va_start(args, msg);
-    vasprintf(&msgBuffer, msg, args);
-    va_end(args);
+    if (minLogLevel <= INFO) {
+        char *msgBuffer;
+        va_list args;
+        va_start(args, msg);
+        vasprintf(&msgBuffer, msg, args);
+        va_end(args);
 
-    dispatch_async(logQueue, ^{
-        ispy_log_write(facility, INFO, msgBuffer);
-    });
+        dispatch_async(logQueue, ^{
+            ispy_log_write(facility, INFO, msgBuffer);
+        });
+    }
 }
 
 EXPORT void ispy_log_warning(unsigned int facility, const char *msg, ...) {
-    char *msgBuffer;
-    va_list args;
-    va_start(args, msg);
-    vasprintf(&msgBuffer, msg, args);
-    va_end(args);
+    if (minLogLevel <= WARNING) {
+        char *msgBuffer;
+        va_list args;
+        va_start(args, msg);
+        vasprintf(&msgBuffer, msg, args);
+        va_end(args);
 
-    dispatch_async(logQueue, ^{
-        ispy_log_write(facility, WARNING, msgBuffer);
-    });
+        dispatch_async(logQueue, ^{
+            ispy_log_write(facility, WARNING, msgBuffer);
+        });
+    }
 }
 
 EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...) {
-    char *msgBuffer;
-    va_list args;
-    va_start(args, msg);
-    vasprintf(&msgBuffer, msg, args);
-    va_end(args);
+    if (minLogLevel <= ERROR) {
+        char *msgBuffer;
+        va_list args;
+        va_start(args, msg);
+        vasprintf(&msgBuffer, msg, args);
+        va_end(args);
 
-    dispatch_async(logQueue, ^{
-        ispy_log_write(facility, ERROR, msgBuffer);
-    });
+        dispatch_async(logQueue, ^{
+            ispy_log_write(facility, ERROR, msgBuffer);
+        });
+    }
 }
 
+/* We always log fatal */
 EXPORT void ispy_log_fatal(unsigned int facility, const char *msg, ...) {
     char *msgBuffer;
     va_list args;

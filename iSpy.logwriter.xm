@@ -78,6 +78,10 @@ extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
  */
 void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
 
+    if (MAX_LOG < facility) {
+        facility = LOG_GENERAL;
+    }
+
     char *line, *p;
     unsigned int lineLength;
     struct timeval tv;

@@ -22,9 +22,6 @@
 @property (assign) HTTP *wsFile;
 @property (assign) HTTP *wsInstance;
 @property (assign) HTTP *wsISpy;
-@property (assign) int straceReadLock;
-@property (assign) int msgSendReadLock;
-@property (assign) int generalReadLock;
 
 -(NSString *)renderStaticTemplate:(NSString *)tpl;
 -(NSDictionary *) getNetworkInfo;
@@ -44,8 +41,6 @@
 @property (assign) char *bundle;
 @property (assign) NSString *bundleId;
 @property (assign) BOOL isInstanceTrackingEnabled;
-@property (assign) BOOL isMsgSendTrackingEnabled;
-@property (assign) BOOL isStraceTrackingEnabled;
 @property (assign) NSMutableDictionary *trackedInstances;
 
 +(id)sharedInstance;

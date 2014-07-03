@@ -1860,7 +1860,7 @@ EXPORT int return_true() {
 		return;
 	}
 
-	NSLog(@"iSpy: checking for running iSpy...");
+	//NSLog(@"iSpy: checking for running iSpy...");
 	// Test to see if iSpy is already loaded in another running app. Abandon ship if so.
 	/*NSError* error = nil;
 	NSURL *bfURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%d/ping", WEBSERVER_PORT]];
@@ -1873,13 +1873,12 @@ EXPORT int return_true() {
 
 	// Initialize the BF log writing system
 	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
-
-
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
 	ispy_init_logwriter(documentsDirectory);
 
+	/* After this point you should not be calling NSLog! */
 	ispy_log_debug(LOG_GENERAL, "================================================================");
 	ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
 	ispy_log_debug(LOG_GENERAL, "================================================================");

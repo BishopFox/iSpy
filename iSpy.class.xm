@@ -114,8 +114,6 @@ id *appClassWhiteList = NULL;
 		[sharedInstance setGlobalStatusStr:@""];
 		[sharedInstance setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
 		[sharedInstance setIsInstanceTrackingEnabled: NO];
-		[sharedInstance setIsMsgSendTrackingEnabled: NO];
-		[sharedInstance setIsStraceTrackingEnabled: NO];
 		sharedInstance->_trackedInstances = [[NSMutableDictionary alloc] init];
 	});
 	
@@ -224,11 +222,6 @@ id *appClassWhiteList = NULL;
 
 -(BOOL) instance_getTrackingState {
 	return bf_get_instance_tracking_state();
-}
-
-// is the msgSend logging system ready to roll?
--(BOOL) msgSend_isInitialized {
-	return bf_has_msgSend_initialized_yet();
 }
 
 -(NSDictionary *) getSymbolTable {

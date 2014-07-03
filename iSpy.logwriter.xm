@@ -59,7 +59,6 @@ static const unsigned int LOG_TCPIP    = 4;
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
 static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log"};
-static const char *LOG_SUBDIRECTORY = "/logs/";
 
 // If we use any hooked calls within the log writer, we must use the original (unhooked) versions.
 // Simply declare them extern and copy from hook_C_system_calls.xm
@@ -109,7 +108,6 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
 
     NSString *iSpyDirectory = [documents stringByAppendingPathComponent:@"/.ispy/"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:iSpyDirectory]) {
-        NSLog(@"Making directory at: %@", iSpyDirectory);
         [[NSFileManager defaultManager] createDirectoryAtPath:iSpyDirectory
             withIntermediateDirectories:NO
             attributes:nil
@@ -121,7 +119,6 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
 
     NSString *logsDirectory = [iSpyDirectory stringByAppendingPathComponent:@"/logs/"];
     if (![[NSFileManager defaultManager] fileExistsAtPath:logsDirectory]) {
-        NSLog(@"Making directory at: %@", logsDirectory);
         [[NSFileManager defaultManager] createDirectoryAtPath:logsDirectory
             withIntermediateDirectories:NO
             attributes:nil
@@ -136,8 +133,6 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
         NSString *fileName = [NSString stringWithFormat:@"%s", FACILITY_FILES[index]];
         NSString *filePath = [NSString stringWithFormat:@"%@/%@", logsDirectory, fileName];
         logFiles[index] = open([filePath UTF8String], O_WRONLY | O_CREAT);
-        NSLog(@"[iSpy][Logging] Create file -> %@", filePath);
-
     }
 
     /* Initialize GCD queue */

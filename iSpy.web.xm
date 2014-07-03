@@ -72,10 +72,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     [self setWsInstance:NULL];
     [self setWsISpy:NULL];
     
-    [self setStraceReadLock:0];
-    [self setMsgSendReadLock:0];
-    [self setGeneralReadLock:0];
-    
     [self setHttp:[[HTTP alloc] init]];
     [self setWsISpy:[[HTTP alloc] init]];
     
@@ -393,14 +389,11 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             // Returns:
             //      the state of objc_msgSend hook initialization (ie. is the msgSend logging subsytem ready?) (as a boolean 0 / 1)
             //      the current off/on state of the msgSend logger (as a boolean 0 / 1)
-            
-            else if([args isEqualToString:@"msgSend/status"]) {
-                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
-                        @"initialized": [NSString stringWithFormat:@"%d", [mySpy msgSend_isInitialized]],
-                        @"enabled": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
-                    } options:0 error:NULL];
-                content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
-            }
+
+            /*
+             * No longer needed
+             */
+
 
             // /api/monitor/status
             // Returns:
@@ -408,15 +401,10 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             //      the on/off status of the instance tracker
             //      the on/off status of the strace logger
             //      the on/off status of the HTTP loggers
-            else if([args isEqualToString:@"monitor/status"]) {
-                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
-                        @"instanceState": [NSString stringWithFormat:@"%d", [mySpy instance_getTrackingState]],
-                        @"msgSendState": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
-                        @"straceState": [NSString stringWithFormat:@"%d", [mySpy strace_getLoggingState]],
-                        @"HTTPState": [NSString stringWithFormat:@"%d", 0],
-                    } options:0 error:NULL];
-                content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
-            }
+
+            /*
+             *   No Longer needed
+             */
 
             // Return a JSON response containing the app's .text symbol table
             else if([args isEqualToString:@"symbols"]) {
@@ -502,12 +490,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 Why is this called "options" instead of something more relevant? TBD.
             */
             else if([args containsString:@"msgSend/options"]) {
-                NSString *enabled = [connection requestBodyVar:@"enableDisable"];
-                if([enabled isEqualToString:@"on"]) {
-                    [mySpy msgSend_enableLogging];
-                } else {
-                    [mySpy msgSend_disableLogging];
-                }
 
                 NSString *restrictToAppBundle = [connection requestBodyVar:@"restrictToAppBundle"];
                 if([restrictToAppBundle isEqualToString:@"on"]) {
@@ -529,40 +511,8 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 It's called by the navbar buttons whenever a user presses one.
                 See menu.mustache.
             */
-            else if([args containsString:@"monitor/status"]) {
-                NSString *item = [connection requestBodyVar:@"item"];
-                NSString *state = [connection requestBodyVar:@"state"];
-                // See menu.mustache for the controls that trigger this call
-                if([item isEqualToString:@"msgSndLogging"]) { // Look for references to msgSndLogging and straceLogging
-                    if([state isEqualToString:@"1"]) {  // the menu button will emit a "1" when it's turned on...
-                        [mySpy msgSend_enableLogging];
-                    } else {
-                        [mySpy msgSend_disableLogging]; // ...and a "0" when turned off
-                    }
-                }
-                if([item isEqualToString:@"straceLogging"]) {
-                    if([state isEqualToString:@"1"]) {
-                        [mySpy strace_enableLogging];
-                    } else {
-                        [mySpy strace_disableLogging];
-                    }
-                }
-                if([item isEqualToString:@"instanceTracking"]) {
-                    if([state isEqualToString:@"1"]) {
-                        [mySpy instance_enableTracking];
-                    } else {
-                        [mySpy instance_disableTracking];
-                    }
-                }
-                if([item isEqualToString:@"btnHTTPState"]) {
-                    if([state isEqualToString:@"1"]) {
-                        ;
-                    } else {
-                        ;
-                    }
-                }
 
-            }
+            /* No Longer needed */
 
             return content;
     }];

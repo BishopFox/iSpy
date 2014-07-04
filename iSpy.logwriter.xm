@@ -57,7 +57,7 @@ static const unsigned int LOG_TCPIP    = 4;
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
 static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log"};
-static const int LOG_UMASK = 644;
+static const int LOG_UMASK = 0644;
 static int logFiles[MAX_LOG + 1];
 static BOOL logIsInitialized = NO;
 static unsigned int minLogLevel = DEBUG;
@@ -119,7 +119,7 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
 
         NSError *error = nil;
 
-        /* Check to see if our home directory exists, and create it if not */
+        /* Check to see if our ispy directory exists, and create it if not */
         NSString *iSpyDirectory = [documents stringByAppendingPathComponent:@"/.ispy/"];
         if (![[NSFileManager defaultManager] fileExistsAtPath:iSpyDirectory]) {
             [[NSFileManager defaultManager] createDirectoryAtPath:iSpyDirectory
@@ -131,7 +131,7 @@ EXPORT void ispy_init_logwriter(NSString *documents) {
             NSLog(@"[iSpy][ERROR] %@", error);
         }
 
-        /* Check to see if the ~/logs/ directory exists, and create it if not */
+        /* Check to see if the <App>/Documents/.ispy/logs/ directory exists, and create it if not */
         NSString *logsDirectory = [iSpyDirectory stringByAppendingPathComponent:@"/logs/"];
         if (![[NSFileManager defaultManager] fileExistsAtPath:logsDirectory]) {
             [[NSFileManager defaultManager] createDirectoryAtPath:logsDirectory

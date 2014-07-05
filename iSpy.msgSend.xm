@@ -109,7 +109,7 @@ namespace bf_msgSend {
             stack = new std::stack<lr_node>;
             int err = pthread_setspecific(thr_key, stack);
             if (err) {
-                ispy_log_debug(LOG_MSGSEND, "[msgSend] Error: pthread_setspecific() Committing suicide.\n");
+                bf_logwrite(LOG_MSGSEND, "[msgSend] Error: pthread_setspecific() Committing suicide.\n");
                 delete stack;
                 stack = NULL;
             }
@@ -244,6 +244,7 @@ namespace bf_msgSend {
             char *tmp;
             id foo, fooId;
             Class fooClass;
+            char json[2048]; // meh
             
             // We need to determine if "self" is a meta class or an instance of a class.
             // We can't use Apple's class_isMetaClass() here because it seems to randomly crash just
@@ -264,7 +265,6 @@ namespace bf_msgSend {
             }
 
             if(!method || !className || !methodName) {
-                bf_logwrite_msgSend(LOG_MSGSEND, "\n\nERROR method=nil or classNAme or methodName\n\n");
                 return;
             }
 
@@ -273,8 +273,9 @@ namespace bf_msgSend {
             tmp = methodName;
 
             // start the JSON block
-            bf_logwrite_msgSend(LOG_MSGSEND, "{\n\"class\":\"%s\",\n\"method\":\"%s\",\n\"isInstanceMethod\":%d,\n\"numArgs\":%d,\n\"args\":[\n", className, methodName, isInstanceMethod, realNumArgs);
+            snprintf(json, sizeof(json), "{\n\"class\":\"%s\",\n\"method\":\"%s\",\n\"isInstanceMethod\":%d,\n\"numArgs\":%d,\n\"args\":[\n", className, methodName, isInstanceMethod, realNumArgs);
 
+            // setup varargs
             va_start(va, _cmd);
 
             // cycle through the paramter list for this method.
@@ -288,7 +289,7 @@ namespace bf_msgSend {
                 // get the arg name
                 name = strsep(&methodName, ":");
                 if(!name) {
-                    bf_logwrite_msgSend(LOG_MSGSEND, "um, so p=NULL in arg printer for class methods... weird. (aka no method name)");
+                    // weird error
                     continue;
                 }
                 
@@ -296,17 +297,17 @@ namespace bf_msgSend {
                 method_getArgumentType(method, k, tmpBuf, 255);
                 char *typeCode = (tmpBuf[0] == '^') ? &tmpBuf[1] : tmpBuf;
 
-/*                // get human-readable type data
+                // get human-readable type data
                 if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
-                    bf_logwrite(LOG_MSGSEND, "Out of mem");
+                    // out of memory
                     break;
                 }
-*/
+
                 // arg data
                 void *paramVal = va_arg(va, void *);
                 
                 // start the JSON for this argument
-                bf_logwrite_msgSend(LOG_MSGSEND, "{\n\t\"name\":\"%s\",\n\t\"typeCode\":\"TBD\",\n\t\"type\":\"TBD\",\n\t\"addr\":\"%p\",\n", name, paramVal);
+                snprintf(json, sizeof(json), "%s{\n\t\"name\":\"%s\",\n\t\"typeCode\":\"%s\",\n\t\"type\":\"%s\",\n\t\"addr\":\"%p\",\n", json, name, tmpBuf, type, paramVal);
 
                 // lololol
                 unsigned long v = (unsigned long)paramVal;
@@ -318,64 +319,61 @@ namespace bf_msgSend {
                     case 's': // short
                     case 'l': // long
                     case 'q': // long long
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%lld\n", (long long)paramVal); 
+                        snprintf(json, sizeof(json), "%s\t\"value\":%lld\n", json, (long long)paramVal); 
                         break;
                     case 'C': // unsigned char
                     case 'I': // unsigned int
                     case 'S': // unsigned short
                     case 'L': // unsigned long
                     case 'Q': // unsigned long long
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%lld", (long long)paramVal); 
+                        snprintf(json, sizeof(json), "%s\t\"value\":%lld", json, (long long)paramVal); 
                         break;
                     case 'f': // float
-                    case 'd': // double
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%llf", (double)d); 
+                    case 'd': // double                        
+                        snprintf(json, sizeof(json), "%s\t\"value\":%llf", json, (double)d); 
                         break;
                     case 'B': // BOOL
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%s", ((int)paramVal)?"true":false);
+                        snprintf(json, sizeof(json),  "%s\t\"value\":%s", json, ((int)paramVal)?"true":false);
                         break;
                     case 'v': // void
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"ptr\":\"%p\"", paramVal);
+                        snprintf(json, sizeof(json),  "%s\t\"ptr\":\"%p\"", json, paramVal);
                         break;
                     case '*': // char *
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"%s\",\n\t\"ptr\":\"%p\" ", (char *)paramVal, paramVal);
+                        snprintf(json, sizeof(json),  "%s\t\"value\":\"%s\",\n\t\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
                         break;
                     case '{': // struct
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"ptr\":\"%p\"", paramVal);
+                        snprintf(json, sizeof(json),  "\t\"ptr\":\"%p\"", json, paramVal);
                         break;
                     case ':': // selector
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"@selector(%s)\"", (paramVal)?(char *)paramVal:"nil");
+                        snprintf(json, sizeof(json),  "%s\t\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
                         break;
                     case '@': // object
                     case '#':
                         if(is_valid_pointer(paramVal)) {
                             fooId = (id)paramVal;
                             fooClass = object_getClass(fooId);
-                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"type\":\"%s\",\n", class_getName(fooClass));
-                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"%s\"", (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
+                            snprintf(json, sizeof(json), "%s\t\"type\":\"%s\",\n", json, class_getName(fooClass));
+                            snprintf(json, sizeof(json), "%s\t\"value\":\"%s\"", json, (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
                         } else {
-                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"type\":\"<Invalid memory address>\"");
+                            snprintf(json, sizeof(json), "%s\t\"type\":\"<Invalid memory address>\"", json);
                         }
                         break;
                     default:
-                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"dvalue\":\"%p\"", fooId);
-                        break;
+                        snprintf(json, sizeof(json), "%s\t\"dvalue\":\"%p\"", json, fooId);
+                        break;     
                 }
-                bf_logwrite_msgSend(LOG_MSGSEND, "}%c\n", (argNum==realNumArgs-1)?' ':',');
-                //free(type);
-
+                snprintf(json, sizeof(json), "%s}%c\n", json, (argNum==realNumArgs-1)?' ':',');
+                free(type);
+                
             }
 
             // finish the JSON block
-            bf_logwrite_msgSend(LOG_MSGSEND, "%s}\n\n", (1)?"]":"");
-
-            free(tmp);
+            snprintf(json, sizeof(json), "%s%s}\n\n", json, (1)?"]":"");
+                
+            free(tmp); //release memory for methodName
             va_end(va);
 
-
-            // keep a local copy of the log in /tmp/bf_msgsend
-            strcat(buf, "\n");
-            ispy_log_info(LOG_MSGSEND, buf);
+            bf_websocket_write(buf);
         }
 
         return;

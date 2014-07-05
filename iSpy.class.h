@@ -75,6 +75,8 @@
 -(NSString *)SHA256HMACForAppBinary;
 -(NSDictionary *)classDumpClass:(NSString *)className;
 -(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
+-(void) msgSend_enableLogging;
+-(void) msgSend_disableLogging;
 //-(void) bounceWebServer;
 @end
 

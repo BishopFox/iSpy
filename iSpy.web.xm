@@ -103,7 +103,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     BOOL ret;
     
     ret = [[self http] listenOnPort:WEBSERVER_PORT onError:^(id reason) {
-        ispy_log_error(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
+        ispy_log_wtf(LOG_GENERAL, "[iSpy] Error starting server: %s", [reason UTF8String]);
     }];
     if(!ret) {
         return ret;
@@ -114,7 +114,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     // Setup the HTTP endpoint handlers
     [[self wsISpy] listenOnPort:31338 onError:^(id reason) {
-        ispy_log_error(LOG_GENERAL, "[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
+        ispy_log_wtf(LOG_GENERAL, "[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
     }];
 
     [[self wsISpy] handleWebSocket:^id (HTTPConnection *connection) {
@@ -123,12 +123,9 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             globalMsgSendWebSocketPtr = NULL;
             return nil;
         }
-        
-        //NSLog(@"WebSocket message '%s'", [connection.requestBody UTF8String]);
-        
+        ispy_log_info(LOG_GENERAL, "Successfully opened a websocket port");
         globalMsgSendWebSocketPtr = [connection connectionPtr];
-
-        return nil; // @"Ok"; //[connection.requestBody capitalizedString];
+        return @"OK"; //[connection.requestBody capitalizedString];
     }];
 
     // Handler for the web root. Displays home page.
@@ -385,12 +382,24 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
             }
 
+            // /api/msgSend/status
+            // Returns:
+            //      the state of objc_msgSend hook initialization (ie. is the msgSend logging subsytem ready?) (as a boolean 0 / 1)
+            //      the current off/on state of the msgSend logger (as a boolean 0 / 1)
+
             // /api/monitor/status
             // Returns:
             //      the on/off status of the msgSend logging service
             //      the on/off status of the instance tracker
             //      the on/off status of the strace logger
             //      the on/off status of the HTTP loggers
+
+            else if([args isEqualToString:@"monitor/status"]) {
+                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
+                        @"msgSendState": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
+                    } options:0 error:NULL];
+                content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
+            }
 
             // Return a JSON response containing the app's .text symbol table
             else if([args isEqualToString:@"symbols"]) {
@@ -490,15 +499,26 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 [self bounceWebServer];
             }
 
-            /*
+/*
                 This is used by the client to enable or disable logging for
                 any of the facilities (msgSend, strace, etc).
 
                 It's called by the navbar buttons whenever a user presses one.
                 See menu.mustache.
             */
-
-            /* No Longer needed */
+            else if([args containsString:@"monitor/status"]) {
+                NSString *item = [connection requestBodyVar:@"item"];
+                NSString *state = [connection requestBodyVar:@"state"];
+                // See menu.mustache for the controls that trigger this call
+                if([item isEqualToString:@"msgSndLogging"]) { // Look for references to msgSndLogging and straceLogging
+                    if([state isEqualToString:@"1"]) {  // the menu button will emit a "1" when it's turned on...
+                        ispy_log_debug(LOG_GENERAL, "objc_msgSend logging enabled!");
+                        [mySpy msgSend_enableLogging];
+                    } else {
+                        [mySpy msgSend_disableLogging]; // ...and a "0" when turned off
+                    }
+                }
+            }
 
             return content;
     }];

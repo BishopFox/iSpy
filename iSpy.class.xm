@@ -147,6 +147,16 @@ id *appClassWhiteList = NULL;
 	bf_disable_instance_tracker();
 }
 
+// Turn on objc_msgSend logging
+-(void) msgSend_enableLogging {
+	bf_enable_msgSend_logging();
+}
+
+// Turn off objc_msgSend logging
+-(void) msgSend_disableLogging {
+	bf_disable_msgSend_logging();
+}
+
 // Dumps a list of all the instances in the runtime, including all Apple's classes like NSString, etc. 
 // Generates a ton of output.
 // Human-readable text.

@@ -401,6 +401,7 @@ namespace bf_msgSend {
     }
 
     EXPORT void bf_enable_msgSend() {
+        ispy_log_wtf(LOG_GENERAL, "Enabled msgSend bool!");
         enabled=1;
     }
 

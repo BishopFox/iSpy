@@ -385,18 +385,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
                 content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
             }
 
-            // /api/msgSend/status
-            // Returns:
-            //      the state of objc_msgSend hook initialization (ie. is the msgSend logging subsytem ready?) (as a boolean 0 / 1)
-            //      the current off/on state of the msgSend logger (as a boolean 0 / 1)
-            
-            else if([args isEqualToString:@"msgSend/status"]) {
-                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
-                        @"enabled": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
-                    } options:0 error:NULL];
-                content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
-            }
-
             // /api/monitor/status
             // Returns:
             //      the on/off status of the msgSend logging service

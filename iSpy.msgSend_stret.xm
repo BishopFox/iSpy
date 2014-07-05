@@ -114,12 +114,9 @@ namespace bf_msgSend_stret {
     extern "C" USED void print_args_stret(void* retval, id self, SEL _cmd, ...) {
         if(self && _cmd) {
             // always call this to ensure the object is properly initialized
-            Class c = orig_objc_msgSend(self, @selector(class));
-            
-            char *selectorName = (char *)sel_getName(_cmd);
-            char *className = (char *)object_getClassName(self);
-            static unsigned int counter = 0;
-            char buf[1027];
+            //Class c = orig_objc_msgSend(self, @selector(class));
+            //char *className = (char *)object_getClassName(self);
+            //char buf[1027];
 
             // We need to determine if "self" is a meta class or an instance of a class.
             // We can't use Apple's class_isMetaClass() here because it seems to randomly crash just
@@ -129,15 +126,15 @@ namespace bf_msgSend_stret {
             // 1. Get the name of the object being passed as "self"
             // 2. Get the metaclass of "self" based on its name
             // 3. Compare the metaclass of "self" to "self". If they're the same, it's a metaclass.
-            bool meta = (objc_getMetaClass(className) == object_getClass(self));
+            //bool meta = (objc_getMetaClass(className) == object_getClass(self));
             
             // write the captured information to the iSpy web socket. If a client is connected it'll receive this event.
             //snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
             //bf_websocket_write(buf);
             
             // keep a local copy of the log in /tmp/bf_msgsend
-            strcat(buf, "\n");
-            ispy_log_info(LOG_MSGSEND, buf);
+            //strcat(buf, "\n");
+            //ispy_log_info(LOG_MSGSEND, buf);
         }
         
         return;

@@ -160,7 +160,7 @@ namespace bf_msgSend {
                         return strdup(buf);
                 }
         } else if (type == CFBooleanGetTypeID()) {
-                snprintf(buf, 1024, "%s", x == kCFBooleanTrue ? "True" : "False");
+                snprintf(buf, 1024, "%s", (x) ? "True" : "False");
                 return strdup(buf);
         } else if (type == CFNullGetTypeID()) {
                 return strdup("NULL");
@@ -233,13 +233,12 @@ namespace bf_msgSend {
             va_list va;
             char *className = (char *)object_getClassName(self);
             char *methodName = (char *)strdup(sel_getName(_cmd));
-            static unsigned int counter = 0;
-            char buf[1027], buf2[1027];
+            char buf[1027];
             Method method = nil;
             int numArgs, k, realNumArgs;
             BOOL isInstanceMethod = true;
             char *tmp;
-            id foo, fooId;
+            id fooId;
             Class fooClass;
             char json[2048]; // meh
             
@@ -270,7 +269,7 @@ namespace bf_msgSend {
             tmp = methodName;
 
             // start the JSON block
-            snprintf(json, sizeof(json), "{\n\"class\":\"%s\",\n\"method\":\"%s\",\n\"isInstanceMethod\":%d,\n\"numArgs\":%d,\n\"args\":[\n", className, methodName, isInstanceMethod, realNumArgs);
+            snprintf(json, sizeof(json), "{\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
 
             // setup varargs
             va_start(va, _cmd);
@@ -294,17 +293,11 @@ namespace bf_msgSend {
                 method_getArgumentType(method, k, tmpBuf, 255);
                 char *typeCode = (tmpBuf[0] == '^') ? &tmpBuf[1] : tmpBuf;
 
-                // get human-readable type data
-                if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
-                    // out of memory
-                    break;
-                }
-
                 // arg data
                 void *paramVal = va_arg(va, void *);
                 
                 // start the JSON for this argument
-                snprintf(json, sizeof(json), "%s{\n\t\"name\":\"%s\",\n\t\"typeCode\":\"%s\",\n\t\"type\":\"%s\",\n\t\"addr\":\"%p\",\n", json, name, tmpBuf, type, paramVal);
+                snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"type\":\"%s\",\"addr\":\"%p\",", json, name, tmpBuf, type, paramVal);
 
                 // lololol
                 unsigned long v = (unsigned long)paramVal;
@@ -312,60 +305,76 @@ namespace bf_msgSend {
 
                 switch(*typeCode) {
                     case 'c': // char
-                    case 'i': // int
-                    case 's': // short
-                    case 'l': // long
-                    case 'q': // long long
-                        snprintf(json, sizeof(json), "%s\t\"value\":%lld\n", json, (long long)paramVal); 
+                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":0x%x (%d) (%c)", json, (unsigned int)paramVal, (int)paramVal, (int)paramVal); 
                         break;
-                    case 'C': // unsigned char
-                    case 'I': // unsigned int
-                    case 'S': // unsigned short
-                    case 'L': // unsigned long
-                    case 'Q': // unsigned long long
-                        snprintf(json, sizeof(json), "%s\t\"value\":%lld", json, (long long)paramVal); 
+                    case 'i': // int
+                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+                        break;
+                    case 's': // short
+                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+                        break;
+                    case 'l': // long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%ld)", json, (long)paramVal, (long)paramVal); 
+                        break;
+                    case 'q': // long long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%lld)", json, (long long)paramVal, (long long)paramVal); 
+                        break;
+                    case 'C': // char
+                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":0x%x (%u) ('%c')", json, (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'I': // int
+                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'S': // short
+                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'L': // long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%lu)", json, (unsigned long)paramVal, (unsigned long)paramVal); 
+                        break;
+                    case 'Q': // long long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%llu)", json, (unsigned long long)paramVal, (unsigned long long)paramVal); 
                         break;
                     case 'f': // float
+                        snprintf(json, sizeof(json), "%s\"type\":\"float\",\"value\":%f", json, (float)d); 
+                        break;
                     case 'd': // double                        
-                        snprintf(json, sizeof(json), "%s\t\"value\":%llf", json, (double)d); 
+                        snprintf(json, sizeof(json), "%s\"type\":\"double\",\"value\":%f", json, (double)d); 
                         break;
                     case 'B': // BOOL
-                        snprintf(json, sizeof(json),  "%s\t\"value\":%s", json, ((int)paramVal)?"true":false);
+                        snprintf(json, sizeof(json),  "%s\"type\":\"BOOL\",\"value\":%s", json, ((int)paramVal)?"true":"false");
                         break;
                     case 'v': // void
-                        snprintf(json, sizeof(json),  "%s\t\"ptr\":\"%p\"", json, paramVal);
+                        snprintf(json, sizeof(json),  "%s\"type\":\"void\",\"ptr\":\"%p\"", json, paramVal);
                         break;
                     case '*': // char *
-                        snprintf(json, sizeof(json),  "%s\t\"value\":\"%s\",\n\t\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
+                        snprintf(json, sizeof(json),  "%s\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
                         break;
                     case '{': // struct
-                        snprintf(json, sizeof(json),  "\t\"ptr\":\"%p\"", json, paramVal);
+                        snprintf(json, sizeof(json),  "%s\"type\":\"struct\",\"ptr\":\"%p\"", json, paramVal);
                         break;
                     case ':': // selector
-                        snprintf(json, sizeof(json),  "%s\t\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
+                        snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
                         break;
                     case '@': // object
                     case '#':
                         if(is_valid_pointer(paramVal)) {
                             fooId = (id)paramVal;
                             fooClass = object_getClass(fooId);
-                            snprintf(json, sizeof(json), "%s\t\"type\":\"%s\",\n", json, class_getName(fooClass));
-                            snprintf(json, sizeof(json), "%s\t\"value\":\"%s\"", json, (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
+                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass));
+                            snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
                         } else {
-                            snprintf(json, sizeof(json), "%s\t\"type\":\"<Invalid memory address>\"", json);
+                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
                         }
                         break;
                     default:
-                        snprintf(json, sizeof(json), "%s\t\"dvalue\":\"%p\"", json, fooId);
+                        snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, fooId);
                         break;     
                 }
-                snprintf(json, sizeof(json), "%s}%c\n", json, (argNum==realNumArgs-1)?' ':',');
-                free(type);
-                
+                snprintf(json, sizeof(json), "%s}%c", json, (argNum==realNumArgs-1)?' ':',');                
             }
 
             // finish the JSON block
-            snprintf(json, sizeof(json), "%s%s}\n\n", json, (1)?"]":"");
+            snprintf(json, sizeof(json), "%s]}\n", json);
                 
             free(tmp); //release memory for methodName
             va_end(va);
@@ -454,15 +463,15 @@ namespace bf_msgSend {
     "LoadSR3:"    "add r12, pc, r2\n"
                 "ldmia r12, {r0-r3}\n"
 
-                //"push {r0-r11,lr}\n"
-                //"bl _do_objc_msgSend_mutex_unlock\n"
-                //"pop {r0-r11,lr}\n"
+                //"push {r0-r11,lr}"
+                //"bl _do_objc_msgSend_mutex_unlock"
+                //"pop {r0-r11,lr}"
 
                 "bl _print_args\n"
                 
-                //"push {r0-r11,lr}\n"
-                //"bl _do_objc_msgSend_mutex_lock\n"
-                //"pop {r0-r11,lr}\n"
+                //"push {r0-r11,lr}"
+                //"bl _do_objc_msgSend_mutex_lock"
+                //"pop {r0-r11,lr}"
 
                 // Restore the registers.
                 "ldr r1, (LSR4)\n"

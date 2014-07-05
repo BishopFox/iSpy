@@ -568,10 +568,14 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 // Requires C linkage for the msgSend stuff.
 extern "C" {
     int bf_websocket_write(const char *msg) {
-        if(globalMsgSendWebSocketPtr == NULL)
+        if(globalMsgSendWebSocketPtr == NULL) {
+            ispy_log_debug(LOG_GENERAL, "OI it failed");
             return -1;
-        else
+        }
+        else {
+            ispy_log_debug(LOG_GENERAL, "squirt %s", msg);
             return mg_websocket_write(globalMsgSendWebSocketPtr, 1, msg, strlen(msg));
+        }
     }
 }
 

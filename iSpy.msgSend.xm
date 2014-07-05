@@ -378,7 +378,6 @@ namespace bf_msgSend {
                 
             free(tmp); //release memory for methodName
             va_end(va);
-
             bf_websocket_write(buf);
         }
 

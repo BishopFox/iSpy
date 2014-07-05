@@ -1921,7 +1921,7 @@ EXPORT int return_true() {
 	// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging]
 	// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
 	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
-	// bf_init_msgSend_logging();
+	bf_init_msgSend_logging();
 
 	// Start the iSpy web server
 	%init(pre_init_group);

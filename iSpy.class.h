@@ -99,3 +99,4 @@
 */
 
 NSString *SHA256HMAC(NSData *theData);
+char *bf_get_type_from_signature(char *typeStr);

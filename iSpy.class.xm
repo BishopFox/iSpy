@@ -50,7 +50,6 @@
 #import "typestring.h"
 
 static NSString *changeDateToDateString(NSDate *date);
-static char *bf_get_type_from_signature(char *typeStr);
 static char *bf_get_friendly_method_return_type(Method method);
 static char *bf_get_attrs_from_signature(char *attributeCString);
 
@@ -955,6 +954,20 @@ Returns a NSDictionary like this:
 
 
 /***********************************************************************************************
+ * These are public functions                                                                  *
+ ***********************************************************************************************/
+
+// The caller is responsible for calling free() on the pointer returned by this function.
+char *bf_get_type_from_signature(char *typeStr) {
+	NSArray *types = ParseTypeString([NSString stringWithUTF8String:typeStr]);
+	NSString *result = [[types valueForKey:@"description"] componentsJoinedByString:@" "];
+	return (char *)strdup([result UTF8String]);
+}
+
+
+
+
+/***********************************************************************************************
  * These are private functions that aren't intended to be exposed to iSpy class and/or Cycript *
  ***********************************************************************************************/
 
@@ -965,13 +978,6 @@ static NSString *changeDateToDateString(NSDate *date) {
 	if(dateString == nil)
 		return @"Bad date.";
 	return dateString;
-}
-
-// The caller is responsible for calling free() on the pointer returned by this function.
-static char *bf_get_type_from_signature(char *typeStr) {
-	NSArray *types = ParseTypeString([NSString stringWithUTF8String:typeStr]);
-	NSString *result = [[types valueForKey:@"description"] componentsJoinedByString:@" "];
-	return (char *)strdup([result UTF8String]);
 }
 
 /*

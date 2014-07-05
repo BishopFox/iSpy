@@ -16,7 +16,7 @@ static NSString *ScrubNumbers (NSString *string) {
 // Convert simple types.
 // |typeScan| is scooted over to account for any consumed characters
 static NSString *SimpleEncoding (char **typeScan) {
-		typedef struct TypeMap {
+	typedef struct TypeMap {
 		unichar discriminator;
 		const char *name;
 	} TypeMap;
@@ -25,7 +25,7 @@ static NSString *SimpleEncoding (char **typeScan) {
 		{ 'i', (const char *)"int" },
 		{ 's', (const char *)"short" },
 		{ 'l', (const char *)"long" },
-		{ 'q', (const char *)"longlong" },
+		{ 'q', (const char *)"long long" },
 		{ 'C', (const char *)"unsigned char" },
 		{ 'I', (const char *)"unsigned int" },
 		{ 'S', (const char *)"unsigned short" },

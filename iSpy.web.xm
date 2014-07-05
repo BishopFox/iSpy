@@ -398,7 +398,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             
             else if([args isEqualToString:@"msgSend/status"]) {
                 NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
-                        @"initialized": [NSString stringWithFormat:@"%d", [mySpy msgSend_isInitialized]],
                         @"enabled": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
                     } options:0 error:NULL];
                 content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];

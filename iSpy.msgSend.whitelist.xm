@@ -8,7 +8,7 @@ static struct bf_objc_msgSend_captured_class *objc_msgSendWhitelist = NULL;
 // It's basically a bunch of methods inherited from NSObject. 
 // Yes, it's hardcoded but this isn't the place to change it:
 // Do so by creating a new list and changing the pointer (bf_objc_msgSend_captured_class->uninterestingMethods) on a per-class basis.
-const char *bf_msgSend_uninterestingList = "|load|initialize|allocWithZone:|copy|copyWithZone:|mutableCopy|mutableCopyWithZone:|new|class|superclass|isSubClassOfClass:|instancesRespondToSelector|retain|release|dealloc|class|init|alloc|";
+const char *bf_msgSend_uninterestingList = "|retain|dealloc|alloc|init|release|class|load|initialize|allocWithZone:|copy|copyWithZone:|mutableCopy|mutableCopyWithZone:|new|class|superclass|isSubClassOfClass:|instancesRespondToSelector|";
 
 
 // Add a class to our whitelist
@@ -66,50 +66,55 @@ int bf_objc_msgSend_whitelist_entry_exists(const char *className, const char *me
 	if(!className || !methodName)
 		return NO;
 
+	len = strlen(methodName);
+	if((searchMethodName = (char *)malloc((size_t)len + 3)) == NULL)
+		return NO;
+
 	while(l) {
 		// is this class on the whitelist?
-		if(strcmp(l->name, className) == 0) {
+		if(l->name && strcmp(l->name, className) == 0) {
 			// yes! are we logging all methods for this class?
 			if(l->logAllMethods) {
 				// yes! ok, but is there an explicit blacklist for this class?
-				if(l->uninterestingMethods) {
-					if(len < 0 || searchMethodName == NULL) { // fast, cached way of wrapping up "methodName" as "|methodName|"
-						len = strlen(methodName);
-						searchMethodName = (char *)malloc((size_t)len + 3);
-						*searchMethodName = '|';
-						searchMethodName[len+1] = '|';
-						searchMethodName[len+2] = (char)0;
-						memcpy(searchMethodName + 1, methodName, len);
-					}
+				if(l->uninterestingMethods) {	
+					*searchMethodName = '|';
+					searchMethodName[len+1] = '|';
+					searchMethodName[len+2] = (char)0;
+					memcpy(searchMethodName + 1, methodName, len);
 					
 					// Ignore anything on the blacklist
 					if(strstr(l->uninterestingMethods, searchMethodName) != NULL) {
-						return NO; // this class::method was found on the blacklist
+						goto shitNo; // this class::method was found on the blacklist
 					}
 
 					// the method wasn't found on the blacklist. Good to go!
-					return YES;
+					goto hellYes;
 
 				// there's no blacklist, so we're good to go.
 				} else {
-					return YES;
+					goto hellYes;
 				}
 
 			// if we're not logging all methods, we need to search for this exact method
 			} else {
 				if(l->whitelistedMethods && (strcmp(methodName, l->whitelistedMethods) == 0)) {
-					return YES; // this method is on the whitelist
+					goto hellYes; // this method is on the whitelist
 				} 
 			}
-			return NO; // fall through to a default deny policy
+			goto shitNo; // fall through to a default deny policy
 		}
 
 		// try the next class on the whitelist
 		l = l->next;
 	}
 
-	// The class wasn't found. Don't log.
+shitNo:
+	free(searchMethodName);
 	return NO;
+
+hellYes:
+	free(searchMethodName);
+	return YES;
 }
 
 int bf_objc_msgSend_whitelist_startup() {

@@ -67,7 +67,10 @@ namespace bf_msgSend_stret {
     __attribute__((used, weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
 
     extern "C" int is_this_method_on_whitelist_stret(int *retVal, id Cls, SEL selector) {
-        return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+        if(Cls && selector)
+            return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+        else
+            return NO;
     }
 
 
@@ -108,8 +111,12 @@ namespace bf_msgSend_stret {
         return retval;
     }
 
+
     extern "C" USED void print_args_stret(void* retval, id self, SEL _cmd, ...) {
         if(self && _cmd) {
+            // always call this to ensure the object is properly initialized
+            Class c = orig_objc_msgSend(self, @selector(class));
+            
             char *selectorName = (char *)sel_getName(_cmd);
             char *className = (char *)object_getClassName(self);
             static unsigned int counter = 0;
@@ -126,12 +133,12 @@ namespace bf_msgSend_stret {
             bool meta = (objc_getMetaClass(className) == object_getClass(self));
             
             // write the captured information to the iSpy web socket. If a client is connected it'll receive this event.
-            snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
-            bf_websocket_write(buf);
+            //snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
+            //bf_websocket_write(buf);
             
             // keep a local copy of the log in /tmp/bf_msgsend
-            strcat(buf, "\n");
-            bf_logwrite_msgSend(LOG_MSGSEND, buf);
+            //strcat(buf, "\n");
+            //bf_logwrite_msgSend(LOG_MSGSEND, buf);
         }
         
         return;

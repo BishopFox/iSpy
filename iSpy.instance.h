@@ -1,5 +1,5 @@
-#ifndef __BEEFHOOK_INSTANCE__
-#define __BEEFHOOK_INSTANCE__
+#ifndef __ISPY_INSTANCE__
+#define __ISPY_INSTANCE__
 
 struct bf_instance {
 	id instance;	// pointer to the instance
@@ -19,4 +19,4 @@ struct bf_instance *bf_alloc_instance_entry();
 void bf_add_instance_entry(id instance);
 void bf_remove_instance_entry(id instance);
 
-#endif // __BEEFHOOK_INSTANCE__
+#endif // __ISPY_INSTANCE__

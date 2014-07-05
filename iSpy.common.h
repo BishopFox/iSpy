@@ -1,5 +1,5 @@
-#ifndef __BEEFHOOK_H__
-#define __BEEFHOOK_H__
+#ifndef __ISPY_H__
+#define __ISPY_H__
 #include "objc_type.h"	// taken from the class-dump-z source
 #include "/usr/include/objc/objc-runtime.h"
 
@@ -93,7 +93,7 @@ EXPORT bool startWebServices();
 EXPORT NSDictionary *getNetworkInfo(void);
 EXPORT void update_msgSend_checklists(id *whiteListPtr, id *blackListPtr);
 EXPORT void update_msgSend_checklists_stret(id *whiteListPtr, id *blackListPtr);
-EXPORT bool bf_has_msgSend_initialized_yet();
+EXPORT void bf_logwrite_msgSend(int facility, const char *msg, ...);
 EXPORT NSString *base64forData(NSData *theData);
 
 // These funcrions are a hacked-up way of using pure C code to send data down Web Sockets.

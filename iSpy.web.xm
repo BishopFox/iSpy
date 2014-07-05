@@ -389,11 +389,13 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             // Returns:
             //      the state of objc_msgSend hook initialization (ie. is the msgSend logging subsytem ready?) (as a boolean 0 / 1)
             //      the current off/on state of the msgSend logger (as a boolean 0 / 1)
-
-            /*
-             * No longer needed
-             */
-
+            
+            else if([args isEqualToString:@"msgSend/status"]) {
+                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:@{
+                        @"enabled": [NSString stringWithFormat:@"%d", [mySpy msgSend_getLoggingState]],
+                    } options:0 error:NULL];
+                content = [[NSString alloc] initWithBytes:[JSONData bytes] length:[JSONData length] encoding: NSUTF8StringEncoding];
+            }
 
             // /api/monitor/status
             // Returns:
@@ -401,10 +403,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             //      the on/off status of the instance tracker
             //      the on/off status of the strace logger
             //      the on/off status of the HTTP loggers
-
-            /*
-             *   No Longer needed
-             */
 
             // Return a JSON response containing the app's .text symbol table
             else if([args isEqualToString:@"symbols"]) {

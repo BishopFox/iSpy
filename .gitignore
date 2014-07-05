@@ -8,3 +8,6 @@ obj/*
 install.sh
 .theos
 .theos/*
+
+# Merge Leftovers
+*.orig

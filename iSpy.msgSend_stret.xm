@@ -51,6 +51,7 @@
 #include <stdbool.h>
 #include <objc/objc.h>
 #include "iSpy.common.h"
+#include "iSpy.msgSend.whitelist.h"
 #include <stack>
 #include <pthread.h>
 
@@ -59,44 +60,17 @@ namespace bf_msgSend_stret {
     static pthread_once_t key_once_stret = PTHREAD_ONCE_INIT;
     static pthread_key_t thr_key_stret;
     static pthread_mutex_t mutex_objc_msgSend_stret = PTHREAD_MUTEX_INITIALIZER;
-    static id *appClassWhiteList = NULL;
-    static bool appClassWhiteListIsReady = false;
     USED static long rx_reserve_stret[6] __asm__("_rx_reserve_stret");    // r0, r1, r2, r3, lr, saved.
     USED static long enabled_stret __asm__("_enabled_stret") = 0;
     USED static void *original_objc_msgSend_stret __asm__("_original_objc_msgSend_stret");
 
     __attribute__((used, weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
 
-    extern "C" int is_object_from_app_bundle_stret(int *retVal, id Cls, SEL selector) {
-        int j = 0; 
-        
-        // don't do shit if we ain't ready
-        if( ! appClassWhiteListIsReady )
-            return false;
-        if( ! appClassWhiteList)
-            return false;
-        if(!Cls || !selector)
-            return false;
-
-        while(appClassWhiteList[j]) {
-            id theClass = nil;
-
-            if(appClassWhiteList[j] == Cls->isa) { // Class method?
-                theClass = Cls->isa;
-                if(class_getClassMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            } else if(appClassWhiteList[j] == Cls->isa->isa) { // Instance method?
-                theClass = Cls->isa->isa;
-                if(class_getInstanceMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            }
-            j++;
-        }
-        return false;
+    extern "C" int is_this_method_on_whitelist_stret(int *retVal, id Cls, SEL selector) {
+        if(Cls && selector)
+            return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+        else
+            return NO;
     }
 
 
@@ -139,6 +113,9 @@ namespace bf_msgSend_stret {
 
     extern "C" USED void print_args_stret(void* retval, id self, SEL _cmd, ...) {
         if(self && _cmd) {
+            // always call this to ensure the object is properly initialized
+            Class c = orig_objc_msgSend(self, @selector(class));
+            
             char *selectorName = (char *)sel_getName(_cmd);
             char *className = (char *)object_getClassName(self);
             static unsigned int counter = 0;
@@ -155,8 +132,8 @@ namespace bf_msgSend_stret {
             bool meta = (objc_getMetaClass(className) == object_getClass(self));
             
             // write the captured information to the iSpy web socket. If a client is connected it'll receive this event.
-            snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
-            bf_websocket_write(buf);
+            //snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
+            //bf_websocket_write(buf);
             
             // keep a local copy of the log in /tmp/bf_msgsend
             strcat(buf, "\n");
@@ -191,15 +168,6 @@ namespace bf_msgSend_stret {
         MSHookFunction((void *)objc_msgSend_stret, (void *)replaced_objc_msgSend_stret, (void **)&original_objc_msgSend_stret);
     }
 
-    // This is a callback function designed to toggle the "ready-to-rock-n-roll" flag.
-    // We can also use it to update the whitelist/blacklist of methods we want to monitor. 
-    EXPORT void update_msgSend_checklists_stret(id *whiteListPtr, id *blackListPtr) {
-        ispy_log_debug(LOG_GENERAL, "[update_msgSend_checklists_stret] Whistlist @ %p", whiteListPtr);
-        appClassWhiteListIsReady = false;
-        appClassWhiteList = whiteListPtr;   // We can update our whitelist as often as we want, just by flipping this pointer.
-        appClassWhiteListIsReady = true;    
-    }
-
 #pragma mark _replaced_objc_msgSend_stret (ARM)
     __asm__ (
         ".text\n"
@@ -214,7 +182,7 @@ namespace bf_msgSend_stret {
 
                 // is this method on the whitelist?
                 "push {r0-r11,lr}\n"
-                "bl _is_object_from_app_bundle_stret\n"
+                "bl _is_this_method_on_whitelist_stret\n"
                 "mov r12, r0\n" 
                 "pop {r0-r11,lr}\n"
                 "teq r12, #0\n"

@@ -40,6 +40,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CFStream.h>
 #import <CFNetwork/CFNetwork.h>
@@ -51,14 +52,18 @@
 #include <stdbool.h>
 #include <objc/objc.h>
 #include "iSpy.common.h"
+#include "iSpy.class.h"
+#include "iSpy.msgSend.whitelist.h"
 #include <stack>
 #include <pthread.h>
+#include "djbhash.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+
+id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 
 namespace bf_msgSend {  
-
-    id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
-    static id *appClassWhiteList = NULL;
-    static bool appClassWhiteListIsReady = false;    
     static pthread_once_t key_once = PTHREAD_ONCE_INIT;
     static pthread_key_t thr_key;
     static pthread_mutex_t mutex_objc_msgSend = PTHREAD_MUTEX_INITIALIZER;
@@ -67,36 +72,11 @@ namespace bf_msgSend {
     USED static void *original_objc_msgSend __asm__("_original_objc_msgSend");
     __attribute__((used)) __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
 
-    extern "C" int is_object_from_app_bundle(id Cls, SEL selector) {
-        int j = 0; 
-        
-        // don't do shit if we ain't ready
-        if( ! appClassWhiteListIsReady )
-            return false;
-        if( ! appClassWhiteList)
-            return false;
-        if(!Cls || !selector)
-            return false;
-
-        while(appClassWhiteList[j]) {
-            id theClass = nil;
-
-            if(appClassWhiteList[j] == Cls->isa) { // Class method?
-                theClass = Cls->isa;
-                if(class_getClassMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            } else if(appClassWhiteList[j] == Cls->isa->isa) { // Instance method?
-                theClass = Cls->isa->isa;
-                if(class_getInstanceMethod(theClass, selector))
-                    return true;
-                else
-                    return false;
-            }
-            j++;
-        }
-        return false;
+    extern "C" int is_this_method_on_whitelist(id Cls, SEL selector) {
+        if(Cls && selector)
+            return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+        else
+            return NO;
     }
 
     static void lr_list_destructor(void* value) {
@@ -137,13 +117,134 @@ namespace bf_msgSend {
         return *stack;
     }
 
+
+    extern "C" USED const char *get_param_value(id x) {
+        char buf[1027];
+
+        if(!x)
+            return NULL;
+
+        Class c = object_getClass((id)x);
+        if(c == nil) {
+            return NULL;
+        }
+        CFTypeID type = 0;
+      
+        if((unsigned long) c % __alignof__(Class) != 0) {
+                snprintf(buf, 1024, "(id)%p", x);
+                return strdup(buf);
+        }
+       
+        if (class_isMetaClass(c)) {
+                snprintf(buf, 1024, "(Class)%s", class_getName(c));
+                return strdup(buf);
+        }
+       
+        if (class_respondsToSelector(c, @selector(UTF8String)))
+                return (char *)x;
+
+        if (class_respondsToSelector(c, @selector(CFGetTypeID)))
+                type = CFGetTypeID(x);
+       
+        if (type == CFStringGetTypeID()) {
+                CFStringEncoding enc = CFStringGetFastestEncoding( (CFStringRef)x );
+                const char* ptr = CFStringGetCStringPtr( (CFStringRef)x, enc );
+                if (ptr != NULL) {
+                        snprintf(buf, 1024, "@\"%s\" ", ptr);
+                        return strdup(buf);
+                }
+
+                CFDataRef data = CFStringCreateExternalRepresentation(NULL, (CFStringRef)x, kCFStringEncodingUTF8, '?');
+                if (data != NULL) {
+                        CFRelease(data);
+                        snprintf(buf, 1024, "@\"%.*s\" ", (int)CFDataGetLength(data), CFDataGetBytePtr(data));
+                        return strdup(buf);
+                }
+        } else if (type == CFBooleanGetTypeID()) {
+                snprintf(buf, 1024, "%s", x == kCFBooleanTrue ? "True" : "False");
+                return strdup(buf);
+        } else if (type == CFNullGetTypeID()) {
+                return strdup("NULL");
+        } else if (type == CFNumberGetTypeID()) {
+                CFNumberType numType = CFNumberGetType((CFNumberRef)x);
+                static const char* const numTypeStrings[] = {
+                        NULL, "SInt8", "SInt16", "SInt32", "SInt64", "Float32", "Float64",
+                        "char", "short", "int", "long", "long long", "float", "double",
+                        "CFIndex", "NSInteger", "CGFloat"
+                };
+
+                switch (numType) {
+                        case kCFNumberSInt8Type:
+                        case kCFNumberSInt16Type:
+                        case kCFNumberSInt32Type:
+                        case kCFNumberCharType:
+                        case kCFNumberShortType:
+                        case kCFNumberIntType:
+                        case kCFNumberLongType:
+                        case kCFNumberCFIndexType:
+                        case kCFNumberNSIntegerType: {
+                                long res;
+                                CFNumberGetValue((CFNumberRef)x, kCFNumberLongType, &res);
+                                snprintf(buf, 1024, "<CFNumber (%s)%ld> ", numTypeStrings[numType], res);
+                                return strdup(buf);
+                                break;
+                        }
+                        case kCFNumberSInt64Type:
+                        case kCFNumberLongLongType: {
+                                long long res;
+                                CFNumberGetValue((CFNumberRef)x, kCFNumberLongLongType, &res);
+                                snprintf(buf, 1024, "<CFNumber (%s)%lld> ", numTypeStrings[numType], res);
+                                return strdup(buf);
+                                break;
+                        }      
+                        default: {
+                                double res;
+                                CFNumberGetValue((CFNumberRef)x, kCFNumberDoubleType, &res);
+                                snprintf(buf, 1024, "<CFNumber (%s)%lg> ", numTypeStrings[numType], res);
+                                return strdup(buf);
+                                break;
+                        }
+                }
+                return strdup("nil");
+        }
+        return "";
+        //bf_logwrite_msgSend(LOG_MSGSEND, "<%s %p>", object_getClassName((id)x));
+    }
+
+    extern "C" USED int is_valid_pointer(void *ptr) {
+        int ret = madvise(ptr, 1, MADV_NORMAL);
+        if(ret == 0)
+            return YES;
+
+        if(errno == EINVAL || errno == ENOMEM)
+            return NO;
+        else
+            return YES;
+    }
+
+
     extern "C" USED void print_args(id self, SEL _cmd, ...) {
         if(self && _cmd) {
-            char *selectorName = (char *)sel_getName(_cmd);
-            char *className = (char *)object_getClassName(self);
-            static unsigned int counter = 0;
-            char buf[1027];
 
+            // always call this first to ensure the class is initialized
+            Class c = orig_objc_msgSend(self, @selector(class));
+            if(!c) {
+                bf_logwrite_msgSend(LOG_MSGSEND, "\n\nERROR c=nil\n\n");
+                return;
+            }
+
+            va_list va;
+            char *className = (char *)object_getClassName(self);
+            char *methodName = (char *)strdup(sel_getName(_cmd));
+            static unsigned int counter = 0;
+            char buf[1027], buf2[1027];
+            Method method = nil;
+            int numArgs, k, realNumArgs;
+            BOOL isInstanceMethod = true;
+            char *tmp;
+            id foo, fooId;
+            Class fooClass;
+            
             // We need to determine if "self" is a meta class or an instance of a class.
             // We can't use Apple's class_isMetaClass() here because it seems to randomly crash just
             // a little too often. Always class_isMetaClass() and always in this piece of code. 
@@ -152,17 +253,131 @@ namespace bf_msgSend {
             // 1. Get the name of the object being passed as "self"
             // 2. Get the metaclass of "self" based on its name
             // 3. Compare the metaclass of "self" to "self". If they're the same, it's a metaclass.
-            bool meta = (objc_getMetaClass(className) == object_getClass(self));
+            //bool meta = (objc_getMetaClass(className) == object_getClass(self));
+            bool meta = (id)c == self;
             
-            // write the captured information to the iSpy web socket. If a client is connected it'll receive this event.
-            snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
-            bf_websocket_write(buf);
-            
+            if(!meta) {
+                method = class_getInstanceMethod(object_getClass(self), _cmd);
+            } else {
+                method = class_getClassMethod(object_getClass(self), _cmd);
+                isInstanceMethod = false;
+            }
+
+            if(!method || !className || !methodName) {
+                bf_logwrite_msgSend(LOG_MSGSEND, "\n\nERROR method=nil or classNAme or methodName\n\n");
+                return;
+            }
+
+            numArgs = method_getNumberOfArguments(method);
+            realNumArgs = numArgs - 2;
+            tmp = methodName;
+
+            // start the JSON block
+            bf_logwrite_msgSend(LOG_MSGSEND, "{\n\"class\":\"%s\",\n\"method\":\"%s\",\n\"isInstanceMethod\":%d,\n\"numArgs\":%d,\n\"args\":[\n", className, methodName, isInstanceMethod, realNumArgs);
+
+            va_start(va, _cmd);
+
+            // cycle through the paramter list for this method.
+            // start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
+            for(k=2; k < numArgs; k++) {
+                char tmpBuf[256]; // safe and reasonable limit on var name length
+                char *type = NULL;
+                char *name = NULL;
+                int argNum = k - 2;
+                
+                // get the arg name
+                name = strsep(&methodName, ":");
+                if(!name) {
+                    bf_logwrite_msgSend(LOG_MSGSEND, "um, so p=NULL in arg printer for class methods... weird. (aka no method name)");
+                    continue;
+                }
+                
+                // get the type code for the argument
+                method_getArgumentType(method, k, tmpBuf, 255);
+                char *typeCode = (tmpBuf[0] == '^') ? &tmpBuf[1] : tmpBuf;
+
+/*                // get human-readable type data
+                if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
+                    bf_logwrite(LOG_MSGSEND, "Out of mem");
+                    break;
+                }
+*/
+                // arg data
+                void *paramVal = va_arg(va, void *);
+                
+                // start the JSON for this argument
+                bf_logwrite_msgSend(LOG_MSGSEND, "{\n\t\"name\":\"%s\",\n\t\"typeCode\":\"TBD\",\n\t\"type\":\"TBD\",\n\t\"addr\":\"%p\",\n", name, paramVal);
+
+                // lololol
+                unsigned long v = (unsigned long)paramVal;
+                double d = (double)v;
+
+                switch(*typeCode) {
+                    case 'c': // char
+                    case 'i': // int
+                    case 's': // short
+                    case 'l': // long
+                    case 'q': // long long
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%lld\n", (long long)paramVal); 
+                        break;
+                    case 'C': // unsigned char
+                    case 'I': // unsigned int
+                    case 'S': // unsigned short
+                    case 'L': // unsigned long
+                    case 'Q': // unsigned long long
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%lld", (long long)paramVal); 
+                        break;
+                    case 'f': // float
+                    case 'd': // double
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%llf", (double)d); 
+                        break;
+                    case 'B': // BOOL
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":%s", ((int)paramVal)?"true":false);
+                        break;
+                    case 'v': // void
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"ptr\":\"%p\"", paramVal);
+                        break;
+                    case '*': // char *
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"%s\",\n\t\"ptr\":\"%p\" ", (char *)paramVal, paramVal);
+                        break;
+                    case '{': // struct
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"ptr\":\"%p\"", paramVal);
+                        break;
+                    case ':': // selector
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"@selector(%s)\"", (paramVal)?(char *)paramVal:"nil");
+                        break;
+                    case '@': // object
+                    case '#':
+                        if(is_valid_pointer(paramVal)) {
+                            fooId = (id)paramVal;
+                            fooClass = object_getClass(fooId);
+                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"type\":\"%s\",\n", class_getName(fooClass));
+                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"value\":\"%s\"", (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
+                        } else {
+                            bf_logwrite_msgSend(LOG_MSGSEND, "\t\"type\":\"<Invalid memory address>\"");
+                        }
+                        break;
+                    default:
+                        bf_logwrite_msgSend(LOG_MSGSEND, "\t\"dvalue\":\"%p\"", fooId);
+                        break;
+                }
+                bf_logwrite_msgSend(LOG_MSGSEND, "}%c\n", (argNum==realNumArgs-1)?' ':',');
+                //free(type);
+
+            }
+
+            // finish the JSON block
+            bf_logwrite_msgSend(LOG_MSGSEND, "%s}\n\n", (1)?"]":"");
+
+            free(tmp);
+            va_end(va);
+
+
             // keep a local copy of the log in /tmp/bf_msgsend
             strcat(buf, "\n");
             ispy_log_info(LOG_MSGSEND, buf);
         }
-        
+
         return;
     }
 
@@ -202,19 +417,6 @@ namespace bf_msgSend {
         orig_objc_msgSend = (id (*)(id, SEL, ...))original_objc_msgSend;
     }
 
-    // This is a callback function designed to toggle the "ready-to-rock-n-roll" flag.
-    // We can also use it to update the whitelist/blacklist of methods we want to monitor. 
-    EXPORT void update_msgSend_checklists(id *whiteListPtr, id *blackListPtr) {
-        ispy_log_debug(LOG_MSGSEND, "[update_msgSend_checklists] Whistlist @ %p", whiteListPtr);
-        appClassWhiteListIsReady = false;
-        appClassWhiteList = whiteListPtr;   // We can update our whitelist as often as we want, just by flipping this pointer.
-        appClassWhiteListIsReady = true;    
-    }
-
-    EXPORT bool bf_has_msgSend_initialized_yet() {
-        return appClassWhiteListIsReady;
-    }
-
 // This is ripped from Subjective-C and bastardized like a mofo.
 #pragma mark _replaced_objc_msgSend (ARM)
     __asm__ (".arm\n"
@@ -230,7 +432,7 @@ namespace bf_msgSend {
 
                 // is this method on the whitelist?
                 "push {r0-r11,lr}\n"
-                "bl _is_object_from_app_bundle\n"
+                "bl _is_this_method_on_whitelist\n"
                 "mov r12, r0\n" 
                 "pop {r0-r11,lr}\n"
                 "teq r12, #0\n"
@@ -257,15 +459,15 @@ namespace bf_msgSend {
     "LoadSR3:"    "add r12, pc, r2\n"
                 "ldmia r12, {r0-r3}\n"
 
-                "push {r0-r11,lr}\n"
-                "bl _do_objc_msgSend_mutex_unlock\n"
-                "pop {r0-r11,lr}\n"
+                //"push {r0-r11,lr}\n"
+                //"bl _do_objc_msgSend_mutex_unlock\n"
+                //"pop {r0-r11,lr}\n"
 
                 "bl _print_args\n"
                 
-                "push {r0-r11,lr}\n"
-                "bl _do_objc_msgSend_mutex_lock\n"
-                "pop {r0-r11,lr}\n"
+                //"push {r0-r11,lr}\n"
+                //"bl _do_objc_msgSend_mutex_lock\n"
+                //"pop {r0-r11,lr}\n"
 
                 // Restore the registers.
                 "ldr r1, (LSR4)\n"

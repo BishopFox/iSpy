@@ -109,7 +109,6 @@ namespace bf_msgSend {
             stack = new std::stack<lr_node>;
             int err = pthread_setspecific(thr_key, stack);
             if (err) {
-                bf_logwrite(LOG_MSGSEND, "[msgSend] Error: pthread_setspecific() Committing suicide.\n");
                 delete stack;
                 stack = NULL;
             }
@@ -208,7 +207,6 @@ namespace bf_msgSend {
                 return strdup("nil");
         }
         return "";
-        //bf_logwrite_msgSend(LOG_MSGSEND, "<%s %p>", object_getClassName((id)x));
     }
 
     extern "C" USED int is_valid_pointer(void *ptr) {
@@ -229,7 +227,6 @@ namespace bf_msgSend {
             // always call this first to ensure the class is initialized
             Class c = orig_objc_msgSend(self, @selector(class));
             if(!c) {
-                bf_logwrite_msgSend(LOG_MSGSEND, "\n\nERROR c=nil\n\n");
                 return;
             }
 

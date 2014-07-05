@@ -127,10 +127,10 @@ int bf_objc_msgSend_whitelist_startup() {
     for(i = 0; i < numClasses; i++) {
     	NSString *name = [classes objectAtIndex:i];
         bf_objc_msgSend_whitelist_add_class([name UTF8String], YES, (char *)bf_msgSend_uninterestingList, NULL);
-        bf_logwrite(LOG_GENERAL, "[Whitelist] adding %s", [name UTF8String]);
+        ispy_log_debug(LOG_GENERAL, "[Whitelist] adding %s", [name UTF8String]);
     }
 
-    bf_logwrite(LOG_GENERAL, "[whitelist] Added %d classes to the whitelist. All done!", i);
+    ispy_log_debug(LOG_GENERAL, "[whitelist] Added %d classes to the whitelist. All done!", i);
 
     return true; 
 }

@@ -46,7 +46,8 @@
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
-static NSString *CSP = @"default-src 'self';";
+/* Underscore.js requires the use of eval :( */
+static NSString *CSP = @"default-src 'self'; script-src 'self' 'unsafe-eval'";
 static NSDictionary *STATIC_CONTENT = @{
     @"js": @"text/javascript",
     @"css": @"text/css",
@@ -146,12 +147,13 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
             NSString *contentType = [STATIC_CONTENT valueForKey:[fname pathExtension]];
             if(!contentType) {
+                [connection setResponseHeader:@"Content-Type" to:"@x/unknown"];
                 ispy_log_warning(LOG_HTTP, "Could not determine content-type of static resource: %s", [fname UTF8String]);
             } else {
                 /* We only write the data if we know the content-type */
                 NSString *pathToStaticFile = [NSString stringWithFormat:@"%@/static/%@/%@", [[self http] publicDir], folder, fname];
                 NSData *data = [NSData dataWithContentsOfFile:pathToStaticFile];
-                [connection setResponseHeader:@"Content-Type" to:contentType]; // blah blah hard-coded type blah
+                [connection setResponseHeader:@"Content-Type" to:contentType];
                 [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
                 [connection writeData:data];
             }

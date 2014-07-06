@@ -46,23 +46,27 @@
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
+static NSString *CSP = @"default-src 'self';";
+static NSDictionary *STATIC_CONTENT = @{
+    @"js": @"text/javascript",
+    @"css": @"text/css",
+    @"png": @"image/png",
+    @"jpg": @"image/jpeg",
+    @"jpeg": @"image/jpeg",
+    @"ico": @"image/ico",
+    @"gif": @"image/gif",
+    @"svg": @"image/svg+xml",
+    @"tff": @"application/x-font-ttf",
+    @"eot": @"application/vnd.ms-fontobject",
+    @"woff": @"application/x-font-woff",
+    @"otf": @"application/x-font-otf",
+};
+
 NSString *templatesPath = @"/var/www/iSpy/templates";   // Path to the Mustache HTML templates
 GRMustacheTemplateRepository *templatesRepo;                // Template repository class
 static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection is (was) a private struct in HTTPKit
 
-@implementation iSpyServer 
-/****************************************************************
-    This is where we setup the web server and Mustache templates.
-*****************************************************************/
-
-// This is a short-cut helper function.
-// Pass it the name of a template (eg "home_page") and it'll render it for you.
--(NSString *)renderStaticTemplate:(NSString *)tpl {
-    GRMustacheTemplate *bfTemplate = [templatesRepo templateNamed:@"main" error:NULL];
-    GRMustacheTemplate *bfContent = [templatesRepo templateNamed:tpl error:NULL];
-    id content = @{ @"content": [bfContent renderObject:@{ } error:NULL] };
-    return [bfTemplate renderObject:content error:NULL];  
-}
+@implementation iSpyServer
 
 -(void)configureWebServer {
     [self setHttp:NULL];
@@ -109,66 +113,48 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
         return ret;
     }
 
-    // Initialize the Mustache HTML templates
-    templatesRepo = [GRMustacheTemplateRepository templateRepositoryWithDirectory:templatesPath];
-
-    // Setup the HTTP endpoint handlers
-    [[self wsISpy] listenOnPort:31338 onError:^(id reason) {
-        ispy_log_wtf(LOG_GENERAL, "[iSpy] Fucked up web services socket: %s", [reason UTF8String]);
-    }];
-
-    [[self wsISpy] handleWebSocket:^id (HTTPConnection *connection) {
-        if(!connection.isOpen) {
-            ispy_log_debug(LOG_GENERAL, "Closed web socket.");
-            globalMsgSendWebSocketPtr = NULL;
-            return nil;
-        }
-        ispy_log_info(LOG_GENERAL, "Successfully opened a websocket port");
-        globalMsgSendWebSocketPtr = [connection connectionPtr];
-        return @"OK"; //[connection.requestBody capitalizedString];
-    }];
-
-    // Handler for the web root. Displays home page.
+    /* This is the only page that is sent */
     [[self http] handleGET:@"/"
         with:^(HTTPConnection *connection) {
-            return [self renderStaticTemplate:@"home_page"];
-    }];
-    
-    // Handler for all static content: CSS, JavaScript, images, etc
-    // Accepts format: http://idevice:31337/static/images/logo.png or /static/css/base.css or /static/js/iSpy.js etc
-    [[self http] handleGET:@"/static/*/*"
-        with:^(HTTPConnection *connection, NSString *folder, NSString *fname) {
-            NSString *contentType;
+            NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/index.html", [[self http] publicDir]];
+            NSData *data = [NSData dataWithContentsOfFile:pathToIndex];
+            ispy_log_info(LOG_HTTP, "[GET] Page -> %s", [pathToIndex UTF8String]);
 
-            // Set Content-Type for images
-            if( [fname rangeOfString:@".png"].location != NSNotFound ||
-                [fname rangeOfString:@".jpg"].location != NSNotFound ||
-                [fname rangeOfString:@".ico"].location != NSNotFound ||
-                [fname rangeOfString:@".gif"].location != NSNotFound) {
-                contentType = [NSString stringWithFormat:@"image/%@", [fname pathExtension]];
-            }
-
-            // Set Content-Type for CSS
-            else if([fname rangeOfString:@".css"].location != NSNotFound) {
-                contentType = [NSString stringWithFormat:@"text/css"];
-            }
-
-            // Set Content-Type for JavaScript
-            else if([fname rangeOfString:@".js"].location != NSNotFound) {
-                contentType = [NSString stringWithFormat:@"text/javascript"];
-            }
-
-            // Fall back to HTML Content-Type
-            else {
-                contentType = [NSString stringWithFormat:@"text/html"];
-            }
-
-            // Locate the file, read it, set the Content-Type and Content-Length, then send the actual data to the client.
-            NSString *pathToStaticFile = [NSString stringWithFormat:@"%@/static/%@/%@", [[self http] publicDir], folder, fname];
-            NSData *data = [NSData dataWithContentsOfFile:pathToStaticFile];
-            [connection setResponseHeader:@"Content-Type" to:contentType]; // blah blah hard-coded type blah
+            /*
+                Since iSpy is basically remote code execution as a feature, it seems
+                prudent to add as many security headers as possible.
+            */
+            [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
+            [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
+            [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
+            [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
+            [connection setResponseHeader:@"Content-Type" to:@"text/html"];
             [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
             [connection writeData:data];
+            return nil;
+    }];
+
+    /*
+     * Handler for all static content: CSS, JavaScript, images, etc (but notably not HTML)
+     */
+    [[self http] handleGET:@"/static/*/*"
+        with:^(HTTPConnection *connection, NSString *folder, NSString *fname) {
+            [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
+            [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
+            [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
+            [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
+
+            NSString *contentType = [STATIC_CONTENT valueForKey:[fname pathExtension]];
+            if(!contentType) {
+                ispy_log_warning(LOG_HTTP, "Could not determine content-type of static resource: %s", [fname UTF8String]);
+            } else {
+                /* We only write the data if we know the content-type */
+                NSString *pathToStaticFile = [NSString stringWithFormat:@"%@/static/%@/%@", [[self http] publicDir], folder, fname];
+                NSData *data = [NSData dataWithContentsOfFile:pathToStaticFile];
+                [connection setResponseHeader:@"Content-Type" to:contentType]; // blah blah hard-coded type blah
+                [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
+                [connection writeData:data];
+            }
             return nil;
     }];
 

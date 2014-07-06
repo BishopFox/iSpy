@@ -32,8 +32,6 @@
 #define PREFERENCEFILE		"/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Settings.plist"
 #define APP_PREFERENCEFILE	"/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Targets.plist"
 
-#define WEBSERVER_PORT 31337
-
 
 /* System family socket address */
 struct sockaddr_sys {

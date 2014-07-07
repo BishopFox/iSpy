@@ -45,6 +45,9 @@
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
+static const int DEFAULT_WEB_PORT = 31337;
+static const int DEFAULT_RPC_PORT = 31338;
+
 /* Underscore.js requires the use of eval :( */
 // static NSString *CSP = @"default-src *; script-src 'self' 'unsafe-eval';";
 
@@ -115,13 +118,13 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
     BOOL web, ws;
 
-    int web_lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:31337];
+    int web_lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:DEFAULT_WEB_PORT];
     ispy_log_debug(LOG_HTTP, "Binding web server to port: %d", web_lport);
     web = [[self http] listenOnPort:web_lport onError:^(id reason) {
         ispy_log_error(LOG_HTTP, "Failed to bind web server: %s", [reason UTF8String]);
     }];
 
-    int rpc_lport = [self getListenPortFor:@"settings_jsonRpcPort" fallbackTo:31338];
+    int rpc_lport = [self getListenPortFor:@"settings_jsonRpcPort" fallbackTo:DEFAULT_RPC_PORT];
     ispy_log_debug(LOG_HTTP, "Binding json-rpc to port: %d", rpc_lport);
     ws = [[self jsonRpc] listenOnPort:rpc_lport onError:^(id reason) {
         ispy_log_error(LOG_HTTP, "Failed to bind json-rpc server: %s", [reason UTF8String]);
@@ -149,6 +152,10 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             // [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
             [connection setResponseHeader:@"Content-Type" to:@"text/html"];
             [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
+
+            int rpc_lport = [self getListenPortFor:@"settings_jsonRpcPort" fallbackTo:DEFAULT_RPC_PORT];
+            [connection setResponseHeader:@"Set-Cookie" to:[NSString stringWithFormat:@"rpc-lport=%d", rpc_lport]];
+
             [connection writeData:data];
             return nil;
     }];

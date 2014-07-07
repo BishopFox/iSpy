@@ -111,8 +111,6 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
 -(BOOL) startWebServices {
     // Initialize the iSpy web service
-    iSpy *mySpy = [iSpy sharedInstance];
-
     BOOL web, ws;
 
     int web_lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:31337];
@@ -189,13 +187,14 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
         with:^(HTTPConnection *connection, NSString *name) {
             NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/404.html", [[self http] publicDir]];
             NSData *data = [NSData dataWithContentsOfFile:pathToIndex];
-            ispy_log_info(LOG_HTTP, "[404]");
+            ispy_log_info(LOG_HTTP, "[404] -> %s", [name UTF8String]);
             [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
             [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
             [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
             [connection setResponseHeader:@"Content-Type" to:@"text/html"];
             [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
             [connection writeData:data];
+            return nil;
     }];
 
 
@@ -206,18 +205,55 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
      * websocket requests from accessing the JSON-RPC interface (which would end badly)
      */
     [[self jsonRpc] handleWebSocket:^id (HTTPConnection *connection) {
+        ispy_log_debug(LOG_HTTP, "Handling business");
         if(!connection.isOpen) {
             ispy_log_info(LOG_HTTP, "Closed web socket.");
             globalMsgSendWebSocketPtr = NULL;
             return nil;
         }
-        if (! [[self.plist objectForKey:@"settings_ignoreRpcOrigin"] boolValue]) {
-            NSString *origin = [connection requestHeader:@"Origin"];
-            ispy_log_info(LOG_HTTP, "origin = %s", [origin UTF8String]);
+
+        // make sure that this pointer is correct - it's needed by the obj_msgSend logging code
+        globalMsgSendWebSocketPtr = [connection connectionPtr];
+
+        // grab the JSON request from the client
+        NSString *JSONRPCRequest = connection.requestBody;  
+        if( ! JSONRPCRequest) {
+            ispy_log_debug(LOG_HTTP, "ERROR: there was not body in the websocket request");
+            return nil;
+        }
+        NSData *RPCRequest = [JSONRPCRequest dataUsingEncoding:NSUTF8StringEncoding];
+        if( ! RPCRequest) {
+            ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
+            return nil;
+        }
+        
+        // create a dictionary from the JSON request
+        NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
+        if(!RPCDictionary) {
+            ispy_log_debug(LOG_HTTP, "ERROR: invalid RPC request, couldn't deserialze the JSON data.");
+            return nil;
         }
 
+        // is this a valid request? (does it contain both "messageType" and "messageData" entries?)
+        if( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"]) {
+            ispy_log_debug(LOG_HTTP, "ERROR: Invalid request. Must have messageType and messageData.");
+            return nil;
+        }
 
-        globalMsgSendWebSocketPtr = [connection connectionPtr];
+        // Verify that the iSpy class can execute the requested selector
+        NSString *selectorString = [RPCDictionary objectForKey:@"messageType"];
+        SEL selectorName = sel_registerName([[NSString stringWithFormat:@"%@:", selectorString] UTF8String]);
+        if(!selectorName) {
+            ispy_log_debug(LOG_HTTP, "ERROR: selectorName was null.");
+            return nil;
+        }
+        if( ! [[iSpy sharedInstance] respondsToSelector:selectorName] ) {
+            ispy_log_debug(LOG_HTTP, "ERROR: doesn't respond to selector");
+            return nil;
+        }
+
+        // Do it!
+        [[iSpy sharedInstance] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];        
 
         return nil;
     }];

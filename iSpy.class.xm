@@ -236,24 +236,6 @@ id *appClassWhiteList = NULL;
 	return nil;
 }
 
--(unsigned int) getMachFlags {
-	return 0;
-	/*
-	sqlite3_stmt *stmt;
-	iSpy *mySpy = [iSpy sharedInstance];
-	unsigned int flags;
-
-	sqlite3_prepare_v2([[mySpy db] handle], "SELECT flags FROM machFlags", -1, &stmt, NULL);
-	if(sqlite3_step(stmt) == SQLITE_ROW)
-		flags = (unsigned int)sqlite3_column_int(stmt, 0);
-	else
-		flags = 0xffffffff;
-	sqlite3_finalize(stmt);
-	return flags;
-	*/
-}
-
-
 -(NSDictionary *)keyChainItems {
 	NSMutableDictionary *genericQuery = [[NSMutableDictionary alloc] init];
 	NSMutableDictionary *keychainDict = [[NSMutableDictionary alloc] init];
@@ -326,10 +308,6 @@ Returns a NSDictionary like this:
 	"returnType" = "void";
 }
 */
-
--(id)testMethodThing {
-	return [self iVarsForClass:@"NSString"];
-}
 
 -(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls {
 	return [self infoForMethod:selector inClass:cls isInstanceMethod:1];
@@ -853,6 +831,7 @@ Returns a NSDictionary like this:
 			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
 			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
 			// of how to deal with this shit. 
+			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
 			char *type = (char *)[[iVar objectForKey:key] UTF8String];
 			
 			if(islower(*type)) {
@@ -879,16 +858,18 @@ Returns a NSDictionary like this:
 	return [iVarData copy];
 }
 
-/*-(void) bounceWebServer {
-    ispy_log_debug(LOG_GENERAL, "Bouncing webserver...");
-    iSpyServer *selfHTTP = [self webServer];
-    [selfHTTP dealloc];
-    selfHTTP = nil;
-    sleep(2);
-    [[self webServer] configureWebServer];
-    [[self webServer] startWebServices];
-    ispy_log_debug(LOG_GENERAL, "Bounce done.");
-}*/
+-(void) testJSONRPC:(NSDictionary *)args {
+	NSLog(@"Looks like RPC works: %@", args);
+}
+
+-(void) setMsgSendLoggingState:(NSDictionary *) args {
+	NSString *state = [args objectForKey:@"state"];
+
+	if(state && [state isEqual:@"true"])
+		[self msgSend_enableLogging];
+	else if(state && [state isEqual:@"false"])
+		[self msgSend_disableLogging];
+}
 
 @end
 
@@ -1000,105 +981,6 @@ static char *bf_get_attrs_from_signature(char *attributeCString) {
 
 	return strdup([result UTF8String]);
 }
-
-/*
-	This incorporates code originally from http://doxygen.asterisk.org/asterisk1.0/dlfcn_8c.html
-	It's been tweaked to fit this purpose.
-*/
-/*
-static void bf_enumerate_symbol_table() {
-	unsigned long i;
-	unsigned long j;
-	struct mach_header *mh = 0;
-	struct load_command *lc = 0;
-	unsigned long table_off = (unsigned long)0;
-	unsigned int vmAddrSlide;
-	unsigned int flags;
-	char* errorMessage;
-	iSpy *mySpy = [iSpy sharedInstance];
-	sqlite3 *dbHandle = [[mySpy db] handle];
-	sqlite3_stmt *stmt;
-
-	// prep for speed
-	sqlite3_exec(dbHandle, "PRAGMA synchronous=OFF", NULL, NULL, &errorMessage);
-	sqlite3_exec(dbHandle, "PRAGMA count_changes=OFF", NULL, NULL, &errorMessage);
-	sqlite3_exec(dbHandle, "PRAGMA journal_mode=MEMORY", NULL, NULL, &errorMessage);
-	sqlite3_exec(dbHandle, "PRAGMA temp_store=MEMORY", NULL, NULL, &errorMessage);
-	sqlite3_exec(dbHandle, "BEGIN TRANSACTION", NULL, NULL, &errorMessage);
-	sqlite3_prepare_v2(dbHandle, "INSERT INTO symbols (name, offset, n_stab, n_pext, n_ext, n_pbud, n_indr, n_arm, type) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)", -1, &stmt, NULL);
-
-	// Grab the ASLR slide info
-	vmAddrSlide = (unsigned int)_dyld_get_image_vmaddr_slide(0);
-	ispy_log_debug(LOG_GENERAL, "ASLR slide = 0x%x", vmAddrSlide);
-
-	// Find the __LINKEDIT segment of the Mach-O header in memory
-	mh = (struct mach_header *)_dyld_get_image_header(0);
-	
-	// cache a copy of the Mach-O header flags for later
-	flags = mh->flags;
-	
-	// find the relevant load command and segment name
-	lc = (struct load_command *)((char *)mh + sizeof(struct mach_header));
-	for (j = 0; j < mh->ncmds; j++, lc = (struct load_command *)((char *)lc + lc->cmdsize)) {
-		if (LC_SEGMENT == lc->cmd) {
-			if (!strcmp(((struct segment_command *)lc)->segname, "__LINKEDIT"))
-				break;
-		}
-	}
-	
-	if(strcmp(((struct segment_command *)lc)->segname, "__LINKEDIT"))
-		return;
-
-	ispy_log_debug(LOG_GENERAL, "Found __LINKEDIT");
-
-	// Calculate the offset to the Load Commands
-	table_off =
-		((unsigned long)((struct segment_command *)lc)->vmaddr) -
-		((unsigned long)((struct segment_command *)lc)->fileoff) + vmAddrSlide;
-
-	ispy_log_debug(LOG_GENERAL, "Table offset = 0x%x", table_off);
-
-	// Find the Load Command(s) for the symbol table(s)
-	lc = (struct load_command *)((char *)mh + sizeof(struct mach_header));
-	for (j = 0; j < mh->ncmds; j++, lc = (struct load_command *)((char *)lc + lc->cmdsize)) {
-		
-		// Is this a symbol table?
-		if(LC_SYMTAB == lc->cmd) {
-			struct nlist *symtable = (struct nlist *)(((struct symtab_command *)lc)->symoff + table_off);
-			unsigned long numsyms = ((struct symtab_command *)lc)->nsyms;
-			unsigned long strtable = (unsigned long)(((struct symtab_command *)lc)->stroff + table_off);
-			
-			// Loop through each entry in the symbol table, dumping all the things
-			for (i = 0; i < numsyms; i++) {
-				if(symtable) {
-					if(strlen((char *)(strtable + symtable->n_un.n_strx))) {                        
-						unsigned int type = (unsigned int)symtable->n_type;
-						sqlite3_bind_text(stmt, 1, (char *)(strtable + symtable->n_un.n_strx), strlen((char *)(strtable + symtable->n_un.n_strx)), SQLITE_STATIC);
-						sqlite3_bind_int(stmt, 2, (int)symtable->n_value);
-						sqlite3_bind_int(stmt, 3, (int)(type & N_STAB) ? 1 : 0);
-						sqlite3_bind_int(stmt, 4, (int)(type & N_PEXT) ? 1 : 0);
-						sqlite3_bind_int(stmt, 5, (int)(type & N_EXT) ? 1 : 0);
-						sqlite3_bind_int(stmt, 6, (int)(type & N_PBUD) ? 1 : 0);
-						sqlite3_bind_int(stmt, 7, (int)(type & N_INDR) ? 1 : 0);
-						sqlite3_bind_int(stmt, 8, (int)(type & N_ARM_THUMB_DEF) ? 1 : 0);
-						sqlite3_bind_int(stmt, 9, (int)type);
-						sqlite3_step(stmt);
-						sqlite3_reset(stmt);
-					}
-				}
-				symtable++;
-			}
-		}
-	}
-	sqlite3_exec(dbHandle, "COMMIT TRANSACTION", NULL, NULL, &errorMessage);
-	sqlite3_finalize(stmt);
-	sqlite3_prepare_v2(dbHandle, "INSERT INTO machFlags (flags) VALUES(?1)", -1, &stmt, NULL);
-	sqlite3_bind_int(stmt, 1, (int)flags);
-	sqlite3_step(stmt);
-	sqlite3_finalize(stmt);
-	return;
-}
-*/
 
 EXPORT NSString *base64forData(NSData *theData) {
 	const uint8_t* input = (const uint8_t*)[theData bytes];

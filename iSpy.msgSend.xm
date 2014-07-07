@@ -188,7 +188,7 @@ namespace bf_msgSend {
 
             __log__("sprintf\n");
             // start the JSON block
-            snprintf(json, sizeof(json), "{\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
+            snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
 
             __log__("vaargs\n");
             // setup varargs

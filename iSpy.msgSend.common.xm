@@ -37,7 +37,7 @@
 #include <objc/runtime.h>
 #include "iSpy.msgSend.common.h"
 
-#define DO_SUPER_DEBUG_MODE 0
+#define DO_SUPER_DEBUG_MODE 1
 
 extern "C" USED int is_valid_pointer(void *ptr) {
     //int ret = madvise(ptr, 4096, MADV_WILLNEED);

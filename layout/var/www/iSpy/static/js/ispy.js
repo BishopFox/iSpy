@@ -12,7 +12,7 @@ function getCookie(name) {
 
 $(document).ready(function() {
 
-    var rpc_url = "ws://" + window.location.hostname.toString() + ":" + getCookie('rpc-lport');
+    var rpc_url = "ws://" + window.location.hostname + ":" + getCookie('rpc-lport');
     console.log("[*] Connecting to json-rpc server -> " + rpc_url);
 
     ws = new WebSocket(rpc_url);

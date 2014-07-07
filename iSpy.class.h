@@ -15,18 +15,12 @@
 @interface iSpyServer : NSObject {
 }
 @property (assign) HTTP *http;         // Used for our HTTP server
-@property (assign) HTTP *wsGeneral;    // Used for different web sockets
-@property (assign) HTTP *wsStrace;
-@property (assign) HTTP *wsMsgSend;
-@property (assign) HTTP *wsNetwork;
-@property (assign) HTTP *wsFile;
-@property (assign) HTTP *wsInstance;
-@property (assign) HTTP *wsISpy;
-
--(NSString *)renderStaticTemplate:(NSString *)tpl;
+@property (assign) HTTP *jsonRpc;
+@property (assign) NSMutableDictionary *plist;
 -(NSDictionary *) getNetworkInfo;
 -(void) configureWebServer;
 -(BOOL) startWebServices;
+-(int) getListenPortFor:(NSString *) key fallbackTo: (int) fallback;
 @end
 
 

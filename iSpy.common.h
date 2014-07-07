@@ -18,19 +18,19 @@
 
 // Cribbed from http://www.opensource.apple.com/source/xnu/xnu-792.13.8/bsd/sys/sys_domain.h
 /* Kernel Events Protocol */
-#define SYSPROTO_EVENT 		1	/* kernel events protocol */
+#define SYSPROTO_EVENT 1	/* kernel events protocol */
 
 /* Kernel Control Protocol */
-#define SYSPROTO_CONTROL       	2	/* kernel control protocol */
-#define AF_SYS_CONTROL		2	/* corresponding sub address type */
+#define SYSPROTO_CONTROL 2	/* kernel control protocol */
+#define AF_SYS_CONTROL 2	/* corresponding sub address type */
 
-/* 
+/*
  This where the all the preferences end up, from the 'Settings' app
  The dictionary keys, and ui are defined in layout/Library/PreferenceLoader/Preferences/iSpy.plist
  Format for keys is roughly "namespace_attrib"
  */
-#define PREFERENCEFILE		"/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Settings.plist"
-#define APP_PREFERENCEFILE	"/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Targets.plist"
+#define PREFERENCEFILE      "/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Settings.plist"
+#define APP_PREFERENCEFILE  "/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Targets.plist"
 
 
 /* System family socket address */
@@ -119,19 +119,19 @@ struct lr_node {
  UI interaction logging.
 
  If you want to log most interactions with UI elements, enable this.
- It'll dump an entry to NSLog every time you press a button, slide a slider, 
+ It'll dump an entry to NSLog every time you press a button, slide a slider,
  hit "back" or "login" or whatever. You'll get these items in your Xcode console:
- 
+
  class name
  method name
  parameter names and values
  a pointer to the controller receiving the UI event
  a pony
- 
+
  It generates very little logging unless you're going crazy in the UI pressing shit.
 
  NOTE: This isn't complete. Needs more work to encorporate all UI elements.
- 
+
  Enabled by default. Comment out to disable.
  */
 #define LOG_UI_INTERACTION 1

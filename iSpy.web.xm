@@ -39,15 +39,14 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #import "HTTPKit/HTTP.h"
-#import "HTTPKit/mongoose.h" 
-#import  "GRMustache/include/GRMustache.h"
+#import "HTTPKit/mongoose.h"
 #include <dlfcn.h>
 #include <mach-o/nlist.h>
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
 /* Underscore.js requires the use of eval :( */
-static NSString *CSP = @"default-src 'self'; script-src 'self' 'unsafe-eval'";
+// static NSString *CSP = @"default-src *; script-src 'self' 'unsafe-eval';";
 
 /* Whitelist of static content we'll serve */
 static NSDictionary *STATIC_CONTENT = @{
@@ -65,18 +64,20 @@ static NSDictionary *STATIC_CONTENT = @{
     @"otf": @"application/x-font-otf",
 };
 
-NSString *templatesPath = @"/var/www/iSpy/templates";   // Path to the Mustache HTML templates
-GRMustacheTemplateRepository *templatesRepo;                // Template repository class
 static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection is (was) a private struct in HTTPKit
 
 @implementation iSpyServer
 
 -(void)configureWebServer {
     [self setHttp:NULL];
+    [self setJsonRpc:NULL];
+    [self setPlist: NULL];
     [self setHttp:[[HTTP alloc] init]];
+    [self setJsonRpc:[[HTTP alloc] init]];
     [[self http] setEnableDirListing:NO];
     [[self http] setPublicDir:@"/var/www/iSpy"];
-    [[self wsISpy] setEnableKeepAlive:YES];
+    [[self jsonRpc] setEnableKeepAlive:YES];
+    [self setPlist: [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE]];
 }
 
 -(id)init {
@@ -94,46 +95,58 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     ispy_log_debug(LOG_HTTP, "Done.");
 }
 
--(BOOL) startWebServices {
-    // Initialize the iSpy web service
-    iSpy *mySpy = [iSpy sharedInstance];
-    BOOL ret;
-
-    /* Load user preferences */
-    NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
-    int lport = [[plist objectForKey:@"settings_listenPort"] intValue];
+-(int) getListenPortFor:(NSString *) key
+       fallbackTo:(int) fallback
+{
+    int lport = [[self.plist objectForKey:key] intValue];
     if (lport <= 0 || 65535 <= lport) {
-        ispy_log_warning(LOG_HTTP, "Invalid listen port (%d); defaulting to: 31337", lport);
-        lport = 31337;
+        ispy_log_warning(LOG_HTTP, "Invalid listen port (%d); fallback to %d", lport, fallback);
+        lport = fallback;
     }
     if (lport <= 1024) {
         ispy_log_warning(LOG_HTTP, "%d is a priviledged port, this is most likely not going to work!", lport);
     }
+    return lport;
+}
 
-    /* Bind web server to specified port */
-    ispy_log_debug(LOG_HTTP, "Attempting to bind web server to port: %d", lport);
-    ret = [[self http] listenOnPort:lport onError:^(id reason) {
-        ispy_log_error(LOG_HTTP, "Failed to bind web server to port: %d (%s)", lport, [reason UTF8String]);
+-(BOOL) startWebServices {
+    // Initialize the iSpy web service
+    iSpy *mySpy = [iSpy sharedInstance];
+
+    BOOL web, ws;
+
+    int web_lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:31337];
+    ispy_log_debug(LOG_HTTP, "Binding web server to port: %d", web_lport);
+    web = [[self http] listenOnPort:web_lport onError:^(id reason) {
+        ispy_log_error(LOG_HTTP, "Failed to bind web server: %s", [reason UTF8String]);
     }];
-    if(!ret) {
-        return ret;
+
+    int rpc_lport = [self getListenPortFor:@"settings_jsonRpcPort" fallbackTo:31338];
+    ispy_log_debug(LOG_HTTP, "Binding json-rpc to port: %d", rpc_lport);
+    ws = [[self jsonRpc] listenOnPort:rpc_lport onError:^(id reason) {
+        ispy_log_error(LOG_HTTP, "Failed to bind json-rpc server: %s", [reason UTF8String]);
+    }];
+
+    if(!web || !ws) {
+        ispy_log_error(LOG_HTTP, "Failed to bind one or more sockets, abandon ship!");
+        return false;
     }
 
-    /* This is the only page that is sent */
+    /*
+     * App Handler
+     *
+     * Since iSpy is basically remote code execution as a feature, it seems
+     * prudent to add as many security headers as possible. This is the only page.
+     */
     [[self http] handleGET:@"/"
         with:^(HTTPConnection *connection) {
             NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/index.html", [[self http] publicDir]];
             NSData *data = [NSData dataWithContentsOfFile:pathToIndex];
             ispy_log_info(LOG_HTTP, "[GET] Page -> %s", [pathToIndex UTF8String]);
-
-            /*
-                Since iSpy is basically remote code execution as a feature, it seems
-                prudent to add as many security headers as possible.
-            */
             [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
             [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
             [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
-            [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
+            // [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
             [connection setResponseHeader:@"Content-Type" to:@"text/html"];
             [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
             [connection writeData:data];
@@ -141,16 +154,17 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     }];
 
     /*
+     * Static Content Handler
+     *
      * Handler for all static content: CSS, JavaScript, images, etc (but notably not HTML)
+     * It's very important to get the content-type correct since we set the nosniff header
      */
     [[self http] handleGET:@"/static/*/*"
         with:^(HTTPConnection *connection, NSString *folder, NSString *fname) {
             [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
             [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
             [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
-            [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
 
-            /* It's very important to get the content-type correct since we set the nosniff header */
             NSString *contentType = [STATIC_CONTENT valueForKey:[fname pathExtension]];
             if(!contentType) {
                 [connection setResponseHeader:@"Content-Type" to:@"x/unknown"];
@@ -166,14 +180,11 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             return nil;
     }];
 
-    /* WebSocket JSON-RPC */
-    [[self http] handleWebSocket:@"/connect"
-        with:^(HTTPConnection *connection) {
-
-
-    }];
-
-    /* Anything that's not a handled GET or POST is a 404 */
+    /*
+     * Four-oh-Four Handler
+     *
+     * Anything that's not a handled GET or POST is a 404
+     */
     [[self http] handleGET:@"/*"
         with:^(HTTPConnection *connection, NSString *name) {
             NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/404.html", [[self http] publicDir]];
@@ -182,12 +193,36 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
             [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
             [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
             [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
-            [connection setResponseHeader:@"Content-Security-Policy" to:CSP];
             [connection setResponseHeader:@"Content-Type" to:@"text/html"];
             [connection setResponseHeader:@"Content-Length" to:[NSString stringWithFormat:@"%d", [data length]]];
             [connection writeData:data];
     }];
 
+
+    /*
+     * WebSocket JSON-RPC
+     *
+     * It's important to check the request's "origin" header to prevent any cross-domain
+     * websocket requests from accessing the JSON-RPC interface (which would end badly)
+     */
+    [[self jsonRpc] handleWebSocket:^id (HTTPConnection *connection) {
+        if(!connection.isOpen) {
+            ispy_log_info(LOG_HTTP, "Closed web socket.");
+            globalMsgSendWebSocketPtr = NULL;
+            return nil;
+        }
+        if (! [[self.plist objectForKey:@"settings_ignoreRpcOrigin"] boolValue]) {
+            NSString *origin = [connection requestHeader:@"Origin"];
+            ispy_log_info(LOG_HTTP, "origin = %s", [origin UTF8String]);
+        }
+
+
+        globalMsgSendWebSocketPtr = [connection connectionPtr];
+
+        return nil;
+    }];
+
+    ispy_log_debug(LOG_HTTP, "Successfully initialized web server on %d and rpc server on %d", web_lport, rpc_lport);
     return true;
 }
 

@@ -44,7 +44,6 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #include "HTTPKit/HTTP.h"
-#import  "GRMustache/include/GRMustache.h"
 #include "iSpy.msgSend.whitelist.h"
 
 // This will become a linked list of pointers to instantiated classes
@@ -1856,17 +1855,6 @@ EXPORT int return_true() {
 		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
 		return;
 	}
-
-	//NSLog(@"iSpy: checking for running iSpy...");
-	// Test to see if iSpy is already loaded in another running app. Abandon ship if so.
-	/*NSError* error = nil;
-	NSURL *bfURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%d/ping", WEBSERVER_PORT]];
-	NSString* result = [NSString stringWithContentsOfURL:bfURL encoding:NSASCIIStringEncoding error:&error];
-	if( result ) {
-		NSLog(@"[iSpy] ERROR: Already running in another app!");
-		return;
-	}
-*/
 
 	// Initialize the BF log writing system
 	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);

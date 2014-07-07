@@ -41,7 +41,6 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #include "HTTPKit/HTTP.h"
-#import  "GRMustache/include/GRMustache.h"
 #include <dlfcn.h>
 #include <mach-o/nlist.h>
 #include <semaphore.h>

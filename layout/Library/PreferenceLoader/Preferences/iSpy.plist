@@ -43,12 +43,12 @@
             <string>Inject iSpy into Apps</string>
          </dict><!-- End Global on/off -->
 
-      <!-- Web Server Listen Port -->
+      <!-- Web Server / JSON RPC -->
          <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>iSpy Web Server</string>
+            <string>iSpy Web Server Configuration</string>
          </dict>
 
          <dict>
@@ -59,11 +59,39 @@
             <key>defaults</key>
             <string>com.bishopfox.iSpy.Settings</string>
             <key>key</key>
-            <string>settings_listenPort</string>
+            <string>settings_webServerPort</string>
             <key>label</key>
-            <string>Listen Port</string>
+            <string>Web Server Port</string>
             <key>placeholder</key>
-            <string>(Default 31337)</string>
+            <string>Default 31337</string>
+         </dict>
+
+         <dict>
+            <key>cell</key>
+            <string>PSEditTextCell</string>
+            <key>detail</key>
+            <string>PSDetailController</string>
+            <key>defaults</key>
+            <string>com.bishopfox.iSpy.Settings</string>
+            <key>key</key>
+            <string>settings_jsonRpcPort</string>
+            <key>label</key>
+            <string>JSON RPC Port</string>
+            <key>placeholder</key>
+            <string>Default 31338</string>
+         </dict>
+
+         <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.bishopfox.iSpy.Settings</string>
+            <key>key</key>
+            <string>settings_ignoreRpcOrigin</string>
+            <key>label</key>
+            <string>Ignore RPC Origin</string>
          </dict>
 
          <!-- Target Selection -->

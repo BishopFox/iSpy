@@ -36,6 +36,7 @@
 @property (assign) NSString *bundleId;
 @property (assign) BOOL isInstanceTrackingEnabled;
 @property (assign) NSMutableDictionary *trackedInstances;
+@property (assign) NSMutableDictionary *msgSendWhitelist;
 
 +(id)sharedInstance;
 -(NSString *) instance_dumpAllInstancesWithPointers;
@@ -50,12 +51,10 @@
 -(void) instance_enableTracking;
 -(void) instance_disableTracking;
 -(NSDictionary *) getSymbolTable;
--(unsigned int) getMachFlags;
 -(NSDictionary *)keyChainItems;
 -(unsigned int)ASLR;
 -(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls;
 -(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls isInstanceMethod:(BOOL)isInstance;
--(id)testMethodThing;
 -(id)iVarsForClass:(NSString *)className;
 -(id)propertiesForClass:(NSString *)className;
 -(id)methodsForClass:(NSString *)className;
@@ -71,8 +70,10 @@
 -(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
-//-(void) bounceWebServer;
+-(void) testJSONRPC:(NSDictionary *)args;
+-(void) setMsgSendLoggingState:(NSDictionary *)args;
 @end
+
 
 /*
 	Helper functions. 

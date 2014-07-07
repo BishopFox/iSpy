@@ -183,7 +183,7 @@ namespace bf_msgSend_stret {
 
             __log__("sprintf\n");
             // start the JSON block
-            snprintf(json, sizeof(json), "{\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
+            snprintf(json, sizeof(json), "{\"messageType\":\"objc_msgSend_stret\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
 
             __log__("vaargs\n");
             // setup varargs

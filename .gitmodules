@@ -1,21 +1,6 @@
 [submodule "OpenSSL-for-iPhone"]
 	path = OpenSSL-for-iPhone
 	url = https://github.com/x2on/OpenSSL-for-iPhone.git
-[submodule "GRMustache"]
-	path = GRMustache
-	url = https://github.com/groue/GRMustache.git
-[submodule "layout/var/www/iSpy/static/DataTables"]
-	path = layout/var/www/iSpy/static/DataTables
-	url = https://github.com/DataTables/DataTables.git
-[submodule "layout/var/www/iSpy/static/font-awesome"]
-	path = layout/var/www/iSpy/static/font-awesome
-	url = https://github.com/FortAwesome/Font-Awesome.git
-[submodule "layout/var/www/iSpy/static/bootstrap-progressbar"]
-	path = layout/var/www/iSpy/static/bootstrap-progressbar
-	url = https://github.com/minddust/bootstrap-progressbar.git
-[submodule "layout/var/www/iSpy/static/jQuery-contextMenu"]
-	path = layout/var/www/iSpy/static/jQuery-contextMenu
-	url = https://github.com/medialize/jQuery-contextMenu.git
 [submodule "theosfork"]
 	path = theos
 	url = https://github.com/moloch--/theos

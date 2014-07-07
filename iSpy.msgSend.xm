@@ -60,6 +60,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <objc/runtime.h>
+#include "iSpy.msgSend.common.h"
 
 id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 
@@ -116,132 +118,44 @@ namespace bf_msgSend {
         return *stack;
     }
 
-
-    extern "C" USED const char *get_param_value(id x) {
-        char buf[1027];
-
-        if(!x)
-            return NULL;
-
-        Class c = object_getClass((id)x);
-        if(c == nil) {
-            return NULL;
-        }
-        CFTypeID type = 0;
-      
-        if((unsigned long) c % __alignof__(Class) != 0) {
-                snprintf(buf, 1024, "(id)%p", x);
-                return strdup(buf);
-        }
-       
-        if (class_isMetaClass(c)) {
-                snprintf(buf, 1024, "(Class)%s", class_getName(c));
-                return strdup(buf);
-        }
-       
-        if (class_respondsToSelector(c, @selector(UTF8String)))
-                return (char *)x;
-
-        if (class_respondsToSelector(c, @selector(CFGetTypeID)))
-                type = CFGetTypeID(x);
-       
-        if (type == CFStringGetTypeID()) {
-                CFStringEncoding enc = CFStringGetFastestEncoding( (CFStringRef)x );
-                const char* ptr = CFStringGetCStringPtr( (CFStringRef)x, enc );
-                if (ptr != NULL) {
-                        snprintf(buf, 1024, "@\"%s\" ", ptr);
-                        return strdup(buf);
-                }
-
-                CFDataRef data = CFStringCreateExternalRepresentation(NULL, (CFStringRef)x, kCFStringEncodingUTF8, '?');
-                if (data != NULL) {
-                        CFRelease(data);
-                        snprintf(buf, 1024, "@\"%.*s\" ", (int)CFDataGetLength(data), CFDataGetBytePtr(data));
-                        return strdup(buf);
-                }
-        } else if (type == CFBooleanGetTypeID()) {
-                snprintf(buf, 1024, "%s", (x) ? "True" : "False");
-                return strdup(buf);
-        } else if (type == CFNullGetTypeID()) {
-                return strdup("NULL");
-        } else if (type == CFNumberGetTypeID()) {
-                CFNumberType numType = CFNumberGetType((CFNumberRef)x);
-                static const char* const numTypeStrings[] = {
-                        NULL, "SInt8", "SInt16", "SInt32", "SInt64", "Float32", "Float64",
-                        "char", "short", "int", "long", "long long", "float", "double",
-                        "CFIndex", "NSInteger", "CGFloat"
-                };
-
-                switch (numType) {
-                        case kCFNumberSInt8Type:
-                        case kCFNumberSInt16Type:
-                        case kCFNumberSInt32Type:
-                        case kCFNumberCharType:
-                        case kCFNumberShortType:
-                        case kCFNumberIntType:
-                        case kCFNumberLongType:
-                        case kCFNumberCFIndexType:
-                        case kCFNumberNSIntegerType: {
-                                long res;
-                                CFNumberGetValue((CFNumberRef)x, kCFNumberLongType, &res);
-                                snprintf(buf, 1024, "<CFNumber (%s)%ld> ", numTypeStrings[numType], res);
-                                return strdup(buf);
-                                break;
-                        }
-                        case kCFNumberSInt64Type:
-                        case kCFNumberLongLongType: {
-                                long long res;
-                                CFNumberGetValue((CFNumberRef)x, kCFNumberLongLongType, &res);
-                                snprintf(buf, 1024, "<CFNumber (%s)%lld> ", numTypeStrings[numType], res);
-                                return strdup(buf);
-                                break;
-                        }      
-                        default: {
-                                double res;
-                                CFNumberGetValue((CFNumberRef)x, kCFNumberDoubleType, &res);
-                                snprintf(buf, 1024, "<CFNumber (%s)%lg> ", numTypeStrings[numType], res);
-                                return strdup(buf);
-                                break;
-                        }
-                }
-                return strdup("nil");
-        }
-        return "";
-    }
-
-    extern "C" USED int is_valid_pointer(void *ptr) {
-        int ret = madvise(ptr, 1, MADV_NORMAL);
-        if(ret == 0)
-            return YES;
-
-        if(errno == EINVAL || errno == ENOMEM)
-            return NO;
-        else
-            return YES;
-    }
-
-
     extern "C" USED void print_args(id self, SEL _cmd, ...) {
+        // party of the __log__ speed optimization. This is not portable and may break in future Objective-C runtimes.
+        struct objc_class {
+            Class isa;
+            Class super_class;
+            const char *name;
+            long version;
+            long info;
+            long instance_size;
+            struct objc_ivar_list *ivars;
+            struct objc_method_list **methodLists;
+            struct objc_cache *cache;
+            struct objc_protocol_list *protocols;
+        };
+        __log__("\n\n<======== Entry ========>\n");
+
         if(self && _cmd) {
-
-            // always call this first to ensure the class is initialized
-            Class c = orig_objc_msgSend(self, @selector(class));
-            if(!c) {
-                return;
-            }
-
             va_list va;
-            char *className = (char *)object_getClassName(self);
-            char *methodName = (char *)strdup(sel_getName(_cmd));
-            char buf[1027];
+            char *className, *methodName, *methodPtr, *argPtr;
             Method method = nil;
             int numArgs, k, realNumArgs;
             BOOL isInstanceMethod = true;
-            char *tmp;
             id fooId;
             Class fooClass;
             char json[2048]; // meh
+            char argName[256]; // srlsy
+            char buf[1027]; // yup
+            Class c;
             
+            // this is pretty egregious abuse of the runtime in the name of speed.
+            //c = (struct objc_class *)self; //(struct objc_class *)orig_objc_msgSend(self, @selector(class));
+            c = (Class)object_getClass(self); // orig_objc_msgSend(self, @selector(class));
+            __log__("Test\n");
+            className = (char *)object_getClassName(self);
+            __log__("Test2\n");
+            //methodName = (char *)_cmd->sel_id;
+            methodName = (char *)sel_getName(_cmd);
+            __log__("Test3\n");
             // We need to determine if "self" is a meta class or an instance of a class.
             // We can't use Apple's class_isMetaClass() here because it seems to randomly crash just
             // a little too often. Always class_isMetaClass() and always in this piece of code. 
@@ -251,58 +165,71 @@ namespace bf_msgSend {
             // 2. Get the metaclass of "self" based on its name
             // 3. Compare the metaclass of "self" to "self". If they're the same, it's a metaclass.
             //bool meta = (objc_getMetaClass(className) == object_getClass(self));
-            bool meta = (id)c == self;
+            //bool meta = (id)c == self;
+            bool meta = (objc_getMetaClass(className) == c);
             
+
             if(!meta) {
-                method = class_getInstanceMethod(object_getClass(self), _cmd);
+                __log__("instance\n");
+                method = class_getInstanceMethod(c, (SEL)_cmd);
             } else {
-                method = class_getClassMethod(object_getClass(self), _cmd);
+                __log__("class\n");
+                method = class_getClassMethod(c, (SEL)_cmd);
                 isInstanceMethod = false;
             }
-
+            
             if(!method || !className || !methodName) {
                 return;
             }
 
+            __log__("args\n");
             numArgs = method_getNumberOfArguments(method);
             realNumArgs = numArgs - 2;
-            tmp = methodName;
 
+            __log__("sprintf\n");
             // start the JSON block
             snprintf(json, sizeof(json), "{\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
 
+            __log__("vaargs\n");
             // setup varargs
             va_start(va, _cmd);
-
+            
+            
+            
+            // use this to iterate over argument names
+            methodPtr = methodName;
+            __log__("Hitting loop...\n");
+            
             // cycle through the paramter list for this method.
             // start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
             for(k=2; k < numArgs; k++) {
-                char tmpBuf[256]; // safe and reasonable limit on var name length
+                char argTypeBuffer[256]; // safe and reasonable limit on var name length
                 char *type = NULL;
-                char *name = NULL;
                 int argNum = k - 2;
+
+                argPtr = argName;
+                while(*methodPtr != ':' && *methodPtr != '\0')
+                    *(argPtr++) = *(methodPtr++);
+                *argPtr = (char)0;
                 
-                // get the arg name
-                name = strsep(&methodName, ":");
-                if(!name) {
-                    // weird error
-                    continue;
-                }
-                
+                __log__("argType\n");
                 // get the type code for the argument
-                method_getArgumentType(method, k, tmpBuf, 255);
-                char *typeCode = (tmpBuf[0] == '^') ? &tmpBuf[1] : tmpBuf;
+                method_getArgumentType(method, k, argTypeBuffer, 255);
+
+                // if it's a pointer then we actually want the next byte.
+                char *typeCode = (argTypeBuffer[0] == '^') ? &argTypeBuffer[1] : argTypeBuffer;
 
                 // arg data
                 void *paramVal = va_arg(va, void *);
                 
                 // start the JSON for this argument
-                snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"type\":\"%s\",\"addr\":\"%p\",", json, name, tmpBuf, type, paramVal);
+                snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"addr\":\"%p\",", json, argName, argTypeBuffer, paramVal);
 
                 // lololol
                 unsigned long v = (unsigned long)paramVal;
                 double d = (double)v;
 
+                __log__("into switch...\n");
                 switch(*typeCode) {
                     case 'c': // char
                         snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":0x%x (%d) (%c)", json, (unsigned int)paramVal, (int)paramVal, (int)paramVal); 
@@ -356,29 +283,75 @@ namespace bf_msgSend {
                         snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
                         break;
                     case '@': // object
+                        if(is_valid_pointer(paramVal)) {
+                            __log__("OBJECT valid pointer. get class...\n");
+                            sprintf(buf, "%p\n", paramVal);
+                            __log__(buf);
+                            fooClass = object_getClass((id)paramVal);
+                            __log__("name\n");
+                            __log__(class_getName(fooClass));
+                            __log__("sprintf\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass)); //(struct objc_class *)paramVal)->name); //class_getName(fooClass));
+                            __log__("value\n");
+                            if(class_respondsToSelector(fooClass, @selector(description))) {
+                                __log__("desc\n");
+                                NSString *desc = orig_objc_msgSend(fooClass, @selector(description));
+                                __log__("sprintf\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                            } else {
+                                __log__("no desc\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "BARF");
+                            }
+                        } else {
+                            __log__("invalid pointer\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+                        }
+                        break;
                     case '#':
                         if(is_valid_pointer(paramVal)) {
-                            fooId = (id)paramVal;
-                            fooClass = object_getClass(fooId);
-                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass));
-                            snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(orig_objc_msgSend(fooId, @selector(description)), @selector(UTF8String)));
+                            sprintf(buf, "%p\n", paramVal);
+                            __log__("CLASS valid pointer. get class...\n");
+                            __log__(buf);
+                            //fooId = (id)paramVal;
+                            __log__("name\n");
+                            __log__(class_getName((Class)paramVal));
+                            __log__("sprintf\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName((Class)paramVal)); //(struct objc_class *)paramVal)->name); //class_getName(fooClass));
+                            __log__("value\n");
+                            if(class_respondsToSelector((Class)paramVal, @selector(description))) {
+                                __log__("desc\n");
+                                NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
+                                __log__("sprintf\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                            } else {
+                                __log__("no desc\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "NO_DATA_FIXME");
+                            }
                         } else {
+                            __log__("invalid pointer\n");
                             snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
                         }
                         break;
                     default:
-                        snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, fooId);
+                        snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, paramVal);
                         break;     
                 }
-                snprintf(json, sizeof(json), "%s}%c", json, (argNum==realNumArgs-1)?' ':',');                
+                if(argNum == realNumArgs-1)
+                    strlcat(json, "}", sizeof(json));
+                else
+                    strlcat(json, "},", sizeof(json));
+                __log__("Looping...\n");                               
             }
+            __log__("Loop finished.\n");
 
             // finish the JSON block
-            snprintf(json, sizeof(json), "%s]}\n", json);
-                
-            free(tmp); //release memory for methodName
+            strlcat(json, "]}", sizeof(json));
+            //snprintf(json, sizeof(json), "%s]}\n", json);
             va_end(va);
-            bf_websocket_write(buf);
+
+            __log__("writing to websocket\n");
+            // b00m!
+            bf_websocket_write(json);
         }
 
         return;

@@ -54,6 +54,7 @@
 #include "iSpy.msgSend.whitelist.h"
 #include <stack>
 #include <pthread.h>
+#include "iSpy.msgSend.common.h"
 
 namespace bf_msgSend_stret {
 
@@ -112,12 +113,43 @@ namespace bf_msgSend_stret {
     }
 
     extern "C" USED void print_args_stret(void* retval, id self, SEL _cmd, ...) {
-        if(self && _cmd) {
-            // always call this to ensure the object is properly initialized
-            //Class c = orig_objc_msgSend(self, @selector(class));
-            //char *className = (char *)object_getClassName(self);
-            //char buf[1027];
+          // party of the __log__ speed optimization. This is not portable and may break in future Objective-C runtimes.
+        struct objc_class {
+            Class isa;
+            Class super_class;
+            const char *name;
+            long version;
+            long info;
+            long instance_size;
+            struct objc_ivar_list *ivars;
+            struct objc_method_list **methodLists;
+            struct objc_cache *cache;
+            struct objc_protocol_list *protocols;
+        };
+        __log__("\n\n<======== Entry ========>\n");
 
+    if(self && _cmd) {
+            va_list va;
+            char *className, *methodName, *methodPtr, *argPtr;
+            Method method = nil;
+            int numArgs, k, realNumArgs;
+            BOOL isInstanceMethod = true;
+            id fooId;
+            Class fooClass;
+            char json[2048]; // meh
+            char argName[256]; // srlsy
+            char buf[1027]; // yup
+            Class c;
+            
+            // this is pretty egregious abuse of the runtime in the name of speed.
+            //c = (struct objc_class *)self; //(struct objc_class *)orig_objc_msgSend(self, @selector(class));
+            c = (Class)object_getClass(self); // orig_objc_msgSend(self, @selector(class));
+            __log__("Test\n");
+            className = (char *)object_getClassName(self);
+            __log__("Test2\n");
+            //methodName = (char *)_cmd->sel_id;
+            methodName = (char *)sel_getName(_cmd);
+            __log__("Test3\n");
             // We need to determine if "self" is a meta class or an instance of a class.
             // We can't use Apple's class_isMetaClass() here because it seems to randomly crash just
             // a little too often. Always class_isMetaClass() and always in this piece of code. 
@@ -127,16 +159,199 @@ namespace bf_msgSend_stret {
             // 2. Get the metaclass of "self" based on its name
             // 3. Compare the metaclass of "self" to "self". If they're the same, it's a metaclass.
             //bool meta = (objc_getMetaClass(className) == object_getClass(self));
+            //bool meta = (id)c == self;
+            bool meta = (objc_getMetaClass(className) == c);
             
-            // write the captured information to the iSpy web socket. If a client is connected it'll receive this event.
-            //snprintf(buf, 1024, "[\"%d\",\"%s\",\"%s\",\"%s\",\"%p\",\"\"],", ++counter, (meta)?"+":"-", className, selectorName, self);
-            //bf_websocket_write(buf);
+
+            if(!meta) {
+                __log__("instance\n");
+                method = class_getInstanceMethod(c, (SEL)_cmd);
+            } else {
+                __log__("class\n");
+                method = class_getClassMethod(c, (SEL)_cmd);
+                //method = class_getClassMethod((Class)c, (SEL)_cmd);
+                isInstanceMethod = false;
+            }
             
-            // keep a local copy of the log in /tmp/bf_msgsend
-            //strcat(buf, "\n");
-            //ispy_log_info(LOG_MSGSEND, buf);
+            if(!method || !className || !methodName) {
+                return;
+            }
+
+            __log__("args\n");
+            numArgs = method_getNumberOfArguments(method);
+            realNumArgs = numArgs - 2;
+
+            __log__("sprintf\n");
+            // start the JSON block
+            snprintf(json, sizeof(json), "{\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
+
+            __log__("vaargs\n");
+            // setup varargs
+            va_start(va, _cmd);
+            
+            
+            
+            // use this to iterate over argument names
+            methodPtr = methodName;
+            __log__("Hitting loop...\n");
+            
+            // cycle through the paramter list for this method.
+            // start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
+            for(k=2; k < numArgs; k++) {
+                char argTypeBuffer[256]; // safe and reasonable limit on var name length
+                char *type = NULL;
+                int argNum = k - 2;
+
+                argPtr = argName;
+                while(*methodPtr != ':' && *methodPtr != '\0')
+                    *(argPtr++) = *(methodPtr++);
+                *argPtr = (char)0;
+                
+                __log__("argType\n");
+                // get the type code for the argument
+                method_getArgumentType(method, k, argTypeBuffer, 255);
+
+                // if it's a pointer then we actually want the next byte.
+                char *typeCode = (argTypeBuffer[0] == '^') ? &argTypeBuffer[1] : argTypeBuffer;
+
+                // arg data
+                void *paramVal = va_arg(va, void *);
+                
+                // start the JSON for this argument
+                snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"addr\":\"%p\",", json, argName, argTypeBuffer, paramVal);
+
+                // lololol
+                unsigned long v = (unsigned long)paramVal;
+                double d = (double)v;
+
+                __log__("into switch...\n");
+                switch(*typeCode) {
+                    case 'c': // char
+                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":0x%x (%d) (%c)", json, (unsigned int)paramVal, (int)paramVal, (int)paramVal); 
+                        break;
+                    case 'i': // int
+                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+                        break;
+                    case 's': // short
+                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+                        break;
+                    case 'l': // long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%ld)", json, (long)paramVal, (long)paramVal); 
+                        break;
+                    case 'q': // long long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%lld)", json, (long long)paramVal, (long long)paramVal); 
+                        break;
+                    case 'C': // char
+                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":0x%x (%u) ('%c')", json, (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'I': // int
+                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'S': // short
+                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+                        break;
+                    case 'L': // long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%lu)", json, (unsigned long)paramVal, (unsigned long)paramVal); 
+                        break;
+                    case 'Q': // long long
+                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%llu)", json, (unsigned long long)paramVal, (unsigned long long)paramVal); 
+                        break;
+                    case 'f': // float
+                        snprintf(json, sizeof(json), "%s\"type\":\"float\",\"value\":%f", json, (float)d); 
+                        break;
+                    case 'd': // double                        
+                        snprintf(json, sizeof(json), "%s\"type\":\"double\",\"value\":%f", json, (double)d); 
+                        break;
+                    case 'B': // BOOL
+                        snprintf(json, sizeof(json),  "%s\"type\":\"BOOL\",\"value\":%s", json, ((int)paramVal)?"true":"false");
+                        break;
+                    case 'v': // void
+                        snprintf(json, sizeof(json),  "%s\"type\":\"void\",\"ptr\":\"%p\"", json, paramVal);
+                        break;
+                    case '*': // char *
+                        snprintf(json, sizeof(json),  "%s\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
+                        break;
+                    case '{': // struct
+                        snprintf(json, sizeof(json),  "%s\"type\":\"struct\",\"ptr\":\"%p\"", json, paramVal);
+                        break;
+                    case ':': // selector
+                        snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
+                        break;
+                    case '@': // object
+                        if(is_valid_pointer(paramVal)) {
+                            __log__("OBJECT valid pointer. get class...\n");
+                            //unsigned int *f = (unsigned int *)paramVal;
+                            sprintf(buf, "%p\n", paramVal);
+                            __log__(buf);
+                            //fooId = (id)paramVal;
+                            fooClass = object_getClass((id)paramVal);
+                            __log__("name\n");
+                            __log__(class_getName(fooClass));
+                            __log__("sprintf\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass)); //(struct objc_class *)paramVal)->name); //class_getName(fooClass));
+                            __log__("value\n");
+                            if(class_respondsToSelector(fooClass, @selector(description))) {
+                                __log__("desc\n");
+                                NSString *desc = orig_objc_msgSend(fooClass, @selector(description));
+                                __log__("sprintf\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                            } else {
+                                __log__("no desc\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "BARF");
+                            }
+                        } else {
+                            __log__("invalid pointer\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+                        }
+                        break;
+                    case '#':
+                        if(is_valid_pointer(paramVal)) {
+                            sprintf(buf, "%p\n", paramVal);
+                            __log__("CLASS valid pointer. get class...\n");
+                            __log__(buf);
+                            //fooId = (id)paramVal;
+                            __log__("name\n");
+                            __log__(class_getName((Class)paramVal));
+                            __log__("sprintf\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName((Class)paramVal)); //(struct objc_class *)paramVal)->name); //class_getName(fooClass));
+                            __log__("value\n");
+                            if(class_respondsToSelector((Class)paramVal, @selector(description))) {
+                                __log__("desc\n");
+                                NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
+                                __log__("sprintf\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                            } else {
+                                __log__("no desc\n");
+                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "NO_DATA_FIXME");
+                            }
+                        } else {
+                            __log__("invalid pointer\n");
+                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+                        }
+                        break;
+                    default:
+                        snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, paramVal);
+                        break;     
+                }
+                if(argNum == realNumArgs-1)
+                    strlcat(json, "}", sizeof(json));
+                else
+                    strlcat(json, "},", sizeof(json));
+                //snprintf(json, sizeof(json), "%s}%c", json, (argNum==realNumArgs-1)?' ':','); 
+                __log__("Looping...\n");                               
+            }
+            __log__("Loop finished.\n");
+
+            // finish the JSON block
+            strlcat(json, "]}", sizeof(json));
+            //snprintf(json, sizeof(json), "%s]}\n", json);
+            va_end(va);
+
+            __log__("writing to websocket\n");
+            // b00m!
+            bf_websocket_write(json);
         }
-        
+
         return;
     }
 

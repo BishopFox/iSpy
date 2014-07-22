@@ -8,6 +8,6 @@
 
 #import "HTTPKit.h"
 
-@interface HTTPWebSocketConnection : HTTPConnection
+@interface HTTPWebSocketConnection : iSpy_HTTPConnection
 
 @end

@@ -4,7 +4,7 @@
 #import "NSBlockUtilities.h"
 #import "FABatching.h"
 
-@interface HTTPConnection () {
+@interface iSpy_HTTPConnection () {
     @protected
     struct mg_connection *_mgConnection;
     NSMutableData *_responseData;

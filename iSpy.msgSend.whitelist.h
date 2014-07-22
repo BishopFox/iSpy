@@ -1,6 +1,11 @@
 #ifndef __ISPY_OBJC_MSGSEND_WHITELIST__
 #define __ISPY_OBJC_MSGSEND_WHITELIST__
 
+typedef std::tr1::unordered_map<std::string, int> MethodMap_t;
+typedef std::tr1::unordered_map<std::string, MethodMap_t> ClassMap_t;
+//typedef std::pair<std::string, int> MethodPair_t;
+typedef std::pair<std::string, MethodMap_t> ClassPair_t;
+
 struct bf_objc_msgSend_captured_class {
 	char *name;						// human-friendly name of class
 	int logAllMethods;				// don't even bother with a whitelist if we're logging all the things
@@ -14,7 +19,7 @@ struct bf_objc_msgSend_captured_class {
 void bf_objc_msgSend_whitelist_clear();
 void bf_objc_msgSend_whitelist_add_class(const char *className, int logAllMethods, char *uninterestingMethods, char *whitelistedMethods);
 int bf_objc_msgSend_whitelist_entry_exists(const char *className, const char *methodName);
-int bf_objc_msgSend_whitelist_startup();
+void bf_objc_msgSend_whitelist_startup();
 
 struct bf_objc_msgSend_captured_class *bf_objc_msgSend_whitelist_get_list_ptr();
 struct bf_objc_msgSend_captured_class *bf_objc_msgSend_whitelist_alloc_entry();

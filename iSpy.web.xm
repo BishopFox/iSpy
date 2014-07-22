@@ -44,6 +44,7 @@
 #include <mach-o/nlist.h>
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
+#import "iSpy.rpc.h"
 
 /* Underscore.js requires the use of eval :( */
 // static NSString *CSP = @"default-src *; script-src 'self' 'unsafe-eval';";
@@ -137,7 +138,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
      * prudent to add as many security headers as possible. This is the only page.
      */
     [[self http] handleGET:@"/"
-        with:^(HTTPConnection *connection) {
+        with:^(iSpy_HTTPConnection *connection) {
             NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/index.html", [[self http] publicDir]];
             NSData *data = [NSData dataWithContentsOfFile:pathToIndex];
             ispy_log_info(LOG_HTTP, "[GET] Page -> %s", [pathToIndex UTF8String]);
@@ -158,7 +159,7 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
      * It's very important to get the content-type correct since we set the nosniff header
      */
     [[self http] handleGET:@"/static/*/*"
-        with:^(HTTPConnection *connection, NSString *folder, NSString *fname) {
+        with:^(iSpy_HTTPConnection *connection, NSString *folder, NSString *fname) {
             [connection setResponseHeader:@"X-XSS-Protection" to:@"1; mode=block"];
             [connection setResponseHeader:@"X-Frame-Options" to:@"DENY"];
             [connection setResponseHeader:@"X-Content-Type-Options" to:@"nosniff"];
@@ -181,10 +182,10 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     /*
      * Four-oh-Four Handler
      *
-     * Anything that's not a handled GET or POST is a 404
+     * Any GET that's not a handled is a 404
      */
     [[self http] handleGET:@"/*"
-        with:^(HTTPConnection *connection, NSString *name) {
+        with:^(iSpy_HTTPConnection *connection, NSString *name) {
             NSString *pathToIndex = [NSString stringWithFormat:@"%@/pages/404.html", [[self http] publicDir]];
             NSData *data = [NSData dataWithContentsOfFile:pathToIndex];
             ispy_log_info(LOG_HTTP, "[404] -> %s", [name UTF8String]);
@@ -199,13 +200,62 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
 
 
     /*
-     * WebSocket JSON-RPC
+     * POST JSON-RPC handler
+     *
+     * Dispatches RPC methods and returns a response.
+     */
+    [[self http] handlePOST:@"/rpc" with:^(iSpy_HTTPConnection *connection) {
+        // Dispatch the method handler
+        NSDictionary *responseDict = [self dispatchRPCRequest:connection.requestBody];
+
+        // If there's a resposne, convert it from NSDictionary into a JSON string and send it back to the caller.
+        if(responseDict) {
+            // first convert the user-supplied JSON-RPC request into NSDATA
+            NSData *RPCRequest = [connection.requestBody dataUsingEncoding:NSUTF8StringEncoding];
+            if( ! RPCRequest) {
+                ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
+                return nil;
+            }
+            
+            // create a dictionary from the JSON-RPC request
+            NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
+            if(!RPCDictionary) {
+                ispy_log_debug(LOG_HTTP, "ERROR: Invalid RPC request, couldn't deserialze the JSON data.");
+                return nil;
+            }
+
+            // did the user request a response? If so, send one.
+            if([RPCDictionary objectForKey:@"responseId"]) {
+                NSDictionary *finalResponse = @{ 
+                    @"messageType":@"response",
+                    @"responseId":[RPCDictionary objectForKey:@"responseId"],
+                    @"responseData": responseDict
+                };
+                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:finalResponse options:0 error:NULL];
+                if(JSONData) {
+                    NSString *JSONString = [[NSString alloc] initWithData:JSONData encoding:NSUTF8StringEncoding];
+                    if(JSONString) {
+                        // Set the correct JSON Content-Type, as specified by RFC4627 (http://www.ietf.org/rfc/rfc4627.txt)
+                        [connection setResponseHeader:@"Content-Type" to:@"application/json"];
+                        [connection writeString:JSONString];
+                    }
+                }
+            }
+        }
+
+        // all done.
+        return nil;
+    }];           
+
+
+    /*
+     * WebSocket JSON-RPC handler
      *
      * It's important to check the request's "origin" header to prevent any cross-domain
-     * websocket requests from accessing the JSON-RPC interface (which would end badly)
+     * websocket requests from accessing the JSON-RPC interface (which would end badly).
+     * FIXME.
      */
-    [[self jsonRpc] handleWebSocket:^id (HTTPConnection *connection) {
-        ispy_log_debug(LOG_HTTP, "Handling business");
+    [[self jsonRpc] handleWebSocket:^id (iSpy_HTTPConnection *connection) {
         if(!connection.isOpen) {
             ispy_log_info(LOG_HTTP, "Closed web socket.");
             globalMsgSendWebSocketPtr = NULL;
@@ -216,45 +266,47 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
         globalMsgSendWebSocketPtr = [connection connectionPtr];
 
         // grab the JSON request from the client
-        NSString *JSONRPCRequest = connection.requestBody;  
-        if( ! JSONRPCRequest) {
-            ispy_log_debug(LOG_HTTP, "ERROR: there was not body in the websocket request");
+        NSString *JSONString = connection.requestBody;  
+        if( ! JSONString) {
+            ispy_log_debug(LOG_HTTP, "ERROR: there was no body in the websocket request");
             return nil;
         }
-        NSData *RPCRequest = [JSONRPCRequest dataUsingEncoding:NSUTF8StringEncoding];
-        if( ! RPCRequest) {
-            ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
-            return nil;
+
+        // Dispatch the RPC request and receive the response, if any
+        NSDictionary *responseDict = [self dispatchRPCRequest:JSONString];
+        
+        // If there's a response, convert it from NSDictionary into a JSON string and send it back to the caller.
+        if(responseDict) {
+            NSData *RPCRequest = [connection.requestBody dataUsingEncoding:NSUTF8StringEncoding];
+            if( ! RPCRequest) {
+                ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
+                return nil;
+            }
+            
+            // create a dictionary from the JSON request
+            NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
+            if(!RPCDictionary) {
+                ispy_log_debug(LOG_HTTP, "ERROR: invalid RPC request, couldn't deserialze the JSON data.");
+                return nil;
+            }
+
+            // Now we can check: did the user actually ask for a response?
+            if([RPCDictionary objectForKey:@"responseId"]) {
+                NSDictionary *finalResponse = @{ 
+                    @"messageType":@"response",
+                    @"responseId":[RPCDictionary objectForKey:@"responseId"],
+                    @"responseData": responseDict
+                };
+                NSData *JSONData = [NSJSONSerialization dataWithJSONObject:finalResponse options:0 error:NULL];
+                if(JSONData) {
+                    NSString *JSONString = [[NSString alloc] initWithData:JSONData encoding:NSUTF8StringEncoding];
+                    if(JSONString) {
+                        bf_websocket_write([JSONString UTF8String]);
+                    }
+                }
+            }
         }
         
-        // create a dictionary from the JSON request
-        NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
-        if(!RPCDictionary) {
-            ispy_log_debug(LOG_HTTP, "ERROR: invalid RPC request, couldn't deserialze the JSON data.");
-            return nil;
-        }
-
-        // is this a valid request? (does it contain both "messageType" and "messageData" entries?)
-        if( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"]) {
-            ispy_log_debug(LOG_HTTP, "ERROR: Invalid request. Must have messageType and messageData.");
-            return nil;
-        }
-
-        // Verify that the iSpy class can execute the requested selector
-        NSString *selectorString = [RPCDictionary objectForKey:@"messageType"];
-        SEL selectorName = sel_registerName([[NSString stringWithFormat:@"%@:", selectorString] UTF8String]);
-        if(!selectorName) {
-            ispy_log_debug(LOG_HTTP, "ERROR: selectorName was null.");
-            return nil;
-        }
-        if( ! [[iSpy sharedInstance] respondsToSelector:selectorName] ) {
-            ispy_log_debug(LOG_HTTP, "ERROR: doesn't respond to selector");
-            return nil;
-        }
-
-        // Do it!
-        [[iSpy sharedInstance] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];        
-
         return nil;
     }];
 
@@ -262,36 +314,49 @@ static struct mg_connection *globalMsgSendWebSocketPtr = NULL; // mg_connection 
     return true;
 }
 
-
-/*
-    Return a dictionary, with one entry per network interface (en0, en1, lo0)
-*/
--(NSDictionary *)getNetworkInfo {
-    NSString *address;
-    NSString *interface;
-    struct ifaddrs *interfaces = NULL;
-    struct ifaddrs *temp_addr = NULL;
-    int success = 0;
-    NSMutableDictionary *info = [[NSMutableDictionary alloc] init];
-
-    success = getifaddrs(&interfaces);
-    if (success == 0) {
-        temp_addr = interfaces;
-        while(temp_addr != NULL) {
-            interface = [NSString stringWithUTF8String:temp_addr->ifa_name];
-            address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
-            [info setValue:address forKey:interface];
-            temp_addr = temp_addr->ifa_next;
-        }
+// Pass this an NSString containing a JSON-RPC request. 
+// It will do sanity/security checks, then dispatch the method, then return an NSDictionary as a return value.
+-(NSDictionary *)dispatchRPCRequest:(NSString *) JSONString {
+    NSData *RPCRequest = [JSONString dataUsingEncoding:NSUTF8StringEncoding];
+    if( ! RPCRequest) {
+        ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
+        return nil;
+    }
+    
+    // create a dictionary from the JSON request
+    NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
+    if(!RPCDictionary) {
+        ispy_log_debug(LOG_HTTP, "ERROR: invalid RPC request, couldn't deserialze the JSON data.");
+        return nil;
     }
 
-    freeifaddrs(interfaces);
-    return info;
+    // is this a valid request? (does it contain both "messageType" and "messageData" entries?)
+    if( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"]) {
+        ispy_log_debug(LOG_HTTP, "ERROR: Invalid request. Must have messageType and messageData.");
+        return nil;
+    }
+
+    // Verify that the iSpy RPC handler class can execute the requested selector
+    NSString *selectorString = [RPCDictionary objectForKey:@"messageType"];
+    SEL selectorName = sel_registerName([[NSString stringWithFormat:@"%@:", selectorString] UTF8String]);
+    if(!selectorName) {
+        ispy_log_debug(LOG_HTTP, "ERROR: selectorName was null.");
+        return nil;
+    }
+    if( ! [[self rpcHandler] respondsToSelector:selectorName] ) {
+        ispy_log_debug(LOG_HTTP, "ERROR: doesn't respond to selector");
+        return nil;
+    }
+
+    // Do it!
+    ispy_log_debug(LOG_HTTP, "Dispatching request for: %s", [selectorString UTF8String]);
+    NSMutableDictionary *responseDict = [[self rpcHandler] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];
+    return responseDict;
 }
 
 @end
 
-// This is the equivalent of [[HTTPConnection connection] writeString:@"Wakka wakka"] except that it's
+// This is the equivalent of [[iSpy_HTTPConnection connection] writeString:@"Wakka wakka"] except that it's
 // pure C all the way down, so it's safe to call it inside the msgSend logging routines.
 // NOT thread safe. Handle locking yourself.
 // Requires C linkage for the msgSend stuff.

@@ -6,11 +6,11 @@
 
 #define _ntohll(y) (((uint64_t)ntohl(y)) << 32 | ntohl(y>>32))
 
-@implementation HTTPConnection
+@implementation iSpy_HTTPConnection
 
-+ (HTTPConnection *)withMGConnection:(struct mg_connection *)aConn server:(HTTP *)aServer
++ (iSpy_HTTPConnection *)withMGConnection:(struct mg_connection *)aConn server:(HTTP *)aServer
 {
-    HTTPConnection *ret = [self new];
+    iSpy_HTTPConnection *ret = [self new];
     ret.mgConnection = aConn;
     ret.mgRequest    = mg_get_request_info(aConn);
     ret.server       = aServer;
@@ -483,7 +483,7 @@ invalidConnection:
     return _mgRequest->is_ssl;
 }
 
-//FA_BATCH_IMPL(HTTPConnection)
+//FA_BATCH_IMPL(iSpy_HTTPConnection)
 - (void)dealloc
 {
     [_requestBodyData release];

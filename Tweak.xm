@@ -334,14 +334,16 @@ void showGUIPopOver() {
 
 %hook UIApplication
 
+/*
 -(void) init {
 	// Register for the "UIApplicationDidBecomeActiveNotification" notification.
-	// Use it to trigger our GUI overlay.
+	// Use it to trigger our GUI overlay.	
 	[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
        	showGUIPopOver();
 	}];
 	return %orig;
 }
+*/
 
 // This is neat - it hooks all user input events and can be used to log them :)
 -(void) sendEvent:(UIEvent*)event
@@ -1748,8 +1750,6 @@ void hijack_on(NSMutableDictionary *plist) {
 %end // %group bf_group
 
 
-
-
 /***********************************************************************************
  *** Do not add any %hook...%end sections after this, it will only end in tears. ***
  ***                                                                             ***
@@ -1820,120 +1820,124 @@ EXPORT int return_true() {
  We use it to hijack C function calls. Extend as necessary.
  */
 %ctor {
-	NSLog(@"[iSpy] *** Entry point ***");
+		NSLog(@"[iSpy] *** Entry point ***");
 
-	iSpy *mySpy = [iSpy sharedInstance];
+		iSpy *mySpy = [iSpy sharedInstance];
 
-	// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
-	// This must be the first thing we do, otherwise SQLite will already have been initialized and 
-	// this call with silently fail.
-	int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
-	
-	// Load preferences. Abort if prefs file not found.
-	NSLog(@"[iSpy] : initializing prefs for %@", [mySpy bundleId]);
-	NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
-	if (!plist) {
-		NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
-		return;
-	}
+		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
+		// This must be the first thing we do, otherwise SQLite will already have been initialized and 
+		// this call with silently fail.
+		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
+		
+		// Load preferences. Abort if prefs file not found.
+		NSLog(@"[iSpy] : initializing prefs for %@", [mySpy bundleId]);
+		NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
+		if (!plist) {
+			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
+			return;
+		}
 
-	// Check to see if iSpy is enabled globally
-	if ( ! [[plist objectForKey:@"settings_GlobalOnOff"] boolValue]) {
-		NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy.");
-		return;
-	}
+		// Check to see if iSpy is enabled globally
+		if ( ! [[plist objectForKey:@"settings_GlobalOnOff"] boolValue]) {
+			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy.");
+			return;
+		}
 
-	// Check to see if iSpy is enabled for this specific application
-	NSMutableDictionary* appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
-	if (!appPlist) {
-		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
-		return;
-	}
+		// Check to see if iSpy is enabled for this specific application
+		NSMutableDictionary* appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
+		if (!appPlist) {
+			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
+			return;
+		}
 
-	NSString *appKey = [NSString stringWithFormat:@"targets_%@", [mySpy bundleId]];
-	if ( ! [[appPlist objectForKey:appKey] boolValue]) {
-		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
-		return;
-	}
+		NSString *appKey = [NSString stringWithFormat:@"targets_%@", [mySpy bundleId]];
+		if ( ! [[appPlist objectForKey:appKey] boolValue]) {
+			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
+			return;
+		}
 
-	// Initialize the BF log writing system
-	NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
-	ispy_init_logwriter(documentsDirectory);
+		// Initialize the BF log writing system
+		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
+	    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+	    NSString *documentsDirectory = [paths objectAtIndex:0];
+	    NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
+		ispy_init_logwriter(documentsDirectory);
 
-	/* After this point you should not be calling NSLog! */
-	ispy_log_debug(LOG_GENERAL, "================================================================");
-	ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
-	ispy_log_debug(LOG_GENERAL, "================================================================");
-	ispy_log_debug(LOG_GENERAL, "[iSpy] Logging initialized!");
-	ispy_log_debug(LOG_GENERAL, "[iSpy] sqlite_config() returned %d (success=0)", configresult);
+		/* After this point you should not be calling NSLog! */
+		ispy_log_debug(LOG_GENERAL, "================================================================");
+		ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
+		ispy_log_debug(LOG_GENERAL, "================================================================");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Logging initialized!");
+		ispy_log_debug(LOG_GENERAL, "[iSpy] sqlite_config() returned %d (success=0)", configresult);
 
-	// Ok, this needs some explanation.
-	// There seems to be some weird intermittent crash that occurs when hijack_on() collides with
-	// something that uses/hooks syscalls; I suspect other MobileSubstrate .dylibs. By pausing for a second
-	// here, we give other libs time to load and, since installing this sleep(1), I've never seen a
-	// startup crash. This could probably do with extra investigation.
-	sleep(1); // testing
-	
-	// Hook all the things necessary for strace-style logging
-	hijack_on(plist);
-	
-	// Replace MSMessageHookEx with the iSpy variant if configured to do so
-	if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
-		bf_init_substrate_replacement();
-	}
+		// pre-init stuff
+		%init(pre_init_group);
 
-	// If configured in the prefs panel on iOS, enable objc_msgSend logging at app startup.
-	// Call bf_disable_msgSend_logging() or [[iSpy sharedInstance] msgSend_disableLogging] or /api/whateveritis to turn it off.
-	// Or turn it off in the prefs panel. Or the web GUI.
-	if ([[plist objectForKey:@"settings_MsgSendLogging"] boolValue]) {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now!");
-		bf_enable_msgSend_logging();
-	} else {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
-	}
+		// Load the objc_msgSend logging interface. This does NOT start logging objc_msgSend calls!
+		// The log is controlled with bf_enable_msgSend_logging() and bf_disable_msgSend_logging(),
+		// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging]
+		// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
+		//[xxxLoggingAssertionHandler load];
+		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
+		dispatch_sync(initQ, ^{
+			bf_objc_msgSend_whitelist_startup();	
+			bf_init_msgSend_logging();
+		});
+		
+		// Ok, this needs some explanation.
+		// There seems to be some weird intermittent crash that occurs when hijack_on() collides with
+		// something that uses/hooks syscalls; I suspect other MobileSubstrate .dylibs. By pausing for a second
+		// here, we give other libs time to load and, since installing this sleep(1), I've never seen a
+		// startup crash. This could probably do with extra investigation.
+		//sleep(1); // testing
+		
+		// Hook all the things necessary for strace-style logging
+		//hijack_on(plist);
+		
+		// Replace MSMessageHookEx with the iSpy variant if configured to do so
+		if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
+			bf_init_substrate_replacement();
+		}
 
-	// SSL pinning bypass?
-	if ([[plist objectForKey:@"settings_TrustMeBypass"] boolValue]) {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - ENABLED");
-		bf_MSHookFunction((void *)SecTrustEvaluate, (void *)new_SecTrustEvaluate, (void **)&original_SecTrustEvaluate);
-	} else {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
-	}
+		// If configured in the prefs panel on iOS, enable objc_msgSend logging at app startup.
+		// Call bf_disable_msgSend_logging() or [[iSpy sharedInstance] msgSend_disableLogging] or /api/whateveritis to turn it off.
+		// Or turn it off in the prefs panel. Or the web GUI.
+		if ([[plist objectForKey:@"settings_MsgSendLogging"] boolValue]) {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Enabling msgSend logging now!");
+			bf_enable_msgSend_logging();
+		} else {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
+		}
 
-	// Load the objc_msgSend logging interface. This does NOT start logging objc_msgSend calls!
-	// The log is controlled with bf_enable_msgSend_logging() and bf_disable_msgSend_logging(),
-	// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging]
-	// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
-	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
-	bf_init_msgSend_logging();
+		// SSL pinning bypass?
+		if ([[plist objectForKey:@"settings_TrustMeBypass"] boolValue]) {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - ENABLED");
+			bf_MSHookFunction((void *)SecTrustEvaluate, (void *)new_SecTrustEvaluate, (void **)&original_SecTrustEvaluate);
+		} else {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
+		}
 
-	// Start the iSpy web server
-	%init(pre_init_group);
-	[[mySpy webServer] startWebServices];
+		// Enable instance tracking if configured to do so
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
+		bf_init_instance_tracker();
+		if ([[plist objectForKey:@"settings_InstanceTracking"] boolValue]) {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
+			bf_enable_instance_tracker();
+		} else {
+			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
+		}
 
-	// Enable instance tracking if configured to do so
-	ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
-	bf_init_instance_tracker();
-	if ([[plist objectForKey:@"settings_InstanceTracking"] boolValue]) {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
-		bf_enable_instance_tracker();
-	} else {
-		ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
-	}
+		// Load our own custom Theos hooks.
+		%init(bf_group);
 
-	// Load our own custom Theos hooks.
-	%init(bf_group);
+		[plist release];
+		[appPlist release];
 
-	// Lastly, initialize objc_msgSend logging whitelist
-	bf_objc_msgSend_whitelist_startup();
-
-	[plist release];
-	[appPlist release];
-	ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
+		// Start the iSpy web server
+		[[mySpy webServer] startWebServices];
+		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 }
 
 

@@ -72,7 +72,7 @@ $(document).ready(function() {
     console.log(objc_cls);
     var objc_method = new ObjcMethod({name: "UTF8String"});
     var msg_send = new ObjcMsgSend({class: objc_cls, method: objc_method});
-    var v = ObjcMsgSendView({model: msg_send});
+    var v = new ObjcMsgSendView({model: msg_send});
 
     console.log(v.$el);
 });

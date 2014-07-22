@@ -8,7 +8,7 @@ static NSString *HTTPSentinel = @" __HTTPSentinel__ ";
 @protocol HTTPHandler <NSObject>
 @property(readwrite, copy) HTTPHandlerBlock block;
 @property(readwrite, strong) id route;
-- (id)handleConnection:(HTTPConnection *)aConnection URL:(NSString *)URL;
+- (id)handleConnection:(iSpy_HTTPConnection *)aConnection URL:(NSString *)URL;
 @end
 
 @interface HTTPHandler_String : NSObject <HTTPHandler>
@@ -17,7 +17,7 @@ static NSString *HTTPSentinel = @" __HTTPSentinel__ ";
 
 @implementation HTTPHandler_String
 @synthesize block=_block;
-- (id)handleConnection:(HTTPConnection *)aConnection URL:(NSString *)URL
+- (id)handleConnection:(iSpy_HTTPConnection *)aConnection URL:(NSString *)URL
 {
     if([URL isEqualToString:_route])
         return self.block ? self.block(aConnection) : nil;
@@ -31,7 +31,7 @@ static NSString *HTTPSentinel = @" __HTTPSentinel__ ";
 
 @implementation HTTPHandler_Regex
 @synthesize block=_block;
-- (id)handleConnection:(HTTPConnection *)aConnection URL:(NSString *)URL
+- (id)handleConnection:(iSpy_HTTPConnection *)aConnection URL:(NSString *)URL
 {
     OnigResult *result = [_route match:URL];
     if(result) {
@@ -56,7 +56,7 @@ static int _requestDidBegin(struct mg_connection * const aConnection)
     @autoreleasepool {
         const struct mg_request_info *requestInfo = mg_get_request_info(aConnection);
         HTTP *self = (__bridge id)requestInfo->user_data;
-        HTTPConnection *connection = [HTTPConnection withMGConnection:aConnection server:self];
+        iSpy_HTTPConnection *connection = [iSpy_HTTPConnection withMGConnection:aConnection server:self];
         
         @try {
             const char *method = requestInfo->request_method;
@@ -93,7 +93,7 @@ static int _requestDidBegin(struct mg_connection * const aConnection)
             else
                 return 0;
         } @catch(NSException *e) {
-            HTTPConnection *errConn = [HTTPConnection withMGConnection:aConnection
+            iSpy_HTTPConnection *errConn = [iSpy_HTTPConnection withMGConnection:aConnection
                                                                 server:self];
             errConn.status = 500;
             errConn.reason = @"Internal Server Error";
@@ -109,7 +109,7 @@ static void _requestDidEnd(const struct mg_connection * const aConnection, int c
     @autoreleasepool {
         const struct mg_request_info *requestInfo = mg_get_request_info((struct mg_connection *)aConnection);
         HTTP *self = (__bridge id)requestInfo->user_data;
-        HTTPConnection *connection = [HTTPConnection withMGConnection:(struct mg_connection *)aConnection
+        iSpy_HTTPConnection *connection = [iSpy_HTTPConnection withMGConnection:(struct mg_connection *)aConnection
                                                                server:self];
         
         connection.isOpen      = NO;

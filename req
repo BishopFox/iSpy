@@ -1,0 +1,7 @@
+{ 
+"messageType":"setMsgSendLoggingState", 
+"messageData": {
+	"state":"true"
+},
+"responseId":"response31337"
+}

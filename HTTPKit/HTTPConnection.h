@@ -9,7 +9,7 @@ typedef enum {
     kHTTPMethodDELETE
 } HTTPMethod;
 
-@interface HTTPConnection : NSObject
+@interface iSpy_HTTPConnection : NSObject
 @property(readwrite, assign) int status;
 @property(readwrite, strong) NSString *reason;
 @property(readwrite, unsafe_unretained) HTTP *server;

@@ -4,7 +4,7 @@
 #import "HTTPConnection.h"
 
 typedef void (^HTTPErrorBlock)(id reason);
-typedef id (^HTTPHandlerBlock)(HTTPConnection *, ...);
+typedef id (^HTTPHandlerBlock)(iSpy_HTTPConnection *, ...);
 
 @interface HTTP : NSObject 
 @property(readwrite, strong) NSString *publicDir;

@@ -136,4 +136,13 @@ struct lr_node {
  */
 #define LOG_UI_INTERACTION 1
 
+
+@interface xxxLoggingAssertionHandler :NSObject {
+
+}
+@end
+
+
+@interface GCKPB_PBGeneratedMessage : NSObject
+@end
 #endif

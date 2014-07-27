@@ -76,7 +76,7 @@ extern size_t (*orig_write)(int fd, const void *cbuf, user_size_t nbyte);
 /*
  * This function is dispatched to GCD for execution
  */
-void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
+static void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
 
     if (MAX_LOG < facility) {
         facility = LOG_GENERAL;
@@ -107,8 +107,11 @@ void ispy_log_write(unsigned int facility, unsigned int level, char *msg) {
     orig_write(logFiles[facility], line, lineLength - 1);
     orig_write(logFiles[LOG_GLOBAL], line, lineLength - 1);
 
-    free(msg);
     free(line);
+
+    // ewww. I made this function static because of this call to free(). 
+    // Nobody should be allowed to call ispy_log_write() except functions below.
+    free(msg);
 }
 
 /*

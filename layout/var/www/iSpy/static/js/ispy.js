@@ -34,3 +34,32 @@ $(document).ready(function() {
     }
 
 });
+
+/*
+ * Objective-C Views
+ */
+var ObjcMsgSendView = Backbone.View.extend({
+
+    template: _.template( $("#objc-msg-send-template").html() ),
+
+    initialize: function() {
+        this.render();
+    },
+
+    render: function() {
+        this.template(this.model.toJSON());
+    },
+
+});
+
+
+$(document).ready(function() {
+    console.log("Ready!");
+    var objc_cls = new ObjcClass({name: "NSString"});
+    console.log(objc_cls);
+    var objc_method = new ObjcMethod({name: "UTF8String"});
+    var msg_send = new ObjcMsgSend({class: objc_cls, method: objc_method});
+    var v = new ObjcMsgSendView({model: msg_send});
+
+    console.log(v.$el);
+});

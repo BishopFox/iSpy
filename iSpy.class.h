@@ -1,10 +1,17 @@
-#import "HTTPKit/HTTP.h"
+#ifndef ___ISPY_DEFINED___
+#import "iSpyServer/iSpyHTTPServer.h"
+#import "iSpy.rpc.h"
+#include "iSpy.msgSend.whitelist.h"
+
 /*
     Adds a nice "containsString" method to NSString
 */
 @interface NSString (iSpy) {
+
 }
+
 -(BOOL) containsString:(NSString*)substring;
+
 @end
 
 
@@ -13,14 +20,17 @@
 	Used for the REST server HTML5 GUI
 */
 @interface iSpyServer : NSObject {
+
 }
-@property (assign) HTTP *http;         // Used for our HTTP server
-@property (assign) HTTP *jsonRpc;
+
+@property (assign) iSpyHTTPServer *httpServer;
 @property (assign) NSMutableDictionary *plist;
--(NSDictionary *) getNetworkInfo;
+@property (assign) RPCHandler *rpcHandler;
 -(void) configureWebServer;
 -(BOOL) startWebServices;
 -(int) getListenPortFor:(NSString *) key fallbackTo: (int) fallback;
+-(NSDictionary *)dispatchRPCRequest:(NSString *)JSONString;
+
 @end
 
 
@@ -37,8 +47,10 @@
 @property (assign) BOOL isInstanceTrackingEnabled;
 @property (assign) NSMutableDictionary *trackedInstances;
 @property (assign) NSMutableDictionary *msgSendWhitelist;
+@property (assign) ClassMap_t *classWhiteList;
 
 +(id)sharedInstance;
+-(NSDictionary *) getNetworkInfo;
 -(NSString *) instance_dumpAllInstancesWithPointers;
 -(NSString *) instance_dumpAppInstancesWithPointers;
 -(NSArray *) instance_dumpAppInstancesWithPointersArray;
@@ -50,7 +62,6 @@
 -(id)instance_dumpInstanceAtAddress:(NSString *)addr;
 -(void) instance_enableTracking;
 -(void) instance_disableTracking;
--(NSDictionary *) getSymbolTable;
 -(NSDictionary *)keyChainItems;
 -(unsigned int)ASLR;
 -(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls;
@@ -58,6 +69,7 @@
 -(id)iVarsForClass:(NSString *)className;
 -(id)propertiesForClass:(NSString *)className;
 -(id)methodsForClass:(NSString *)className;
+-(NSArray *)methodListForClass:(NSString *)className;
 -(id)classes;
 -(id)classesWithSuperClassAndProtocolInfo;
 -(id)protocolsForClass:(NSString *)className;
@@ -65,19 +77,18 @@
 -(id)methodsForProtocol:(Protocol *)protocol;
 -(NSDictionary *)protocolDump;
 -(NSDictionary *)classDump;
--(NSString *)SHA256HMACForAppBinary;
 -(NSDictionary *)classDumpClass:(NSString *)className;
 -(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
--(void) testJSONRPC:(NSDictionary *)args;
--(void) setMsgSendLoggingState:(NSDictionary *)args;
 @end
 
 
 /*
-	Helper functions. 
+	Helper functions.
 */
 
-NSString *SHA256HMAC(NSData *theData);
 char *bf_get_type_from_signature(char *typeStr);
+#else
+#define ___ISPY_DEFINED___
+#endif

@@ -15,32 +15,5 @@ To build:
 	rm -rf src
 	cd ..
 
-HTTPKit.a
----------
-This is a minimized, re-organized, and modified version of HTTPKit (https://github.com/mralexgray/HTTPKit).
-All its dependencies have been patched and then lumped into one folder here. Mmmmm.
-	https://github.com/mralexgray/HTTPKit/tree/master/Dependencies/CocoaOniguruma
-	https://github.com/fjolnir/FABatching
-	https://github.com/mralexgray/HTTPKit/tree/master/Dependencies/mongoose
-This is NOT a git submodule, it's fully merged into the iSpy source tree.
-To build:
-
-	cd /path/to/iSpy/HTTPKit
-	./build
-	cd ..
-
-That's it. The library will have be installed for you.
-
-GRMustache.a
-------------
-This is a git submodule of https://github.com/groue/GRMustache
-To build:
-
-	cd /path/to/iSpy
-	git submodule update
-	cd GRMustache
-	git submodule update --init src/vendor/groue/jrswizzle
-	make
-
 That's it. iSpy knows where to find the resulting library, libGRMustache6-iOS.a. No further action required :)
 

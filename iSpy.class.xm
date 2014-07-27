@@ -40,17 +40,18 @@
 #include "iSpy.class.h"
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
-#include "HTTPKit/HTTP.h"
 #include <dlfcn.h>
 #include <mach-o/nlist.h>
 #include <semaphore.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <QuartzCore/QuartzCore.h>
 #import "typestring.h"
+#import "iSpy.rpc.h"
 
 static NSString *changeDateToDateString(NSDate *date);
 static char *bf_get_friendly_method_return_type(Method method);
 static char *bf_get_attrs_from_signature(char *attributeCString);
+static pthread_mutex_t mutex_methodsForClass = PTHREAD_MUTEX_INITIALIZER;
 
 id *appClassWhiteList = NULL;
 
@@ -99,6 +100,7 @@ id *appClassWhiteList = NULL;
 
 	Voila! All the instance support functions appear. Same for msgSend, strace, etc.
 **************************************************************************************************/
+
 @implementation iSpy
 
 // Returns the singleton
@@ -112,6 +114,7 @@ id *appClassWhiteList = NULL;
 		[sharedInstance setGlobalStatusStr:@""];
 		[sharedInstance setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
 		[sharedInstance setIsInstanceTrackingEnabled: NO];
+		[[sharedInstance webServer] setRpcHandler:[[RPCHandler alloc] init]];
 		sharedInstance->_trackedInstances = [[NSMutableDictionary alloc] init];
 	});
 	
@@ -136,16 +139,15 @@ id *appClassWhiteList = NULL;
 	return false;
 }
 
-// A lot of methods are just wrapping pure C calls, which has the effect of exposing core iSpy features
+
+/*
+ *
+ * Methods for working with objc_msgSend logging.
+ *
+ */
+
+// A lot of methods are just wrappers around pure C calls, which has the effect of exposing core iSpy features
 // to Cycript for advanced use.
--(void) instance_enableTracking {
-	bf_enable_instance_tracker();
-}
-
--(void) instance_disableTracking {
-	bf_disable_instance_tracker();
-}
-
 // Turn on objc_msgSend logging
 -(void) msgSend_enableLogging {
 	bf_enable_msgSend_logging();
@@ -154,6 +156,21 @@ id *appClassWhiteList = NULL;
 // Turn off objc_msgSend logging
 -(void) msgSend_disableLogging {
 	bf_disable_msgSend_logging();
+}
+
+
+/*
+ *
+ * Methods for working with instaniated objects.
+ *
+ */
+
+-(void) instance_enableTracking {
+	bf_enable_instance_tracker();
+}
+
+-(void) instance_disableTracking {
+	bf_disable_instance_tracker();
 }
 
 // Dumps a list of all the instances in the runtime, including all Apple's classes like NSString, etc. 
@@ -232,9 +249,85 @@ id *appClassWhiteList = NULL;
 	return bf_get_instance_tracking_state();
 }
 
--(NSDictionary *) getSymbolTable {
-	return nil;
+-(id)instance_atAddress:(NSString *)addr {
+	// Given a string in the format @"0xdeadbeef", this first converts the string to an address, then
+	// returns an opaque Objective-C object at that address.
+	// The runtime can treat this return value just like any other object.
+	// BEWARE: give this an incorrect/invalid address and you'll return a duff pointer. Caveat emptor.
+	return (id)strtoul([addr UTF8String], (char **)NULL, 16);
 }
+
+// Given a hex address (eg. 0xdeafbeef) dumps the class data from the object at that address.
+// Returns an object as discussed in instance_dumpInstance, below.
+// This is exposed to /api/instance/0xdeadbeef << replace deadbeef with an actual address.
+-(id)instance_dumpInstanceAtAddress:(NSString *)addr {
+	return [self instance_dumpInstance:[self instance_atAddress:addr]];
+}
+
+// Make sure to pass a valid pointer (instance) to this method!
+// In return it'll give you an array. Each element in the array represents an iVar and comprises a dictionary.
+// Each element in the dictionary represents the name, type, and value of the iVar.
+-(id)instance_dumpInstance:(id)instance {
+	void *ptr;
+	NSArray *iVars = [self iVarsForClass:[NSString stringWithUTF8String:object_getClassName(instance)]];
+	int i;
+	NSMutableArray *iVarData = [[NSMutableArray alloc] init];
+
+	for(i=0; i< [iVars count]; i++) {
+		NSDictionary *iVar = [iVars objectAtIndex:i];
+		NSEnumerator *e = [iVar keyEnumerator];
+		id key;
+
+		while((key = [e nextObject])) {
+			NSMutableDictionary *iVarInfo = [[NSMutableDictionary alloc] init];
+			[iVarInfo setObject:key forKey:@"name"];
+			
+			object_getInstanceVariable(instance, [key UTF8String], &ptr );
+			
+			// Retarded check alert!
+			// The logic goes like this. All parameter types have a style guide. 
+			// e.g. If the type of argument we're examining is an Objective-C class, the first letter of its name
+			// will be a capital letter. We can dump these with ease using the Objective-C runtime.
+			// Similarly, anything from the C world should have a lower case first letter.
+			// Now, we can easily leverage the Objective-C runtime to dump class data. but....
+			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints. 
+			// Of course we could dump strings (char*) too, but we need to write code to handle that.
+			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
+			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
+			// of how to deal with this shit. 
+			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
+			char *type = (char *)[[iVar objectForKey:key] UTF8String];
+			
+			if(islower(*type)) {
+				char *boolVal = (char *)ptr;
+				if(strcmp(type, "char") == 0) {
+					[iVarInfo setObject:@"BOOL" forKey:@"type"];
+					[iVarInfo setObject:[NSString stringWithFormat:@"%d", (int)boolVal&0xff] forKey:@"value"];
+				} else {
+					[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
+					[iVarInfo setObject:[NSString stringWithFormat:@"[%s] pointer @ %p", type, ptr] forKey:@"value"];
+				}
+			} else {
+				// This is likely to be an Objective-C class. Hey, what's the worst that could happen if it's not?
+				// That would be a segfault. Signal 11. Do not pass go, do not collect a stack trace.
+				// This is a shady janky-ass mofo of a function. 
+				[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
+				[iVarInfo setObject:[NSString stringWithFormat:@"%@", ptr] forKey:@"value"];
+			}
+			[iVarData addObject:iVarInfo];
+			[iVarInfo release];
+		}
+	}
+
+	return [iVarData copy];
+}
+
+
+/*
+ *
+ * Methods for working with the keychain.
+ *
+ */
 
 -(NSDictionary *)keyChainItems {
 	NSMutableDictionary *genericQuery = [[NSMutableDictionary alloc] init];
@@ -292,6 +385,11 @@ id *appClassWhiteList = NULL;
 
 
 
+/*
+ *
+ * Methods for working with methods
+ *
+ */
 
 /*
 Returns a NSDictionary like this:
@@ -308,7 +406,6 @@ Returns a NSDictionary like this:
 	"returnType" = "void";
 }
 */
-
 -(NSDictionary *)infoForMethod:(SEL)selector inClass:(Class)cls {
 	return [self infoForMethod:selector inClass:cls isInstanceMethod:1];
 }
@@ -387,6 +484,13 @@ Returns a NSDictionary like this:
 	return [methodInfo copy];
 }
 
+
+/*
+ *
+ * Methods for working with classes
+ *
+ */
+
 -(id)iVarsForClass:(NSString *)className {
 	unsigned int iVarCount = 0, j;
 	Ivar *ivarList = class_copyIvarList(objc_getClass([className UTF8String]), &iVarCount);
@@ -427,67 +531,6 @@ Returns a NSDictionary like this:
 	return [properties copy];
 }
 
--(id)propertiesForProtocol:(Protocol *)protocol {
-	unsigned int propertyCount = 0, j;
-	objc_property_t *propertyList = protocol_copyPropertyList(protocol, &propertyCount);
-	NSMutableArray *properties = [[NSMutableArray alloc] init];
-
-	if(!propertyList)
-		return properties;
-
-	for(j = 0; j < propertyCount; j++) {
-		NSMutableDictionary *property = [[NSMutableDictionary alloc] init];
-
-		char *name = (char *)property_getName(propertyList[j]);
-		char *attr = bf_get_attrs_from_signature((char *)property_getAttributes(propertyList[j])); 
-		[property setObject:[NSString stringWithUTF8String:attr] forKey:[NSString stringWithUTF8String:name]];
-		[properties addObject:property];
-		free(attr);
-	}
-	return [properties copy];
-}
-
--(id)methodsForProtocol:(Protocol *)protocol {
-	BOOL isReqVals[4] =      {NO, NO,  YES, YES};
-	BOOL isInstanceVals[4] = {NO, YES, NO,  YES};
-	unsigned int methodCount;
-	NSMutableArray *methods = [[NSMutableArray alloc] init];
-	
-	for( int i = 0; i < 4; i++ ){
-		struct objc_method_description *methodDescriptionList = protocol_copyMethodDescriptionList(protocol, isReqVals[i], isInstanceVals[i], &methodCount);
-		if(!methodDescriptionList)
-			continue;
-
-		if(methodCount <= 0) {
-			free(methodDescriptionList);
-			continue;
-		}
-
-		NSMutableDictionary *methodInfo = [[NSMutableDictionary alloc] init];
-		for(int j = 0; j < methodCount; j++) {
-			NSArray *types = ParseTypeString([NSString stringWithUTF8String:methodDescriptionList[j].types]);
-			[methodInfo setObject:[NSString stringWithUTF8String:sel_getName(methodDescriptionList[j].name)] forKey:@"methodName"];
-			[methodInfo setObject:[types objectAtIndex:0] forKey:@"returnType"];
-			[methodInfo setObject:((isReqVals[i]) ? @"1" : @"0") forKey:@"required"];
-			[methodInfo setObject:((isInstanceVals[i]) ? @"1" : @"0") forKey:@"instance"];
-
-			NSMutableArray *params = [[NSMutableArray alloc] init];
-			if([types count] > 3) {  // return_type, class, selector, ...
-				NSRange range;
-				range.location = 3;
-				range.length = [types count]-3;
-				[params addObject:[types subarrayWithRange:range]];
-			}
-			[methodInfo setObject:params forKey:@"parameters"];
-		}
-
-		[methods addObject:methodInfo];
-
-		free(methodDescriptionList);
-	}
-	return [methods copy];
-}
-
 -(id)protocolsForClass:(NSString *)className {
 	unsigned int protocolCount = 0, j;
 	Protocol **protocols = class_copyProtocolList(objc_getClass([className UTF8String]), &protocolCount);
@@ -524,51 +567,9 @@ Returns a NSDictionary like this:
 	return [protocolList copy];
 }
 
--(NSDictionary *)protocolDump {
-	unsigned int protocolCount = 0, j;
-	Protocol **protocols = objc_copyProtocolList(&protocolCount);
-	NSMutableDictionary *protocolList = [[NSMutableDictionary alloc] init];
-
-	if(protocolCount <= 0)
-		return protocolList;
-
-	// some of this code was inspired by (and a little of it is copy/pasta) https://gist.github.com/markd2/5961219
-	for(j = 0; j < protocolCount; j++) {
-		NSMutableArray *adoptees;
-		NSMutableDictionary *protocolInfoDict = [[NSMutableDictionary alloc] init];
-		const char *protocolName = protocol_getName(protocols[j]); 
-		unsigned int adopteeCount;
-		Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
-
-		if(!adopteeCount) {
-			free(adopteesList);
-			continue;
-		}
-	
-		adoptees = [[NSMutableArray alloc] init];
-		for(int i = 0; i < adopteeCount; i++) {
-			const char *adopteeName = protocol_getName(adopteesList[i]);
-
-			if(!adopteeName) {
-				free(adopteesList);
-				continue; // skip broken names or shit we don't care about
-			}
-			[adoptees addObject:[NSString stringWithUTF8String:adopteeName]];
-		}
-		free(adopteesList);
-
-		[protocolInfoDict setObject:[NSString stringWithUTF8String:protocolName] forKey:@"protocolName"];
-		[protocolInfoDict setObject:adoptees forKey:@"adoptees"];
-		[protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
-		[protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
-		 
-		[protocolList setObject:protocolInfoDict forKey:[NSString stringWithUTF8String:protocolName]];
-	}
-	free(protocols);
-	return (NSDictionary *)[protocolList copy];
-}
-
-
+/*
+ * returns an NSArray of NSDictionaries, each containing metadata (name, class/instance, etc) about a method for the specified class.
+ */
 -(id)methodsForClass:(NSString *)className {
 	unsigned int numClassMethods = 0;
 	unsigned int numInstanceMethods = 0;
@@ -578,7 +579,102 @@ Returns a NSDictionary like this:
 	char *classNameUTF8;
 	Method *classMethodList = NULL;
 	Method *instanceMethodList = NULL;
+
+	if(!className)
+		return nil; //[methods copy];
+
+	if((classNameUTF8 = (char *)[className UTF8String]) == NULL)
+		return nil; //[methods copy];
+
+	ispy_log_debug(LOG_GENERAL, "methodsForClass: %s", classNameUTF8);
+
+	Class cls = objc_getClass(classNameUTF8);
+	if(cls == nil)
+		return nil; //[methods copy];
 	
+	ispy_log_debug(LOG_GENERAL, "getClass: %s", classNameUTF8);
+	c = object_getClass(cls);
+	if(c) {
+		ispy_log_debug(LOG_GENERAL, "class_methods: %s", classNameUTF8);
+		pthread_mutex_lock(&mutex_methodsForClass);
+		classMethodList = class_copyMethodList(c, &numClassMethods);
+		pthread_mutex_unlock(&mutex_methodsForClass);
+	}
+	else {
+		classMethodList = NULL;
+		numClassMethods = 0;
+	}
+
+	ispy_log_debug(LOG_GENERAL, "instance_methods: %s", classNameUTF8);
+	pthread_mutex_lock(&mutex_methodsForClass);
+	instanceMethodList = class_copyMethodList(cls, &numInstanceMethods);
+	pthread_mutex_unlock(&mutex_methodsForClass);
+	
+	ispy_log_debug(LOG_GENERAL, "got: %d", numInstanceMethods);
+	if(	(classMethodList == nil && instanceMethodList == nil) ||
+		(numClassMethods == 0 && numInstanceMethods ==0))
+		return nil;
+
+	if(classMethodList != NULL) {
+		for(i = 0; i < numClassMethods; i++) {
+			ispy_log_debug(LOG_GENERAL, "class method: %d", i);
+			if(!classMethodList[i])
+				continue;
+			pthread_mutex_lock(&mutex_methodsForClass);
+			SEL sel = method_getName(classMethodList[i]);
+			pthread_mutex_unlock(&mutex_methodsForClass);
+			if(!sel)
+				continue;
+			pthread_mutex_lock(&mutex_methodsForClass);
+			NSDictionary *methodInfo = [[iSpy sharedInstance] infoForMethod:sel inClass:cls];
+			if(methodInfo != nil)
+				[methods addObject:methodInfo];
+			pthread_mutex_unlock(&mutex_methodsForClass);
+		}
+		free(classMethodList);
+	}
+
+	if(instanceMethodList != NULL) {
+		for(i = 0; i < numInstanceMethods; i++) {
+			ispy_log_debug(LOG_GENERAL, "instance method: %d", i);
+			if(!instanceMethodList[i])
+				continue;
+			pthread_mutex_lock(&mutex_methodsForClass);
+			ispy_log_debug(LOG_GENERAL, "sel");
+			SEL sel = method_getName(instanceMethodList[i]);
+			pthread_mutex_unlock(&mutex_methodsForClass);
+			if(!sel)
+				continue;
+			ispy_log_debug(LOG_GENERAL, "info");
+			pthread_mutex_lock(&mutex_methodsForClass);
+			NSDictionary *methodInfo = [[iSpy sharedInstance] infoForMethod:sel inClass:cls];
+			if(methodInfo != nil)
+				[methods addObject:methodInfo];
+			pthread_mutex_unlock(&mutex_methodsForClass);
+		}
+		free(instanceMethodList);
+	}
+	pthread_mutex_unlock(&mutex_methodsForClass);
+	if([methods count] <= 0)
+		return nil;
+	else
+		return [methods copy];
+}
+
+/*
+ * Returns an NSArray of NSString names, each of which is a method name for the specified class.
+ * You should release the returned NSArray.
+ */
+-(NSArray *)methodListForClass:(NSString *)className {
+	unsigned int numClassMethods = 0;
+	unsigned int numInstanceMethods = 0;
+	unsigned int i;
+	NSMutableArray *methods = [[NSMutableArray alloc] init];
+	Class c;
+	char *classNameUTF8;
+	Method *classMethodList = NULL;
+	Method *instanceMethodList = NULL;
+
 	if(!className)
 		return nil; //[methods copy];
 
@@ -590,36 +686,45 @@ Returns a NSDictionary like this:
 		return nil; //[methods copy];
 	
 	c = object_getClass(cls);
-	if(c)
+	if(c) {
 		classMethodList = class_copyMethodList(c, &numClassMethods);
-	else
+	}
+	else {
+		classMethodList = NULL;
 		numClassMethods = 0;
-	instanceMethodList  = class_copyMethodList(cls, &numInstanceMethods);
+	}
+
+	instanceMethodList = class_copyMethodList(cls, &numInstanceMethods);
 	
+	if(	(classMethodList == nil && instanceMethodList == nil) ||
+		(numClassMethods == 0 && numInstanceMethods ==0))
+		return nil;
+
 	if(classMethodList != NULL) {
 		for(i = 0; i < numClassMethods; i++) {
-			SEL sel = method_getName(classMethodList[i]);
-			if(!sel)
+			if(!classMethodList[i])
 				continue;
-			NSDictionary *methodInfo = [self infoForMethod:sel inClass:cls];
-			if(methodInfo != nil)
-				[methods addObject:methodInfo];    
+			SEL sel = method_getName(classMethodList[i]);
+			if(sel)
+				[methods addObject:[NSString stringWithUTF8String:sel_getName(sel)]];
 		}
 		free(classMethodList);
 	}
 
 	if(instanceMethodList != NULL) {
 		for(i = 0; i < numInstanceMethods; i++) {
-			SEL sel = method_getName(instanceMethodList[i]);
-			if(!sel)
+			if(!instanceMethodList[i])
 				continue;
-			NSDictionary *methodInfo = [self infoForMethod:sel inClass:cls];
-			if(methodInfo != nil)
-				[methods addObject:methodInfo];    
+			SEL sel = method_getName(instanceMethodList[i]);
+			if(sel)
+				[methods addObject:[NSString stringWithUTF8String:sel_getName(sel)]];
 		}
 		free(instanceMethodList);
 	}
-	return [methods copy];
+	if([methods count] <= 0)
+		return nil;
+	else
+		return (NSArray *)[methods copy];
 }
 
 -(id)classes {
@@ -693,6 +798,7 @@ Returns a NSDictionary like this:
 }
 
 /*
+ * The following function returns an NSDictionary, like so:
 {
 	"MyClass1": {
 		"className": "MyClass1",
@@ -747,6 +853,7 @@ Returns a NSDictionary like this:
 	return [classDumpDict copy];
 }
 
+// This function does the same thing, only for a single specified class name.
 -(NSDictionary *)classDumpClass:(NSString *)className {
 	NSMutableDictionary *cls = [[NSMutableDictionary alloc] init];
 	Class theClass = objc_getClass([className UTF8String]);
@@ -777,98 +884,147 @@ Returns a NSDictionary like this:
 	return (NSDictionary *)[cls copy];
 }
 
--(NSString *)SHA256HMACForAppBinary {
-	NSString *fileName = [[[NSProcessInfo processInfo] arguments] objectAtIndex:0];
-	NSString *HMAC = SHA256HMAC([NSData dataWithContentsOfFile:fileName]);
-	NSLog(@"[iSpy] HMAC: %@", HMAC);
-	return HMAC;
-}
 
+/*
+ *
+ * Methods for working with protocols.
+ *
+ */
 
--(id)instance_atAddress:(NSString *)addr {
-	// Given a string in the format @"0xdeadbeef", this first converts the string to an address, then
-	// returns an opaque Objective-C object at that address.
-	// The runtime can treat this return value just like any other object.
-	// BEWARE: give this an incorrect/invalid address and you'll return a duff pointer. Caveat emptor.
-	return (id)strtoul([addr UTF8String], (char **)NULL, 16);
-}
+-(id)propertiesForProtocol:(Protocol *)protocol {
+	unsigned int propertyCount = 0, j;
+	objc_property_t *propertyList = protocol_copyPropertyList(protocol, &propertyCount);
+	NSMutableArray *properties = [[NSMutableArray alloc] init];
 
-// Given a hex address (eg. 0xdeafbeef) dumps the class data from the object at that address.
-// Returns an object as discussed in instance_dumpInstance, below.
-// This is exposed to /api/instance/0xdeadbeef << replace deadbeef with an actual address.
--(id)instance_dumpInstanceAtAddress:(NSString *)addr {
-	return [self instance_dumpInstance:[self instance_atAddress:addr]];
-}
+	if(!propertyList)
+		return properties;
 
-// Make sure to pass a valid pointer (instance) to this method!
-// In return it'll give you an array. Each element in the array represents an iVar and comprises a dictionary.
-// Each element in the dictionary represents the name, type, and value of the iVar.
--(id)instance_dumpInstance:(id)instance {
-	void *ptr;
-	NSArray *iVars = [self iVarsForClass:[NSString stringWithUTF8String:object_getClassName(instance)]];
-	int i;
-	NSMutableArray *iVarData = [[NSMutableArray alloc] init];
+	for(j = 0; j < propertyCount; j++) {
+		NSMutableDictionary *property = [[NSMutableDictionary alloc] init];
 
-	for(i=0; i< [iVars count]; i++) {
-		NSDictionary *iVar = [iVars objectAtIndex:i];
-		NSEnumerator *e = [iVar keyEnumerator];
-		id key;
-
-		while((key = [e nextObject])) {
-			NSMutableDictionary *iVarInfo = [[NSMutableDictionary alloc] init];
-			[iVarInfo setObject:key forKey:@"name"];
-			
-			object_getInstanceVariable(instance, [key UTF8String], &ptr );
-			
-			// Retarded check alert!
-			// The logic goes like this. All parameter types have a style guide. 
-			// e.g. If the type of argument we're examining is an Objective-C class, the first letter of its name
-			// will be a capital letter. We can dump these with ease using the Objective-C runtime.
-			// Similarly, anything from the C world should have a lower case first letter.
-			// Now, we can easily leverage the Objective-C runtime to dump class data. but....
-			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints. 
-			// Of course we could dump strings (char*) too, but we need to write code to handle that.
-			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
-			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
-			// of how to deal with this shit. 
-			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
-			char *type = (char *)[[iVar objectForKey:key] UTF8String];
-			
-			if(islower(*type)) {
-				char *boolVal = (char *)ptr;
-				if(strcmp(type, "char") == 0) {
-					[iVarInfo setObject:@"BOOL" forKey:@"type"];
-					[iVarInfo setObject:[NSString stringWithFormat:@"%d", (int)boolVal&0xff] forKey:@"value"];
-				} else {
-					[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
-					[iVarInfo setObject:[NSString stringWithFormat:@"[%s] pointer @ %p", type, ptr] forKey:@"value"];
-				}
-			} else {
-				// This is likely to be an Objective-C class. Hey, what's the worst that could happen if it's not?
-				// That would be a segfault. Signal 11. Do not pass go, do not collect a stack trace.
-				// This is a shady janky-ass mofo of a function. 
-				[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
-				[iVarInfo setObject:[NSString stringWithFormat:@"%@", ptr] forKey:@"value"];
-			}
-			[iVarData addObject:iVarInfo];
-			[iVarInfo release];
-		}
+		char *name = (char *)property_getName(propertyList[j]);
+		char *attr = bf_get_attrs_from_signature((char *)property_getAttributes(propertyList[j])); 
+		[property setObject:[NSString stringWithUTF8String:attr] forKey:[NSString stringWithUTF8String:name]];
+		[properties addObject:property];
+		free(attr);
 	}
-
-	return [iVarData copy];
+	return [properties copy];
 }
 
--(void) testJSONRPC:(NSDictionary *)args {
-	NSLog(@"Looks like RPC works: %@", args);
+-(id)methodsForProtocol:(Protocol *)protocol {
+	BOOL isReqVals[4] =      {NO, NO,  YES, YES};
+	BOOL isInstanceVals[4] = {NO, YES, NO,  YES};
+	unsigned int methodCount;
+	NSMutableArray *methods = [[NSMutableArray alloc] init];
+	
+	for( int i = 0; i < 4; i++ ){
+		struct objc_method_description *methodDescriptionList = protocol_copyMethodDescriptionList(protocol, isReqVals[i], isInstanceVals[i], &methodCount);
+		if(!methodDescriptionList)
+			continue;
+
+		if(methodCount <= 0) {
+			free(methodDescriptionList);
+			continue;
+		}
+
+		NSMutableDictionary *methodInfo = [[NSMutableDictionary alloc] init];
+		for(int j = 0; j < methodCount; j++) {
+			NSArray *types = ParseTypeString([NSString stringWithUTF8String:methodDescriptionList[j].types]);
+			[methodInfo setObject:[NSString stringWithUTF8String:sel_getName(methodDescriptionList[j].name)] forKey:@"methodName"];
+			[methodInfo setObject:[types objectAtIndex:0] forKey:@"returnType"];
+			[methodInfo setObject:((isReqVals[i]) ? @"1" : @"0") forKey:@"required"];
+			[methodInfo setObject:((isInstanceVals[i]) ? @"1" : @"0") forKey:@"instance"];
+
+			NSMutableArray *params = [[NSMutableArray alloc] init];
+			if([types count] > 3) {  // return_type, class, selector, ...
+				NSRange range;
+				range.location = 3;
+				range.length = [types count]-3;
+				[params addObject:[types subarrayWithRange:range]];
+			}
+			[methodInfo setObject:params forKey:@"parameters"];
+		}
+
+		[methods addObject:methodInfo];
+
+		free(methodDescriptionList);
+	}
+	return [methods copy];
 }
 
--(void) setMsgSendLoggingState:(NSDictionary *) args {
-	NSString *state = [args objectForKey:@"state"];
 
-	if(state && [state isEqual:@"true"])
-		[self msgSend_enableLogging];
-	else if(state && [state isEqual:@"false"])
-		[self msgSend_disableLogging];
+-(NSDictionary *)protocolDump {
+	unsigned int protocolCount = 0, j;
+	Protocol **protocols = objc_copyProtocolList(&protocolCount);
+	NSMutableDictionary *protocolList = [[NSMutableDictionary alloc] init];
+
+	if(protocolCount <= 0)
+		return protocolList;
+
+	// some of this code was inspired by (and a little of it is copy/pasta) https://gist.github.com/markd2/5961219
+	for(j = 0; j < protocolCount; j++) {
+		NSMutableArray *adoptees;
+		NSMutableDictionary *protocolInfoDict = [[NSMutableDictionary alloc] init];
+		const char *protocolName = protocol_getName(protocols[j]); 
+		unsigned int adopteeCount;
+		Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
+
+		if(!adopteeCount) {
+			free(adopteesList);
+			continue;
+		}
+	
+		adoptees = [[NSMutableArray alloc] init];
+		for(int i = 0; i < adopteeCount; i++) {
+			const char *adopteeName = protocol_getName(adopteesList[i]);
+
+			if(!adopteeName) {
+				free(adopteesList);
+				continue; // skip broken names or shit we don't care about
+			}
+			[adoptees addObject:[NSString stringWithUTF8String:adopteeName]];
+		}
+		free(adopteesList);
+
+		[protocolInfoDict setObject:[NSString stringWithUTF8String:protocolName] forKey:@"protocolName"];
+		[protocolInfoDict setObject:adoptees forKey:@"adoptees"];
+		[protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
+		[protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
+		 
+		[protocolList setObject:protocolInfoDict forKey:[NSString stringWithUTF8String:protocolName]];
+	}
+	free(protocols);
+	return (NSDictionary *)[protocolList copy];
+}
+
+/*
+    Return a dictionary, with one entry per network interface (en0, en1, lo0)
+*/
+-(NSDictionary *)getNetworkInfo {
+    NSString *address;
+    NSString *interface;
+    struct ifaddrs *interfaces = NULL;
+    struct ifaddrs *temp_addr = NULL;
+    int success = 0;
+    NSMutableDictionary *info = [[NSMutableDictionary alloc] init];
+
+    success = getifaddrs(&interfaces);
+    if (success == 0) {
+        temp_addr = interfaces;
+        while(temp_addr != NULL) {
+            interface = [NSString stringWithUTF8String:temp_addr->ifa_name];
+            address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
+            [info setValue:address forKey:interface];
+            temp_addr = temp_addr->ifa_next;
+        }
+    }
+
+    freeifaddrs(interfaces);
+    return info;
+}
+
++(void) initialize {
+
 }
 
 @end
@@ -1032,3 +1188,7 @@ NSString *SHA256HMAC(NSData *theData) {
 
     return [result copy];
 }
+
+
+
+

@@ -73,7 +73,7 @@ static const int DEFAULT_WEB_PORT = 31337;
     // Normally there's no need to run our server on any specific port.
     // Technologies like Bonjour allow clients to dynamically discover the server's port at runtime.
     // However, for easy testing you may want force a certain port so you can just hit the refresh button.
-     int lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:DEFAULT_WEB_PORT];
+    int lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:DEFAULT_WEB_PORT];
     [httpServer setPort: lport];
     ispy_log_info(LOG_HTTP, "iSpyHTTPServer is listening on port %d", lport);
 

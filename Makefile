@@ -23,9 +23,6 @@ iSpy_FILES = \
 	iSpy.msgSend.whitelist.xm \
 	iSpy.msgSend.common.xm \
 	iSpy.rpc.xm
-
-# WebServer Files
-iSpy_FILES += \
 	iSpyServer/iSpyHTTPServer.xm \
 	iSpyServer/iSpyHTTPConnection.xm \
 	iSpyServer/iSpyWebSocket.xm \

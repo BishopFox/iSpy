@@ -22,7 +22,7 @@ iSpy_FILES = \
 	typestring.xm \
 	iSpy.msgSend.whitelist.xm \
 	iSpy.msgSend.common.xm \
-	iSpy.rpc.xm
+	iSpy.rpc.xm \
 	iSpyServer/iSpyHTTPServer.xm \
 	iSpyServer/iSpyHTTPConnection.xm \
 	iSpyServer/iSpyWebSocket.xm \

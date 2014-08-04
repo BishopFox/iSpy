@@ -107,17 +107,20 @@ id *appClassWhiteList = NULL;
 + (id)sharedInstance {
 	static iSpy *sharedInstance;
 	static dispatch_once_t once;
-	
+	NSLog(@"[iSpy] Sending iSpy to dispatch_once ...");
 	dispatch_once(&once, ^{
 		sharedInstance = [[self alloc] init];
+		NSLog(@"[iSpy] Alloc the iSpyServer ...");
 		[sharedInstance setWebServer:[[iSpyServer alloc] init]];
 		[sharedInstance setGlobalStatusStr:@""];
+		NSLog(@"[iSpy] Setting the bundleIdentifier");
 		[sharedInstance setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
 		[sharedInstance setIsInstanceTrackingEnabled: NO];
+		NSLog(@"[iSpy] Setting up RPCHandler ...");
 		[[sharedInstance webServer] setRpcHandler:[[RPCHandler alloc] init]];
 		sharedInstance->_trackedInstances = [[NSMutableDictionary alloc] init];
 	});
-	
+	NSLog(@"[iSpy] Returning sharedInstance to caller");
 	return sharedInstance;
 }
 

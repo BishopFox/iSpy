@@ -1820,16 +1820,16 @@ EXPORT int return_true() {
  */
 %ctor {
 		NSLog(@"[iSpy] *** Entry point ***");
-
 		iSpy *mySpy = [iSpy sharedInstance];
+		NSLog(@"[iSpy] iSpy object finished instantiation");
 
 		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
 		// This must be the first thing we do, otherwise SQLite will already have been initialized and 
 		// this call with silently fail.
 		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
-		
+		NSLog(@"[iSpy] SQLite database initialized: %d", configresult);
 		// Load preferences. Abort if prefs file not found.
-		NSLog(@"[iSpy] : initializing prefs for %@", [mySpy bundleId]);
+		NSLog(@"[iSpy] Initializing prefs for %@", [mySpy bundleId]);
 		NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
 		if (!plist) {
 			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
@@ -1861,6 +1861,7 @@ EXPORT int return_true() {
 	    NSString *documentsDirectory = [paths objectAtIndex:0];
 	    NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
 		ispy_init_logwriter(documentsDirectory);
+		NSLog(@"[iSpy] Logging system is operational, no calls should be made to NSLog hereafter");
 
 		/* After this point you should not be calling NSLog! */
 		ispy_log_debug(LOG_GENERAL, "================================================================");

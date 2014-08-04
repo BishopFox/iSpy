@@ -60,22 +60,24 @@ static const int DEFAULT_WEB_PORT = 31337;
     [self setPlist: [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE]];
 
     [self setHttpServer:NULL];
+    NSLog(@"[iSpy] Alloc iSpyHTTPServer ..");
     iSpyHTTPServer *httpServer = [[iSpyHTTPServer alloc] init];
     [self setHttpServer: httpServer];
 
     // Tell server to use our custom MyHTTPConnection class.
+    NSLog(@"[iSpy] Setting up iSpyHTTPConnection ..");
     [httpServer setConnectionClass:[iSpyHTTPConnection class]];
 
     // Tell the server to broadcast its presence via Bonjour.
     // This allows browsers such as Safari to automatically discover our service.
-    [httpServer setType:@"_http._tcp."];
+    //[httpServer setType:@"_http._tcp."];
 
     // Normally there's no need to run our server on any specific port.
     // Technologies like Bonjour allow clients to dynamically discover the server's port at runtime.
     // However, for easy testing you may want force a certain port so you can just hit the refresh button.
     int lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:DEFAULT_WEB_PORT];
     [httpServer setPort: lport];
-    ispy_log_info(LOG_HTTP, "iSpyHTTPServer is listening on port %d", lport);
+    NSLog(@"[iSpy] iSpyHTTPServer is listening on port %d", lport);
 
     // Serve files from our embedded Web folder
     [httpServer setDocumentRoot: @"/var/www/iSpy"];
@@ -85,9 +87,8 @@ static const int DEFAULT_WEB_PORT = 31337;
     if( ! [httpServer start:&error])
     {
         NSString *errorMessage = [NSString stringWithFormat:@"%@", error];
-        ispy_log_error(LOG_HTTP, "Error starting HTTP Server: %s", [errorMessage UTF8String]);
+        NSLog(@"[iSpy] Error starting HTTP Server: %@", errorMessage);
     }
-
 }
 
 -(id)init {
@@ -105,11 +106,11 @@ static const int DEFAULT_WEB_PORT = 31337;
 {
     int lport = [[self.plist objectForKey:key] intValue];
     if (lport <= 0 || 65535 <= lport) {
-        ispy_log_warning(LOG_HTTP, "Invalid listen port (%d); fallback to %d", lport, fallback);
+        NSLog(@"[iSpy] Invalid listen port (%d); fallback to %d", lport, fallback);
         lport = fallback;
     }
     if (lport <= 1024) {
-        ispy_log_warning(LOG_HTTP, "%d is a priviledged port, this is most likely not going to work!", lport);
+        NSLog(@"[iSpy] %d is a priviledged port, this is most likely not going to work!", lport);
     }
     return lport;
 }

@@ -45,6 +45,9 @@
 #include "hooks_CoreFoundation.h"
 #import "iSpy.rpc.h"
 
+#import "iSpyServer/CocoaHTTPServer/DDLog.h"
+#import "iSpyServer/CocoaHTTPServer/DDTTYLogger.h"
+
 #import "iSpyServer/iSpyHTTPServer.h"
 #import "iSpyServer/iSpyHTTPConnection.h"
 
@@ -61,6 +64,7 @@ static const int DEFAULT_WEB_PORT = 31337;
 
     [self setHttpServer:NULL];
     NSLog(@"[iSpy] Alloc iSpyHTTPServer ..");
+    [DDLog addLogger:[DDTTYLogger sharedInstance]];
     iSpyHTTPServer *httpServer = [[iSpyHTTPServer alloc] init];
     [self setHttpServer: httpServer];
 
@@ -77,10 +81,10 @@ static const int DEFAULT_WEB_PORT = 31337;
     // However, for easy testing you may want force a certain port so you can just hit the refresh button.
     int lport = [self getListenPortFor:@"settings_webServerPort" fallbackTo:DEFAULT_WEB_PORT];
     [httpServer setPort: lport];
-    NSLog(@"[iSpy] iSpyHTTPServer is listening on port %d", lport);
+    NSLog(@"[iSpy] iSpyHTTPServer configured to listen on port %d", lport);
 
     // Serve files from our embedded Web folder
-    [httpServer setDocumentRoot: @"/var/www/iSpy"];
+    [httpServer setDocumentRoot: @"/var/www/iSpy/"];
 
     // Start the server (and check for problems)
     NSError *error;
@@ -89,6 +93,7 @@ static const int DEFAULT_WEB_PORT = 31337;
         NSString *errorMessage = [NSString stringWithFormat:@"%@", error];
         NSLog(@"[iSpy] Error starting HTTP Server: %@", errorMessage);
     }
+    NSLog(@"[iSpy] HTTP server started successfully");
 }
 
 -(id)init {
@@ -124,33 +129,33 @@ static const int DEFAULT_WEB_PORT = 31337;
 // It will do sanity/security checks, then dispatch the method, then return an NSDictionary as a return value.
 -(NSDictionary *)dispatchRPCRequest:(NSString *) JSONString {
     NSData *RPCRequest = [JSONString dataUsingEncoding:NSUTF8StringEncoding];
-    if( ! RPCRequest) {
-        ispy_log_debug(LOG_HTTP, "ERROR: Could not convert websocket payload into NSData");
+    if ( ! RPCRequest) {
+        ispy_log_error(LOG_HTTP, "Could not convert websocket payload into NSData");
         return nil;
     }
 
     // create a dictionary from the JSON request
     NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
-    if(!RPCDictionary) {
-        ispy_log_debug(LOG_HTTP, "ERROR: invalid RPC request, couldn't deserialze the JSON data.");
+    if ( ! RPCDictionary) {
+        ispy_log_error(LOG_HTTP, "invalid RPC request, couldn't deserialze the JSON data.");
         return nil;
     }
 
     // is this a valid request? (does it contain both "messageType" and "messageData" entries?)
-    if( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"]) {
-        ispy_log_debug(LOG_HTTP, "ERROR: Invalid request. Must have messageType and messageData.");
+    if ( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"]) {
+        ispy_log_error(LOG_HTTP, "Invalid request. Must have messageType and messageData.");
         return nil;
     }
 
     // Verify that the iSpy RPC handler class can execute the requested selector
     NSString *selectorString = [RPCDictionary objectForKey:@"messageType"];
     SEL selectorName = sel_registerName([[NSString stringWithFormat:@"%@:", selectorString] UTF8String]);
-    if(!selectorName) {
-        ispy_log_debug(LOG_HTTP, "ERROR: selectorName was null.");
+    if ( ! selectorName) {
+        ispy_log_error(LOG_HTTP, "selectorName was null.");
         return nil;
     }
-    if( ! [[self rpcHandler] respondsToSelector:selectorName] ) {
-        ispy_log_debug(LOG_HTTP, "ERROR: doesn't respond to selector");
+    if ( ! [[self rpcHandler] respondsToSelector:selectorName] ) {
+        ispy_log_error(LOG_HTTP, "doesn't respond to selector");
         return nil;
     }
 

@@ -1820,17 +1820,9 @@ EXPORT int return_true() {
  */
 %ctor {
 		NSLog(@"[iSpy] *** Entry point ***");
-		iSpy *mySpy = [iSpy sharedInstance];
-		NSLog(@"[iSpy] iSpy object finished instantiation");
-
-		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
-		// This must be the first thing we do, otherwise SQLite will already have been initialized and 
-		// this call with silently fail.
-		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
-		NSLog(@"[iSpy] SQLite database initialized: %d", configresult);
-		// Load preferences. Abort if prefs file not found.
-		NSLog(@"[iSpy] Initializing prefs for %@", [mySpy bundleId]);
+		NSString *bundleId = [[[NSBundle mainBundle] bundleIdentifier] copy];
 		NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
+
 		if (!plist) {
 			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
 			return;
@@ -1845,15 +1837,27 @@ EXPORT int return_true() {
 		// Check to see if iSpy is enabled for this specific application
 		NSMutableDictionary* appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
 		if (!appPlist) {
-			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
+			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", bundleId);
 			return;
 		}
 
-		NSString *appKey = [NSString stringWithFormat:@"targets_%@", [mySpy bundleId]];
+		NSString *appKey = [NSString stringWithFormat:@"targets_%@", bundleId];
 		if ( ! [[appPlist objectForKey:appKey] boolValue]) {
-			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", [mySpy bundleId]);
+			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", bundleId);
 			return;
 		}
+
+		/* Green light to inject - Init all the things */
+		iSpy *mySpy = [iSpy sharedInstance];
+		NSLog(@"[iSpy] iSpy object finished instantiation");
+
+		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
+		// This must be the first thing we do, otherwise SQLite will already have been initialized and 
+		// this call with silently fail.
+		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
+		NSLog(@"[iSpy] SQLite database initialized: %d", configresult);
+		// Load preferences. Abort if prefs file not found.
+		NSLog(@"[iSpy] Initializing prefs for %@", [mySpy bundleId]);
 
 		// Initialize the BF log writing system
 		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
@@ -1881,20 +1885,20 @@ EXPORT int return_true() {
 		//[xxxLoggingAssertionHandler load];
 		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
 		dispatch_sync(initQ, ^{
-			bf_objc_msgSend_whitelist_startup();	
+			bf_objc_msgSend_whitelist_startup();
 			bf_init_msgSend_logging();
 		});
-		
+
 		// Ok, this needs some explanation.
 		// There seems to be some weird intermittent crash that occurs when hijack_on() collides with
 		// something that uses/hooks syscalls; I suspect other MobileSubstrate .dylibs. By pausing for a second
 		// here, we give other libs time to load and, since installing this sleep(1), I've never seen a
 		// startup crash. This could probably do with extra investigation.
 		//sleep(1); // testing
-		
+
 		// Hook all the things necessary for strace-style logging
 		//hijack_on(plist);
-		
+
 		// Replace MSMessageHookEx with the iSpy variant if configured to do so
 		if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");

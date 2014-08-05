@@ -5,10 +5,13 @@
 #import "iSpyWebSocket.h"
 
 
-// Log levels: off, error, warn, info, verbose
-// Other flags: trace
-
 @implementation iSpyHTTPConnection
+
+- (NSObject<HTTPResponse> *)httpResponseForMethod:(NSString *)method URI:(NSString *)path
+{
+    NSLog(@"[iSpy] iSpyHTTPConnection - method: %@ path: %@", method, path);
+    return [super httpResponseForMethod:method URI:path];
+}
 
 - (WebSocket *)webSocketForURI:(NSString *) path
 {

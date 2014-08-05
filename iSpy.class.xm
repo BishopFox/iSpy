@@ -107,7 +107,6 @@ id *appClassWhiteList = NULL;
 + (id)sharedInstance {
 	static iSpy *sharedInstance;
 	static dispatch_once_t once;
-	NSLog(@"[iSpy] Sending iSpy to dispatch_once ...");
 	dispatch_once(&once, ^{
 		sharedInstance = [[self alloc] init];
 		NSLog(@"[iSpy] Alloc the iSpyServer ...");
@@ -120,7 +119,6 @@ id *appClassWhiteList = NULL;
 		[[sharedInstance webServer] setRpcHandler:[[RPCHandler alloc] init]];
 		sharedInstance->_trackedInstances = [[NSMutableDictionary alloc] init];
 	});
-	NSLog(@"[iSpy] Returning sharedInstance to caller");
 	return sharedInstance;
 }
 

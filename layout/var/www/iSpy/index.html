@@ -1,136 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>iSpy</title>
-        <meta name="description" content="iOS Hacking Framework">
-        <meta name="author" content="haggis, moloch">
-        <link href="/images/favicon.ico" rel="shortcut icon" />
-        <link href="/css/bootstrap.min.css" rel="stylesheet" />
-        <link href="/css/bootstrap-theme.min.css" rel="stylesheet" />
-        <link href="/css/bishopfox.css" rel="stylesheet" />
-        <link href="/css/animate.css" rel="stylesheet" />
-        <link href="/css/font-awesome.min.css" rel="stylesheet" />
-        <script src="/js/jquery.min.js" type="text/javascript"></script>
-        <script src="/js/bootstrap.min.js" type="text/javascript"></script>
-        <script src="/js/underscore.min.js" type="text/javascript"></script>
-        <script src="/js/backbone.min.js" type="text/javascript"></script>
-    </head>
-    <!-- Templates -->
-    <script id="objc-msg-send-template" type="text/template">
-        <strong><%= name %></strong>
-    </script>
-    <!-- Visable -->
-    <body id="ispy-body">
-        <nav class="navbar navbar-fixed-top navbar-inverse" role="navigation">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <a class="navbar-brand" href="http://bishopfox.com" target="_blank">
-                        <img src="/static/images/bf-32x32.png">
-                        &nbsp;iSpy
-                    </a>
-                </div>
-                <div class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="dropdown">
-                            <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">
-                                App Info <b class="caret"></b>
-                            </a>
-                            <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/">
-                                        File Browser
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/info">
-                                        App Summary
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/classdump">
-                                        Class dump
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                    <ul class="nav navbar-nav">
-                        <li class="dropdown">
-                            <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">
-                                Monitor <b class="caret"></b>
-                            </a>
-                            <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/generalMonitor">
-                                        iSpy log
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/straceMonitor">
-                                        System call log
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/instances">
-                                        Instance tracking
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a role="menuitem" tabindex="-1" href="/msgSendMonitor">
-                                        Objective-C messages
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                            <button id="objcMsgSendButton" class="btn btn-default navbar-btn" data-toggle="tooltip" data-original-title="objc_msgSend logging" data-placement="bottom" data-state="0" type="button">
-                                <i class="fa fa-fw fa-apple" id="objcMsgSendIcon"></i>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="btn btn-default navbar-btn" data-toggle="tooltip" data-original-title="Strace-style logging" data-placement="bottom">
-                                <i class="fa fa-fw fa-list" id=""></i>
-                            </button>
-                        </li>
 
-                        <li>
-                            <button class="btn btn-default navbar-btn" data-toggle="tooltip"  data-original-title="Objective-C instance tracking" data-placement="bottom">
-                                <i class="fa fa-fw fa-sitemap" id=""></i>
-                            </button>
-                        </li>
-                        <li>
-                            <a class="brand">
-                                <i id="activity-monitor" class="fa fa-fw fa-inverse fa-eye-slash"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iSpy</title>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/local.css" />
+    <script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+
+    <!-- you need to include the shieldui css and js assets in order for the charts to work -->
+    <link rel="stylesheet" type="text/css" href="/css/shieldui-all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/all.min.css" />
+    <link id="gridcss" rel="stylesheet" type="text/css" href="/css/dark-bootstrap-all.min.css" />
+    <script type="text/javascript" src="/js/shieldui-all.min.js"></script>
+    <script type="text/javascript" src="/js/gridData.js"></script>
+</head>
+
+<body>
+    <div id="wrapper">
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">iSpy</a>
             </div>
-        </nav>
-        <div id="ispy-main" class="container-fluid animated fadeIn">
-            We have a body here!
-        </div>
-        <div class="footer">
-            <div class="container">
-                <p class="text-muted">
-                    <a href="https://github.com/BishopFox/iSpy" target="_blank">
-                        <i class="fa fa-fw fa-github-alt"></i>
-                        Source Code
-                    </a> -
-                    <a href="https://github.com/BishopFox/iSpy/issues" target="_blank">
-                        <i class="fa fa-fw fa-bug"></i>
-                        Report a Bug
-                    </a> -
-                    Version 0.0.1
-                </p>
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul id="active" class="nav navbar-nav side-nav">
+                    <li class="selected"><a href="index.html"><i class="fa fa-bullseye"></i> Dashboard</a>
+                    </li>
+                    <li><a href="portfolio.html"><i class="fa fa-fw fa-tasks"></i> Portfolio</a>
+                    </li>
+                    <li><a href="blog.html"><i class="fa fa-fw fa-globe"></i> Blog</a>
+                    </li>
+                    <li><a href="signup.html"><i class="fa fa-fw fa-list-ol"></i> SignUp</a>
+                    </li>
+                    <li><a href="register.html"><i class="fa fa-fw fa-font"></i> Register</a>
+                    </li>
+                    <li><a href="timeline.html"><i class="fa fa-fw fa-font"></i> Timeline</a>
+                    </li>
+                    <li><a href="forms.html"><i class="fa fa-fw fa-list-ol"></i> Forms</a>
+                    </li>
+                    <li><a href="typography.html"><i class="fa fa-fw fa-font"></i> Typography</a>
+                    </li>
+                    <li><a href="bootstrap-elements.html"><i class="fa fa-fw fa-list-ul"></i> Bootstrap Elements</a>
+                    </li>
+                    <li><a href="bootstrap-grid.html"><i class="fa fa-fw fa-table"></i> Bootstrap Grid</a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right navbar-user">
+                    <li class="dropdown messages-dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-envelope"></i> Messages <span class="badge">2</span> <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-header">2 New Messages</li>
+                            <li class="message-preview">
+                                <a href="#">
+                                    <span class="avatar"><i class="fa fa-bell"></i>
+                                    </span>
+                                    <span class="message">Security alert</span>
+                                </a>
+                            </li>
+                            <li class="divider"></li>
+                            <li class="message-preview">
+                                <a href="#">
+                                    <span class="avatar"><i class="fa fa-bell"></i>
+                                    </span>
+                                    <span class="message">Security alert</span>
+                                </a>
+                            </li>
+                            <li class="divider"></li>
+                            <li><a href="#">Go to Inbox <span class="badge">2</span></a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="divider-vertical"></li>
+                    <li>
+                        <form class="navbar-search">
+                            <input type="text" placeholder="Search" class="form-control">
+                        </form>
+                    </li>
+                </ul>
             </div>
-        </div>
-    </body>
-    <!-- Load the iSpy code last -->
-    <script src="/static/js/ispy-models.js" type="text/javascript"></script>
-    <script src="/static/js/ispy-views.js" type="text/javascript"></script>
-    <script src="/static/js/ispy.js" type="text/javascript"></script>
+        </nav><!-- /#nav -->
+        <div id="page-wrapper">
+            <div class="row">
+                We got a body here!
+            </div>
+        </div><!-- /#page-wrapper -->
+    </div>
+</body>
 </html>

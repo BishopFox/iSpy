@@ -37,7 +37,6 @@
 #import  <Foundation/NSJSONSerialization.h>
 #import  <MobileCoreServices/MobileCoreServices.h>
 #import  <QuartzCore/QuartzCore.h>
-#import  <sqlite3.h>
 #include "iSpy.common.h"
 #include "iSpy.instance.h"
 #include "iSpy.class.h"
@@ -244,10 +243,12 @@ extern int (*orig_dup)(u_int fd);
 %end
 */
 
-
 /********************************************
  *** End of area for putting your tweaks. ***
  ********************************************/
+
+
+
 
 
 /*
@@ -1823,11 +1824,6 @@ EXPORT int return_true() {
 		NSLog(@"[iSpy] *** Entry point ***");
 
 		iSpy *mySpy = [iSpy sharedInstance];
-
-		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
-		// This must be the first thing we do, otherwise SQLite will already have been initialized and 
-		// this call with silently fail.
-		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
 		
 		// Load preferences. Abort if prefs file not found.
 		NSLog(@"[iSpy] : initializing prefs for %@", [mySpy bundleId]);
@@ -1868,7 +1864,6 @@ EXPORT int return_true() {
 		ispy_log_debug(LOG_GENERAL, "iSpy starting for application %s", [[mySpy bundleId] UTF8String]);
 		ispy_log_debug(LOG_GENERAL, "================================================================");
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Logging initialized!");
-		ispy_log_debug(LOG_GENERAL, "[iSpy] sqlite_config() returned %d (success=0)", configresult);
 
 		// pre-init stuff
 		%init(pre_init_group);
@@ -1878,12 +1873,12 @@ EXPORT int return_true() {
 		// which are accessible via the /api/ calls, or via cycript using [[iSpy sharedInstance] msgSend_enableLogging]
 		// and [[iSpy sharedInstance] msgSend_disableLogging]. You can also use the web GUI on/off button.
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing objc_msgSend logging system");
-		//[xxxLoggingAssertionHandler load];
-		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
-		dispatch_sync(initQ, ^{
+
+//		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
+//		dispatch_sync(initQ, ^{
 			bf_objc_msgSend_whitelist_startup();	
 			bf_init_msgSend_logging();
-		});
+//		});
 		
 		// Ok, this needs some explanation.
 		// There seems to be some weird intermittent crash that occurs when hijack_on() collides with

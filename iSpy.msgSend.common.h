@@ -17,7 +17,7 @@ struct objc_selector
 #define __log__(stuff) {}
 #endif
 
-#define ISPY_MAX_RECURSION 32
+#define ISPY_MAX_RECURSION 84
 
 extern "C" USED int is_valid_pointer(void *ptr);
 extern "C" USED const char *get_param_value(id x);

@@ -4,20 +4,21 @@
 #include "iSpy.msgSend.common.h"
 #include "iSpy.class.h"
 
+extern ClassMap_t WhitelistClassMap;
+
 namespace bf_objc_msgSend_stret {
     static pthread_once_t key_once_stret = PTHREAD_ONCE_INIT;
     static pthread_key_t stack_keys_stret[ISPY_MAX_RECURSION], curr_stack_key_stret;
     USED static long enabled_stret __asm__("_enabled_stret") = 0;
     USED static void *original_objc_msgSend_stret __asm__("_original_objc_msgSend_stret");
-    static ClassMap_t *ClassMap_stret;
-    __attribute__((used)) __attribute((weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
+    USED __attribute((weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
+    static ClassMap_t *ClassMap_stret = [[iSpy sharedInstance] classWhitelist];
 
     extern "C" int is_this_method_on_whitelist_stret(void *dummy, id Cls, SEL selector) {
         if(Cls && selector) {
             std::string className(object_getClassName(Cls));
             std::string methodName(sel_getName(selector));
-            return (*ClassMap_stret)[className][methodName];
-            //return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+            return ( (*ClassMap_stret)[className][methodName] == 1 );
         }
         else
             return NO;
@@ -33,54 +34,34 @@ namespace bf_objc_msgSend_stret {
         }
     }
 
-    extern "C" USED void increment_depth_stret() {
+    extern "C" USED inline void increment_depth_stret() {
         int currentDepth = (int)pthread_getspecific(curr_stack_key_stret);
         currentDepth++;
         pthread_setspecific(curr_stack_key_stret, (void *)currentDepth);
     }
 
-    extern "C" USED void decrement_depth_stret() {
+    extern "C" USED inline void decrement_depth_stret() {
         int currentDepth = (int)pthread_getspecific(curr_stack_key_stret);
         currentDepth--;
         pthread_setspecific(curr_stack_key_stret, (void *)currentDepth);
     }
 
-    extern "C" USED int get_depth_stret() {
+    extern "C" USED inline int get_depth_stret() {
         return (int)pthread_getspecific(curr_stack_key_stret);
     }
 
-    extern "C" USED id saveBuffer_stret(id buffer) {
-        char buf[1024];
-
+    extern "C" USED void *saveBuffer_stret(void * buffer) {
         increment_depth_stret();
-        sprintf(buf, ">> stret Saving (%p[%d]) buffer: %p <<\n", pthread_self(), get_depth_stret(), buffer);
-        __log__(buf);
         pthread_setspecific(stack_keys_stret[get_depth_stret()], buffer);
-        __log__(">> stret SAVE DONE <<\n\n");
         return buffer;
     }
 
     extern "C" USED void *loadBuffer_stret() {
-        void *retVal;
-        char buf[1024];
-        sprintf(buf, ">> stret Loading (%p[%d]) <<\n", pthread_self(), get_depth_stret());
-        __log__(buf);
-        retVal = pthread_getspecific(stack_keys_stret[get_depth_stret()]);
-        sprintf(buf, ">> stret Got buffer: %p << \n", retVal);
-        __log__(buf);
-        __log__(">> stret LOAD DONE <<\n\n");
-        return retVal;
+        return pthread_getspecific(stack_keys_stret[get_depth_stret()]);
     }
 
     extern "C" USED void *finalLoadBuffer_stret() {
-        void *retVal;
-        char buf[1024];
-        sprintf(buf, ">> stret Final loading (%p[%d]) <<\n", pthread_self(), get_depth_stret());
-        __log__(buf);
-        retVal = pthread_getspecific(stack_keys_stret[get_depth_stret()]);
-        sprintf(buf, ">> stret Final got buffer: %p << \n", retVal);
-        __log__(buf);
-        __log__(">> stret FINAL LOAD DONE <<\n\n");
+        void *retVal = pthread_getspecific(stack_keys_stret[get_depth_stret()]);
         decrement_depth_stret();
         return retVal;
     }
@@ -94,10 +75,14 @@ namespace bf_objc_msgSend_stret {
 
     EXPORT void bf_hook_msgSend_stret() {
         __log__("Hook stret\n");
-        ClassMap_stret = [[iSpy sharedInstance] classWhiteList];
+
+        ClassMap_stret = [[iSpy sharedInstance] classWhitelist];
+
         pthread_once(&key_once_stret, make_key_stret);
-        MSHookFunction((void *)objc_msgSend_stret, (void *)replaced_objc_msgSend_stret, (void **)&original_objc_msgSend_stret);
-        __log__("Hooked\n");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            MSHookFunction((void *)objc_msgSend_stret, (void *)replaced_objc_msgSend_stret, (void **)&original_objc_msgSend_stret);
+            __log__("Hooked\n");
+        });
     }
 
     EXPORT void bf_enable_msgSend_stret() {
@@ -160,8 +145,8 @@ namespace bf_objc_msgSend_stret {
 "LoadSOrig1:"   "ldr r12, [pc, r12]\n"
                 "blx r12\n"
 
-                // save a copy of the return value on the stack
-                "push {r0}\n"
+                // save a copy of the return value and other regs onto the stack
+                "push {r0,r11}\n"
 
                 // Print return value
                 "bl _show_retval\n"
@@ -177,8 +162,8 @@ namespace bf_objc_msgSend_stret {
                 "bl _free\n"                // free() the malloc'd buffer
                 "pop {r0-r3,lr}\n"          // restore the saved registers from the stack
                 
-                // restore the return value
-                "pop {r0}\n"                
+                // restore the return value and other regs
+                "pop {r0,r11}\n"                
                 
                 // return to caller
                 "bx lr\n"

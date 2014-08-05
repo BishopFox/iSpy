@@ -33,7 +33,7 @@
 	Functionality that's exposed to Cycript.
 */
 @interface iSpy : NSObject {
-	Class *classList;
+//	Class *classList;
 }
 @property (assign) iSpyServer *webServer;
 @property (assign) NSString *globalStatusStr;
@@ -42,9 +42,9 @@
 @property (assign) BOOL isInstanceTrackingEnabled;
 @property (assign) NSMutableDictionary *trackedInstances;
 @property (assign) NSMutableDictionary *msgSendWhitelist;
-@property (assign) ClassMap_t *classWhiteList;
+@property (assign) ClassMap_t *classWhitelist;
 
-+(id)sharedInstance;
++(iSpy *)sharedInstance;
 -(NSDictionary *) getNetworkInfo;
 -(NSString *) instance_dumpAllInstancesWithPointers;
 -(NSString *) instance_dumpAppInstancesWithPointers;

@@ -215,15 +215,6 @@ extern CFDictionaryRef (*orig_CFNetworkCopySystemProxySettings)(void);
 extern SecCertificateRef (*orig_SecCertificateCreateWithData)(CFAllocatorRef allocator, CFDataRef data);
 extern int (*orig_dup)(u_int fd);
 
-
-//
-// The FILE pointers are used to deliver logs to the browser. 
-// Defined in iSpy.web.xm
-//
-
-
-
-
 /*************************************************************
  *** This is where you should put your own Theos tweaks.   ***
  *** This shit is important. Put them inside "%bf_group"   ***
@@ -287,7 +278,7 @@ void showGUIPopOver() {
 	[view setContentMode:UIViewContentModeCenter];
 
 	// Load th Bishop Fox logo into a UIImageView
-	UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/static/images/bf-orange-alpha.png"]];
+	UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/images/bf-orange-alpha.png"]];
 	[img setContentMode:UIViewContentModeLeft];
 
 	// give everything a nice BF orange border
@@ -337,7 +328,6 @@ void showGUIPopOver() {
 // This is neat - it hooks all user input events and can be used to log them :)
 -(void) sendEvent:(UIEvent*)event
 {
-    //NSLog(@"Area51:%@",event);
     NSSet *touches = [event allTouches];
     UITouch *touch = [touches anyObject];
     CALayer *touchedLayer = [touch view].layer;
@@ -438,7 +428,7 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 */
 %hook NSString
 %new(B@:)
-- (BOOL) containsString: (NSString*) substring {    
+- (BOOL) containsString: (NSString*) substring {
 	NSRange range = [self rangeOfString : substring];
 	BOOL found = ( range.location != NSNotFound );
 	return found;
@@ -491,7 +481,7 @@ EXPORT int return_true() {
 		NSString *bundleId = [[[NSBundle mainBundle] bundleIdentifier] copy];
 		NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
 
-		if (!plist) {
+		if ( ! plist) {
 			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
 			return;
 		}
@@ -504,7 +494,7 @@ EXPORT int return_true() {
 
 		// Check to see if iSpy is enabled for this specific application
 		NSMutableDictionary* appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
-		if (!appPlist) {
+		if ( ! appPlist) {
 			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", bundleId);
 			return;
 		}
@@ -517,7 +507,6 @@ EXPORT int return_true() {
 
 		/* Green light to inject - Init all the things */
 		iSpy *mySpy = [iSpy sharedInstance];
-		NSLog(@"[iSpy] iSpy object finished instantiation");
 
 		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
 		// This must be the first thing we do, otherwise SQLite will already have been initialized and

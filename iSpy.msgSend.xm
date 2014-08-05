@@ -9,23 +9,24 @@ extern FILE *superLogFP;
 
 namespace bf_msgSend {  
     static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+    static pthread_mutex_t mutex_biglock = PTHREAD_MUTEX_INITIALIZER;
     static pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
     USED static long enabled __asm__("_enabled") = 0;
     USED static void *original_objc_msgSend __asm__("_original_objc_msgSend");
-    __attribute__((used)) __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
-    static ClassMap_t *ClassMap;
+    USED __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
+    static ClassMap_t *ClassMap = NULL;
+
     extern "C" int is_this_method_on_whitelist(id Cls, SEL selector) {
-        if(Cls && selector){
+        if(Cls && selector) {
             std::string className(object_getClassName(Cls));
             std::string methodName(sel_getName(selector));
-            return (*ClassMap)[className][methodName];
-            //return bf_objc_msgSend_whitelist_entry_exists(object_getClassName(Cls), sel_getName(selector));
+            return ( (*ClassMap)[className][methodName] == 1 );
         }
         else
             return NO;
     }
 
-    static void make_key() {
+    extern "C" void make_key() {
         // setup pthreads
         pthread_key_create(&curr_stack_key, NULL);
         pthread_setspecific(curr_stack_key, 0);
@@ -35,54 +36,36 @@ namespace bf_msgSend {
         }
     }
 
-    extern "C" USED void increment_depth() {
+    extern "C" USED inline void increment_depth() {
         int currentDepth = (int)pthread_getspecific(curr_stack_key);
         currentDepth++;
         pthread_setspecific(curr_stack_key, (void *)currentDepth);
     }
 
-    extern "C" USED void decrement_depth() {
+    extern "C" USED inline void decrement_depth() {
         int currentDepth = (int)pthread_getspecific(curr_stack_key);
         currentDepth--;
         pthread_setspecific(curr_stack_key, (void *)currentDepth);
     }
 
-    extern "C" USED int get_depth() {
+    extern "C" USED inline int get_depth() {
         return (int)pthread_getspecific(curr_stack_key);
     }
 
-    extern "C" USED id saveBuffer(id buffer) {
-        char buf[1024];
-
+    extern "C" USED void *saveBuffer(void *buffer) {
         increment_depth();
-        sprintf(buf, ">> Saving (%p[%d]) buffer: %p <<\n", pthread_self(), get_depth(), buffer);
-        __log__(buf);
         pthread_setspecific(stack_keys[get_depth()], buffer);
-        __log__(">> SAVE DONE <<\n\n");
         return buffer;
     }
 
     extern "C" USED void *loadBuffer() {
-        void *retVal;
-        char buf[1024];
-        sprintf(buf, ">> Loading (%p[%d]) <<\n", pthread_self(), get_depth());
-        __log__(buf);
-        retVal = pthread_getspecific(stack_keys[get_depth()]);
-        sprintf(buf, ">> Got buffer: %p << \n", retVal);
-        __log__(buf);
-        __log__(">> LOAD DONE <<\n\n");
-        return retVal;
+        void *buffer;
+        buffer = pthread_getspecific(stack_keys[get_depth()]);
+        return buffer;
     }
 
     extern "C" USED void *finalLoadBuffer() {
-        void *retVal;
-        char buf[1024];
-        sprintf(buf, ">> Final loading (%p[%d]) <<\n", pthread_self(), get_depth());
-        __log__(buf);
-        retVal = pthread_getspecific(stack_keys[get_depth()]);
-        sprintf(buf, ">> Final got buffer: %p << \n", retVal);
-        __log__(buf);
-        __log__(">> FINAL LOAD DONE <<\n\n");
+        void *retVal = pthread_getspecific(stack_keys[get_depth()]);
         decrement_depth();
         return retVal;
     }
@@ -110,6 +93,8 @@ namespace bf_msgSend {
     // This is called in the main iSpy constructor.
     EXPORT void bf_hook_msgSend() {
         char buf[256];
+        int pagesize = sysconf(_SC_PAGE_SIZE);
+        NSLog(@"Page size: %d // align: %d", pagesize, (int)objc_msgSend % pagesize);
 #ifdef DO_SUPER_DEBUG_MODE
         superLogFP = fopen("/tmp/bf.log","a");
         sprintf(buf, "\n\n=================\nLOGGIN (NSThread threaded: %d)\n=================\n\n", [NSThread isMultiThreaded]);
@@ -118,13 +103,16 @@ namespace bf_msgSend {
 #endif
         bf_disable_msgSend();
         bf_disable_msgSend_stret();
-        ClassMap = [[iSpy sharedInstance] classWhiteList];
+
+        ClassMap = [[iSpy sharedInstance] classWhitelist];
+        
         __log__("setup pthread_once\n");
         pthread_once(&key_once, make_key);
-        __log__("hook\n");
-        MSHookFunction((void *)objc_msgSend, (void *)replaced_objc_msgSend, (void **)&original_objc_msgSend);
-        __log__("hooked\n");
-        orig_objc_msgSend = (id (*)(id, SEL, ...))original_objc_msgSend;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            MSHookFunction((void *)objc_msgSend, (void *)replaced_objc_msgSend, (void **)&original_objc_msgSend);
+            __log__("hooked\n");
+            orig_objc_msgSend = (id (*)(id, SEL, ...))original_objc_msgSend;
+        });
     }
 
 // This is basically a rewrite of Subjective-C.
@@ -157,7 +145,7 @@ namespace bf_msgSend {
 
                 // Save r0, r1, r2, r3 and lr.
                 "push {r0-r3,lr}\n" // first copy the registers onto the stack
-                "mov r0, #20\n"     // allocate 5 * 4 bytes, enough to hold 4 registers 
+                "mov r0, #20\n"     // allocate 5 * 4 bytes, enough to hold 5 registers 
                 "bl _malloc\n"      // malloc'd pointer returned in r0
                 "bl _saveBuffer\n"  // save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
                 "mov r12, r0\n"     // keep a copy of the malloc'd buffer
@@ -181,8 +169,8 @@ namespace bf_msgSend {
 "LoadOrig1:"    "ldr r12, [pc, r12]\n"
                 "blx r12\n"
 
-                // save a copy of the return value on the stack
-                "push {r0}\n"
+                // save a copy of the return value and other regs onto the stack
+                "push {r0-r11}\n"
 
                 // Print return value
                 "bl _show_retval\n"
@@ -198,8 +186,8 @@ namespace bf_msgSend {
                 "bl _free\n"                // free() the malloc'd buffer
                 "pop {r0-r3,lr}\n"          // restore the saved registers from the stack
                 
-                // restore the return value
-                "pop {r0}\n"                
+                // restore the return value and other regs
+                "pop {r0-r11}\n"                
                 
                 // return to caller
                 "bx lr\n"

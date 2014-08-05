@@ -12,4 +12,6 @@
 
 }
 
+-(void) webSocketSendAll: (NSString *) msg;
+
 @end

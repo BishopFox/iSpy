@@ -104,7 +104,7 @@ id *appClassWhiteList = NULL;
 @implementation iSpy
 
 // Returns the singleton
-+ (id)sharedInstance {
++(iSpy *)sharedInstance {
 	static iSpy *sharedInstance;
 	static dispatch_once_t once;
 	dispatch_once(&once, ^{

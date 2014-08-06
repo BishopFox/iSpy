@@ -9,7 +9,6 @@ extern FILE *superLogFP;
 
 namespace bf_msgSend {  
     static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-    static pthread_mutex_t mutex_biglock = PTHREAD_MUTEX_INITIALIZER;
     static pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
     USED static long enabled __asm__("_enabled") = 0;
     USED static void *original_objc_msgSend __asm__("_original_objc_msgSend");
@@ -59,22 +58,24 @@ namespace bf_msgSend {
     }
 
     extern "C" USED void *loadBuffer() {
+        __log__("loadBuffer\n");
         void *buffer;
         buffer = pthread_getspecific(stack_keys[get_depth()]);
         return buffer;
     }
 
-    extern "C" USED void *finalLoadBuffer() {
-        void *retVal = pthread_getspecific(stack_keys[get_depth()]);
+    extern "C" USED void cleanUp() {
+        __log__("cleanUp\n");
         decrement_depth();
-        return retVal;
     }
 
-    extern "C" USED void print_args(id self, SEL _cmd, ...) {
+    extern "C" USED void *print_args(id self, SEL _cmd, ...) {
+        void *retVal;
         std::va_list va;
         va_start(va, _cmd);
-        print_args_v(self, _cmd, va);
+        retVal = print_args_v(self, _cmd, va);
         va_end(va);
+        return retVal;
     }
 
     EXPORT void bf_enable_msgSend() {
@@ -92,10 +93,10 @@ namespace bf_msgSend {
 
     // This is called in the main iSpy constructor.
     EXPORT void bf_hook_msgSend() {
-        char buf[256];
         int pagesize = sysconf(_SC_PAGE_SIZE);
         NSLog(@"Page size: %d // align: %d", pagesize, (int)objc_msgSend % pagesize);
 #ifdef DO_SUPER_DEBUG_MODE
+        char buf[256];
         superLogFP = fopen("/tmp/bf.log","a");
         sprintf(buf, "\n\n=================\nLOGGIN (NSThread threaded: %d)\n=================\n\n", [NSThread isMultiThreaded]);
         fputs(buf, superLogFP);
@@ -145,7 +146,7 @@ namespace bf_msgSend {
 
                 // Save r0, r1, r2, r3 and lr.
                 "push {r0-r3,lr}\n" // first copy the registers onto the stack
-                "mov r0, #20\n"     // allocate 5 * 4 bytes, enough to hold 5 registers 
+                "mov r0, #28\n"     // allocate 5 * 4 bytes + 4 bytes, enough to hold 5 registers plus 2x 4-byte address 
                 "bl _malloc\n"      // malloc'd pointer returned in r0
                 "bl _saveBuffer\n"  // save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
                 "mov r12, r0\n"     // keep a copy of the malloc'd buffer
@@ -156,11 +157,15 @@ namespace bf_msgSend {
         
                 // log this call to objc_msgSend
                 "bl _print_args\n"
+                "push {r0}\n"       // save the returned pointer to the JSON data
 
-                // restore the malloc'd buffer
-                "bl _loadBuffer\n"
+                "bl _loadBuffer\n"  // restore the thread-specific malloc'd buffer
+                "mov r12, r0\n"     // make a copy
+                "add r12, #20\n"    // move to the end of the buffer
+                "pop {r2}\n"        // grab the address of the JSON data pointer
+                "stmia r12, {r2}\n" // store it at the end of the thread-specific buffer
 
-                // restore the regs saved in the buffer 
+                // restore the original register values from the thread-specific buffer 
                 "mov r12, r0\n"
                 "ldmia r12, {r0-r3,lr}\n"
 
@@ -169,14 +174,20 @@ namespace bf_msgSend {
 "LoadOrig1:"    "ldr r12, [pc, r12]\n"
                 "blx r12\n"
 
-                // save a copy of the return value and other regs onto the stack
-                "push {r0-r11}\n"
-
-                // Print return value
-                "bl _show_retval\n"
+                "push {r0-r11}\n"           // save a copy of the return value and other regs onto the stack
+                "push {r0}\n"               // save another copy of return value
+                "bl _loadBuffer\n"          // get the address of the thread-specific buffer
+                "pop {r1}\n"                // get the return value from objc_msgSend                
+                "mov r12, r0\n"
+                "add r12, #20\n"
+                "ldmia r12, {r0}\n"
+                "bl _show_retval\n"         // add the return value to the JSON buffer:
+                                            // _show_retval(threadSpecificBuffer, returnValue)
+                                            // returns the address of the thread-specific buffer
 
                 // fetch the malloc'd buffer, restore the regs from it, then free() it
-                "bl _finalLoadBuffer\n"     // get malloc buffer
+                //"bl _finalLoadBuffer\n"     // get malloc buffer
+                "bl _loadBuffer\n"
                 "push {r0}\n"               // save buffer address on stack
                 "mov r12, r0\n"             // move buffer address into general purpose reg...
                 "ldmia r12, {r0-r3,lr}\n"   // ...then restore the original registers from it (clobbers r12)
@@ -184,7 +195,8 @@ namespace bf_msgSend {
                 "push {r0-r3,lr}\n"         // save the restored registers on the stack so we can call free()
                 "mov r0, r12\n"             // put the malloc'd buffer address into r0
                 "bl _free\n"                // free() the malloc'd buffer
-                "pop {r0-r3,lr}\n"          // restore the saved registers from the stack
+                "bl _cleanUp\n"
+                "pop {r0-r3,lr}\n"          // restore the saved registers from the stack (we only care about lr)
                 
                 // restore the return value and other regs
                 "pop {r0-r11}\n"                

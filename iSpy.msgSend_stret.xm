@@ -57,20 +57,22 @@ namespace bf_objc_msgSend_stret {
     }
 
     extern "C" USED void *loadBuffer_stret() {
+        __log__("loadBuffer stret\n");
         return pthread_getspecific(stack_keys_stret[get_depth_stret()]);
     }
 
-    extern "C" USED void *finalLoadBuffer_stret() {
-        void *retVal = pthread_getspecific(stack_keys_stret[get_depth_stret()]);
+    extern "C" USED void cleanUp_stret() {
+        __log__("cleanUp\n");
         decrement_depth_stret();
-        return retVal;
     }
 
-    extern "C" USED void print_args_stret(void *retval, id self, SEL _cmd, ...) {
+    extern "C" USED void *print_args_stret(void *retval, id self, SEL _cmd, ...) {
+        void *retVal;
         std::va_list va;
         va_start(va, _cmd);
-        print_args_v(self, _cmd, va);
+        retVal = print_args_v(self, _cmd, va);
         va_end(va);
+        return retVal;
     }
 
     EXPORT void bf_hook_msgSend_stret() {
@@ -120,23 +122,27 @@ namespace bf_objc_msgSend_stret {
 "LoadSO2:"      "ldreq pc, [pc, r12]\n"
 
                 // Save r0, r1, r2, r3 and lr.
-                "push {r0-r3,lr}\n"     // first copy the registers onto the stack
-                "mov r0, #20\n"         // allocate 5 * 4 bytes, enough to hold 4 registers 
-                "bl _malloc\n"          // malloc'd pointer returned in r0
-                "bl _saveBuffer_stret\n"// save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
-                "mov r12, r0\n"         // keep a copy of the malloc'd buffer
-                "pop {r0-r3,lr}\n"      // restore regs to original state from the stack
+                "push {r0-r3,lr}\n" // first copy the registers onto the stack
+                "mov r0, #28\n"     // allocate 5 * 4 bytes + 4 bytes, enough to hold 5 registers plus 2x 4-byte address 
+                "bl _malloc\n"      // malloc'd pointer returned in r0
+                "bl _saveBuffer_stret\n"  // save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
+                "mov r12, r0\n"     // keep a copy of the malloc'd buffer
+                "pop {r0-r3,lr}\n"  // restore regs to original state from the stack
 
                 // Save the registers into the malloc'd buffer
                 "stmia r12, {r0-r3,lr}\n"
         
                 // log this call to objc_msgSend
                 "bl _print_args_stret\n"
+                "push {r0}\n"       // save the returned pointer to the JSON data
 
-                // restore the malloc'd buffer
-                "bl _loadBuffer_stret\n"
+                "bl _loadBuffer_stret\n"  // restore the thread-specific malloc'd buffer
+                "mov r12, r0\n"     // make a copy
+                "add r12, #20\n"    // move to the end of the buffer
+                "pop {r2}\n"        // grab the address of the JSON data pointer
+                "stmia r12, {r2}\n" // store it at the end of the thread-specific buffer
 
-                // restore the regs saved in the buffer 
+                // restore the original register values from the thread-specific buffer 
                 "mov r12, r0\n"
                 "ldmia r12, {r0-r3,lr}\n"
 
@@ -145,14 +151,20 @@ namespace bf_objc_msgSend_stret {
 "LoadSOrig1:"   "ldr r12, [pc, r12]\n"
                 "blx r12\n"
 
-                // save a copy of the return value and other regs onto the stack
-                "push {r0,r11}\n"
-
-                // Print return value
-                "bl _show_retval\n"
+                "push {r0-r11}\n"           // save a copy of the return value and other regs onto the stack
+                "push {r0}\n"               // save another copy of return value
+                "bl _loadBuffer_stret\n"          // get the address of the thread-specific buffer
+                "pop {r1}\n"                // get the return value from objc_msgSend                
+                "mov r12, r0\n"
+                "add r12, #20\n"
+                "ldmia r12, {r0}\n"
+                "bl _show_retval\n"         // add the return value to the JSON buffer:
+                                            // _show_retval(threadSpecificBuffer, returnValue)
+                                            // returns the address of the thread-specific buffer
 
                 // fetch the malloc'd buffer, restore the regs from it, then free() it
-                "bl _finalLoadBuffer_stret\n"     // get malloc buffer
+                //"bl _finalLoadBuffer\n"     // get malloc buffer
+                "bl _loadBuffer_stret\n"
                 "push {r0}\n"               // save buffer address on stack
                 "mov r12, r0\n"             // move buffer address into general purpose reg...
                 "ldmia r12, {r0-r3,lr}\n"   // ...then restore the original registers from it (clobbers r12)
@@ -160,10 +172,11 @@ namespace bf_objc_msgSend_stret {
                 "push {r0-r3,lr}\n"         // save the restored registers on the stack so we can call free()
                 "mov r0, r12\n"             // put the malloc'd buffer address into r0
                 "bl _free\n"                // free() the malloc'd buffer
-                "pop {r0-r3,lr}\n"          // restore the saved registers from the stack
+                "bl _cleanUp_stret\n"
+                "pop {r0-r3,lr}\n"          // restore the saved registers from the stack (we only care about lr)
                 
                 // restore the return value and other regs
-                "pop {r0,r11}\n"                
+                "pop {r0-r11}\n"                
                 
                 // return to caller
                 "bx lr\n"

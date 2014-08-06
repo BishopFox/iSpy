@@ -8,6 +8,11 @@ struct objc_selector
   const char *sel_types; 
 };
 
+struct objc_callState {
+	char *json;
+	char *returnType; 
+};
+
 // uncomment this for /tmp/bf.log - be aware this will basically grind your app to a halt. Use only in coding emergencies.
 //#define DO_SUPER_DEBUG_MODE 1
 
@@ -21,7 +26,8 @@ struct objc_selector
 
 extern "C" USED int is_valid_pointer(void *ptr);
 extern "C" USED const char *get_param_value(id x);
-extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va);
+extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va);
+extern "C" USED char *parameter_to_JSON(char *typeCode, void *paramVal);
 void ___log___(const char *jank);
 
 #endif

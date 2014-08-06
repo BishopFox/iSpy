@@ -39,7 +39,6 @@
 FILE *superLogFP = NULL;
 
 extern "C" USED int is_valid_pointer(void *ptr) {
-    //int ret = madvise(ptr, 4096, MADV_WILLNEED);
     char vec;
     int ret;
     ret = mincore(ptr, 4096, &vec);
@@ -51,116 +50,168 @@ extern "C" USED int is_valid_pointer(void *ptr) {
 }
 
 extern void ___log___(const char *jank) {
-    fputs(jank, superLogFP);
+    char *buf = (char *)malloc(strlen(jank) + 64);
+    sprintf(buf, "[%08x] %s", (unsigned int)pthread_self(), jank);
+    fputs(buf, superLogFP);
+    free(buf);
     fflush(superLogFP);
 }
 
-extern "C" USED const char *get_param_value(id x) {
-    char buf[1027];
 
-    if(!x)
-        return NULL;
+extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
+    char buf[1024];
+    __log__("======= _show_retval entry ======\n");
 
-    Class c = object_getClass((id)x);
-    if(c == nil) {
-        return NULL;
+    struct objc_callState *callState = (struct objc_callState *)threadBuffer;
+    char *newJSON = NULL;
+
+    if(!callState)
+        return threadBuffer;
+    sprintf(buf, "show_retval intro %p // %p // %p\n", callState, callState->json, callState->returnType);
+    __log__(buf);
+
+    if(callState->returnType && callState->returnType[0] != 'v') {
+        char *returnValueJSON = parameter_to_JSON(callState->returnType, returnValue);
+        size_t len = (size_t)strlen(callState->json) + strlen(returnValueJSON) + 20;
+        newJSON = (char *)malloc(len);
+        snprintf(newJSON, len, "%s,\"returnValue\":{%s}}\n", callState->json, returnValueJSON);    
+        free(returnValueJSON);
+    } else {
+        size_t len = (size_t)strlen(callState->json) + 3;
+        newJSON = (char *)malloc(len);
+        snprintf(newJSON, len, "%s}\n", callState->json);
     }
-    CFTypeID type = 0;
-  
-    if((unsigned long) c % __alignof__(Class) != 0) {
-            snprintf(buf, 1024, "(id)%p", x);
-            return strdup(buf);
-    }
-   
-    if (class_isMetaClass(c)) {
-            snprintf(buf, 1024, "(Class)%s", class_getName(c));
-            return strdup(buf);
-    }
-   
-    if (class_respondsToSelector(c, @selector(UTF8String)))
-            return (char *)x;
-
-    if (class_respondsToSelector(c, @selector(CFGetTypeID)))
-            type = CFGetTypeID(x);
-   
-    if (type == CFStringGetTypeID()) {
-            CFStringEncoding enc = CFStringGetFastestEncoding( (CFStringRef)x );
-            const char* ptr = CFStringGetCStringPtr( (CFStringRef)x, enc );
-            if (ptr != NULL) {
-                    snprintf(buf, 1024, "@\"%s\" ", ptr);
-                    return strdup(buf);
-            }
-
-            CFDataRef data = CFStringCreateExternalRepresentation(NULL, (CFStringRef)x, kCFStringEncodingUTF8, '?');
-            if (data != NULL) {
-                    CFRelease(data);
-                    snprintf(buf, 1024, "@\"%.*s\" ", (int)CFDataGetLength(data), CFDataGetBytePtr(data));
-                    return strdup(buf);
-            }
-    } else if (type == CFBooleanGetTypeID()) {
-            snprintf(buf, 1024, "%s", (x) ? "True" : "False");
-            return strdup(buf);
-    } else if (type == CFNullGetTypeID()) {
-            return strdup("NULL");
-    } else if (type == CFNumberGetTypeID()) {
-            CFNumberType numType = CFNumberGetType((CFNumberRef)x);
-            static const char* const numTypeStrings[] = {
-                    NULL, "SInt8", "SInt16", "SInt32", "SInt64", "Float32", "Float64",
-                    "char", "short", "int", "long", "long long", "float", "double",
-                    "CFIndex", "NSInteger", "CGFloat"
-            };
-
-            switch (numType) {
-                    case kCFNumberSInt8Type:
-                    case kCFNumberSInt16Type:
-                    case kCFNumberSInt32Type:
-                    case kCFNumberCharType:
-                    case kCFNumberShortType:
-                    case kCFNumberIntType:
-                    case kCFNumberLongType:
-                    case kCFNumberCFIndexType:
-                    case kCFNumberNSIntegerType: {
-                            long res;
-                            CFNumberGetValue((CFNumberRef)x, kCFNumberLongType, &res);
-                            snprintf(buf, 1024, "<CFNumber (%s)%ld> ", numTypeStrings[numType], res);
-                            return strdup(buf);
-                            break;
-                    }
-                    case kCFNumberSInt64Type:
-                    case kCFNumberLongLongType: {
-                            long long res;
-                            CFNumberGetValue((CFNumberRef)x, kCFNumberLongLongType, &res);
-                            snprintf(buf, 1024, "<CFNumber (%s)%lld> ", numTypeStrings[numType], res);
-                            return strdup(buf);
-                            break;
-                    }      
-                    default: {
-                            double res;
-                            CFNumberGetValue((CFNumberRef)x, kCFNumberDoubleType, &res);
-                            snprintf(buf, 1024, "<CFNumber (%s)%lg> ", numTypeStrings[numType], res);
-                            return strdup(buf);
-                            break;
-                    }
-            }
-            return strdup("nil");
-    }
-    return "";
+    
+    bf_websocket_write(newJSON);
+    __log__(newJSON);
+    
+    free(newJSON);
+    free(callState->returnType);
+    free(callState->json);
+    free(callState);
+    __log__("======= _show_retval exit ======\n");
+    
+    return threadBuffer;
 }
 
-extern "C" USED void show_retval (void *addr) {
+/*
+    returns something that looks like this:
+
+        "type":"int", "value":"31337"
+*/
+extern "C" USED char *parameter_to_JSON(char *typeCode, void *paramVal) {
+    char json[4096]; // 4096 chosen at random
+    Class fooClass;
+    
+    if(!typeCode || !is_valid_pointer((void *)typeCode))
+        return (char *)"";
+
+    // lololol
+    unsigned long v = (unsigned long)paramVal;
+    double d = (double)v;
+
+    memset(json, 0, 4096);
+    __log__("Typecode: ");
+    __log__(typeCode);
+    __log__("\n");
+    switch(*typeCode) {
+        case 'c': // char
+            snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%d) ('%c')\"", json, (unsigned int)paramVal, (int)paramVal, (paramVal)?(int)paramVal:' '); 
+            break;
+        case 'i': // int
+            snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+            break;
+        case 's': // short
+            snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
+            break;
+        case 'l': // long
+            snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%ld)", json, (long)paramVal, (long)paramVal); 
+            break;
+        case 'q': // long long
+            snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%lld)", json, (long long)paramVal, (long long)paramVal); 
+            break;
+        case 'C': // char
+            snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%u) ('%c')\"", json, (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
+            break;
+        case 'I': // int
+            snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+            break;
+        case 'S': // short
+            snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+            break;
+        case 'L': // long
+            snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%lu)", json, (unsigned long)paramVal, (unsigned long)paramVal); 
+            break;
+        case 'Q': // long long
+            snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%llu)", json, (unsigned long long)paramVal, (unsigned long long)paramVal); 
+            break;
+        case 'f': // float
+            snprintf(json, sizeof(json), "%s\"type\":\"float\",\"value\":%f", json, (float)d); 
+            break;
+        case 'd': // double                        
+            snprintf(json, sizeof(json), "%s\"type\":\"double\",\"value\":%f", json, (double)d); 
+            break;
+        case 'B': // BOOL
+            snprintf(json, sizeof(json),  "%s\"type\":\"BOOL\",\"value\":%s", json, ((int)paramVal)?"true":"false");
+            break;
+        case 'v': // void
+            snprintf(json, sizeof(json),  "%s\"type\":\"void\",\"ptr\":\"%p\"", json, paramVal);
+            break;
+        case '*': // char *
+            snprintf(json, sizeof(json),  "%s\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
+            break;
+        case '{': // struct
+            snprintf(json, sizeof(json),  "%s\"type\":\"struct\",\"ptr\":\"%p\"", json, paramVal);
+            break;
+        case ':': // selector
+            snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?"Selector FIXME":"nil");
+            break;
+        case '@': // object
+            __log__("obj @\n");
+            if(is_valid_pointer(paramVal)) {
+                fooClass = object_getClass((id)paramVal);
+                snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass));
+                if(class_respondsToSelector(fooClass, @selector(description))) {
+                    NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
+                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                } else {
+                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "@BARF. No description. This is probably a bug.");
+                }
+            } else {
+                snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+            }
+            break;
+        case '#': // class
+            __log__("class #\n");
+            if(is_valid_pointer(paramVal)) {
+                snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName((Class)paramVal));
+                if(class_respondsToSelector((Class)paramVal, @selector(description))) {
+                    NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
+                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
+                } else {
+                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "#BARF. No description. This is probably a bug.");
+                }
+            } else {
+                snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+            }
+            break;
+        default:
+            snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, paramVal);
+            break;     
+    }
+    return strdup(json); // caller must free()
 }
 
-extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va) {
-    __log__("\n\n<======== Entry ========>\n");
+extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va) {
+    char json[4096];  // lololol, roflcopters
+    struct objc_callState *callState = NULL;
+    __log__("\n\n<======== Print Args Entry ========>\n");
     if(self && _cmd) {
         char *className, *methodName, *methodPtr, *argPtr;
         Method method = nil;
         int numArgs, k, realNumArgs;
         BOOL isInstanceMethod = true;
-        Class fooClass;
-        char json[2048]; // 2k should be big enough
         char argName[256]; // srlsy
-        char buf[1027]; // yup
         Class c;
 
         // needed for all the things
@@ -192,7 +243,7 @@ extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va) {
         
         // quick sanity check
         if(!method || !className || !methodName) {
-            return;
+            return NULL;
         }
 
         // grab the argument count
@@ -200,10 +251,13 @@ extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va) {
         numArgs = method_getNumberOfArguments(method);
         realNumArgs = numArgs - 2;
 
+        // setup call state
+        callState = (struct objc_callState *)malloc(sizeof(struct objc_callState));
+        callState->returnType = method_copyReturnType(method);
+
         // start the JSON block
         __log__("sprintf\n");
-        snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, realNumArgs);
-        __log__(json);
+        snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"returnTypeCode\":\"%s\",\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, callState->returnType, realNumArgs);
 
         // use this to iterate over argument names
         methodPtr = methodName;
@@ -236,116 +290,14 @@ extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va) {
                 // start the JSON for this argument
                 snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"addr\":\"%p\",", json, argName, argTypeBuffer, paramVal);
 
-                // lololol
-                unsigned long v = (unsigned long)paramVal;
-                double d = (double)v;
-
-                __log__("into switch...\n");
-                switch(*typeCode) {
-                    case 'c': // char
-                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%d) ('%c')\"", json, (unsigned int)paramVal, (int)paramVal, (paramVal)?(int)paramVal:' '); 
-                        break;
-                    case 'i': // int
-                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
-                        break;
-                    case 's': // short
-                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%d)", json, (int)paramVal, (int)paramVal); 
-                        break;
-                    case 'l': // long
-                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%ld)", json, (long)paramVal, (long)paramVal); 
-                        break;
-                    case 'q': // long long
-                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%lld)", json, (long long)paramVal, (long long)paramVal); 
-                        break;
-                    case 'C': // char
-                        snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%u) ('%c')\"", json, (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
-                        break;
-                    case 'I': // int
-                        snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
-                        break;
-                    case 'S': // short
-                        snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":0x%x (%u)", json, (unsigned int)paramVal, (unsigned int)paramVal); 
-                        break;
-                    case 'L': // long
-                        snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":0x%lx (%lu)", json, (unsigned long)paramVal, (unsigned long)paramVal); 
-                        break;
-                    case 'Q': // long long
-                        snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":%llx (%llu)", json, (unsigned long long)paramVal, (unsigned long long)paramVal); 
-                        break;
-                    case 'f': // float
-                        snprintf(json, sizeof(json), "%s\"type\":\"float\",\"value\":%f", json, (float)d); 
-                        break;
-                    case 'd': // double                        
-                        snprintf(json, sizeof(json), "%s\"type\":\"double\",\"value\":%f", json, (double)d); 
-                        break;
-                    case 'B': // BOOL
-                        snprintf(json, sizeof(json),  "%s\"type\":\"BOOL\",\"value\":%s", json, ((int)paramVal)?"true":"false");
-                        break;
-                    case 'v': // void
-                        snprintf(json, sizeof(json),  "%s\"type\":\"void\",\"ptr\":\"%p\"", json, paramVal);
-                        break;
-                    case '*': // char *
-                        snprintf(json, sizeof(json),  "%s\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
-                        break;
-                    case '{': // struct
-                        snprintf(json, sizeof(json),  "%s\"type\":\"struct\",\"ptr\":\"%p\"", json, paramVal);
-                        break;
-                    case ':': // selector
-                        snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?(char *)paramVal:"nil");
-                        break;
-                    case '@': // object
-                        if(is_valid_pointer(paramVal)) {
-                            __log__("OBJECT valid pointer. get class...\n");
-                            sprintf(buf, "%p\n", paramVal);
-                            __log__(buf);
-                            fooClass = object_getClass((id)paramVal);
-                            __log__("name\n");
-                            __log__(class_getName(fooClass));
-                            __log__("sprintf\n");
-                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass));
-                            __log__("value\n");
-                            if(class_respondsToSelector(fooClass, @selector(description))) {
-                                __log__("desc\n");
-                                NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
-                                __log__("sprintf\n");
-                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
-                            } else {
-                                __log__("no desc\n");
-                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "@BARF. No description. This is probably a bug.");
-                            }
-                        } else {
-                            __log__("invalid pointer\n");
-                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
-                        }
-                        break;
-                    case '#': // class
-                        if(is_valid_pointer(paramVal)) {
-                            sprintf(buf, "%p\n", paramVal);
-                            __log__("CLASS valid pointer. get class...\n");
-                            __log__(buf);
-                            __log__("name\n");
-                            __log__(class_getName((Class)paramVal));
-                            __log__("sprintf\n");
-                            snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName((Class)paramVal));
-                            __log__("value\n");
-                            if(class_respondsToSelector((Class)paramVal, @selector(description))) {
-                                __log__("desc\n");
-                                NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
-                                __log__("sprintf\n");
-                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(desc, @selector(UTF8String)));
-                            } else {
-                                __log__("no desc\n");
-                                snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "#BARF. No description. This is probably a bug.");
-                            }
-                        } else {
-                            __log__("invalid pointer\n");
-                            snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
-                        }
-                        break;
-                    default:
-                        snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN_FIXME\",\"value\":\"%p\"", json, paramVal);
-                        break;     
-                }
+                __log__("Parsing param -> JSON\n");
+                char *paramValueJSON = parameter_to_JSON(typeCode, paramVal);
+                __log__("strlcat\n");
+                strlcat(json, paramValueJSON, sizeof(json));
+                __log__("free\n");
+                free(paramValueJSON);
+                
+                __log__("more strlcat\n");
                 if(argNum == realNumArgs-1)
                     strlcat(json, "}", sizeof(json));
                 else
@@ -355,14 +307,18 @@ extern "C" USED void print_args_v(id self, SEL _cmd, std::va_list va) {
             __log__("Loop finished.\n");
         } // log args
 
-        // finish the JSON block
-        strlcat(json, "]}", sizeof(json));
-
-        // b00m!
-        __log__("writing to websocket\n");
-        bf_websocket_write(json);
+        // finish the JSON block, but don't add a trailing "}" - that will be added last by the return value logger in the hooked objc_msgSend.
+        strlcat(json, "]", sizeof(json));
+    } else {
+        __log__("======= print_args_v exit NULLLLL =====\n");
+        return NULL;
     }
 
-    return;
+    char foo[1024];
+    callState->json = strdup(json);
+    sprintf(foo, "print_args outro %p // %p // %p\n", callState, callState->json, callState->returnType);
+    __log__(foo);
+    __log__("======= print_args_v exit =====\n");
+    return (void *)callState; // caller must free this and its internal pointers, but only after we're completely done (ie. after we've logged the return value)
 }
 

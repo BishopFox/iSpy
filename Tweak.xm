@@ -332,7 +332,7 @@ void showGUIPopOver() {
     NSSet *touches = [event allTouches];
     UITouch *touch = [touches anyObject];
     CALayer *touchedLayer = [touch view].layer;
-    NSLog(@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
+    (@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
 
     %orig;
 }

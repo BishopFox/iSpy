@@ -43,17 +43,15 @@
 #include "iSpy.class.h"
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
-#import "iSpy.rpc.h"
 
+#import "iSpy.rpc.h"
 #import "iSpyServer/CocoaHTTPServer/DDLog.h"
 #import "iSpyServer/CocoaHTTPServer/DDTTYLogger.h"
-
 #import "iSpyServer/iSpyHTTPServer.h"
 #import "iSpyServer/iSpyHTTPConnection.h"
 
 
 static const int DEFAULT_WEB_PORT = 31337;
-
 
 @implementation iSpyServer
 
@@ -64,13 +62,14 @@ static const int DEFAULT_WEB_PORT = 31337;
 
     [self setHttpServer:NULL];
     NSLog(@"[iSpy] Alloc iSpyHTTPServer ..");
-    [DDLog addLogger:[DDTTYLogger sharedInstance]];
+    // [DDLog addLogger:[DDTTYLogger sharedInstance]];
     iSpyHTTPServer *httpServer = [[iSpyHTTPServer alloc] init];
     [self setHttpServer: httpServer];
 
     // Tell server to use our custom MyHTTPConnection class.
     NSLog(@"[iSpy] Setting up iSpyHTTPConnection ..");
     [httpServer setConnectionClass:[iSpyHTTPConnection class]];
+    [httpServer setRpcCallback: @selector(dispatchRPCRequest:)];
 
     // Tell the server to broadcast its presence via Bonjour.
     // This allows browsers such as Safari to automatically discover our service.
@@ -118,11 +117,6 @@ static const int DEFAULT_WEB_PORT = 31337;
         NSLog(@"[iSpy] %d is a priviledged port, this is most likely not going to work!", lport);
     }
     return lport;
-}
-
--(BOOL) startWebServices {
-    // Initialize the iSpy web service
-    return true;
 }
 
 // Pass this an NSString containing a JSON-RPC request.
@@ -173,15 +167,10 @@ static const int DEFAULT_WEB_PORT = 31337;
 // Requires C linkage for the msgSend stuff.
 extern "C" {
     int bf_websocket_write(const char *msg) {
-        /*
-        if(globalMsgSendWebSocketPtr == NULL) {
-            return -1;
-        }
-        else {
-            return mg_websocket_write(globalMsgSendWebSocketPtr, 1, msg, strlen(msg));
-        }
-        */
-        return -1;
+        iSpyHTTPServer *httpServer =  [[[iSpy sharedInstance] webServer] httpServer];
+        NSString *message = [NSString stringWithCString:msg length:strlen(msg)];
+        [httpServer webSocketBroadcast: message];
+        return 1;
     }
 }
 

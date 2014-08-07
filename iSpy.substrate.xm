@@ -1,11 +1,11 @@
 /*
  iSpy - Bishop Fox iOS hooking framework.
- 
+
  This module replaces MobileSubstrate's MSMessageHookEx method-swizzling function with a
  cache-poisoning variant that goes undetected by Metaforic's anti-swizzling protection.
 
  Once loaded, this variant will let you write normal Theos tweaks that work on Metaforic-protected
- binaries. There's a decent chance it'll work against other anti-tampering libraries, too... 
+ binaries. There's a decent chance it'll work against other anti-tampering libraries, too...
  Arxan perhaps?
 
  You can enable this by editing Tweak.xm and setting the ENABLE_BF_SUBSTRATE_REPLACEMENT flag.
@@ -38,7 +38,7 @@ static void bf_MSHookMessageEx(id cls, SEL selector, IMP replacement,
         IMP *result);
 static IMP bf_method_getImplementation(Method method);
 
-// This is our linked list of hooked methods. 
+// This is our linked list of hooked methods.
 static struct poisonedCacheList *hookList = NULL;
 
 /*

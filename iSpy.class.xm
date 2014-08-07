@@ -234,7 +234,7 @@ id *appClassWhiteList = NULL;
 -(int) instance_numberOfTrackedInstances {
 	int i = 0;
 	struct bf_instance *p = bf_get_instance_list_ptr();
-	
+
 	while(p) {
 		p=p->next;
 		i++;
@@ -282,23 +282,23 @@ id *appClassWhiteList = NULL;
 		while((key = [e nextObject])) {
 			NSMutableDictionary *iVarInfo = [[NSMutableDictionary alloc] init];
 			[iVarInfo setObject:key forKey:@"name"];
-			
+
 			object_getInstanceVariable(instance, [key UTF8String], &ptr );
-			
-			// Retarded check alert!
-			// The logic goes like this. All parameter types have a style guide. 
+
+			// Dumb check alert!
+			// The logic goes like this. All parameter types have a style guide.
 			// e.g. If the type of argument we're examining is an Objective-C class, the first letter of its name
 			// will be a capital letter. We can dump these with ease using the Objective-C runtime.
 			// Similarly, anything from the C world should have a lower case first letter.
 			// Now, we can easily leverage the Objective-C runtime to dump class data. but....
-			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints. 
+			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints.
 			// Of course we could dump strings (char*) too, but we need to write code to handle that.
 			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
 			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
-			// of how to deal with this shit. 
+			// of how to deal with this shit.
 			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
 			char *type = (char *)[[iVar objectForKey:key] UTF8String];
-			
+
 			if(islower(*type)) {
 				char *boolVal = (char *)ptr;
 				if(strcmp(type, "char") == 0) {
@@ -311,7 +311,7 @@ id *appClassWhiteList = NULL;
 			} else {
 				// This is likely to be an Objective-C class. Hey, what's the worst that could happen if it's not?
 				// That would be a segfault. Signal 11. Do not pass go, do not collect a stack trace.
-				// This is a shady janky-ass mofo of a function. 
+				// This is a shady janky-ass mofo of a function.
 				[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
 				[iVarInfo setObject:[NSString stringWithFormat:@"%@", ptr] forKey:@"value"];
 			}
@@ -397,11 +397,11 @@ Returns a NSDictionary like this:
 {
 	"name" = "doSomething:forString:withChars:",
 
-	"parameters" = { 
+	"parameters" = {
 		// name = type
 		"arg1" = "id",
 		"arg2" = "NSString *",
-		"arg3" = "char *"        
+		"arg3" = "char *"
 	},
 
 	"returnType" = "void";
@@ -418,7 +418,7 @@ Returns a NSDictionary like this:
 	NSMutableDictionary *methodInfo = [[NSMutableDictionary alloc] init];
 	int numArgs, k;
 	NSString *returnType;
-	char *freeMethodName, *methodName, *tmp; 
+	char *freeMethodName, *methodName, *tmp;
 
 	if(cls == NULL || selector == NULL || cls == nil || selector == nil)
 		return nil;
@@ -432,14 +432,15 @@ Returns a NSDictionary like this:
 		return nil;
 	}
 
-	if(method == nil)
-		return nil;    
+	if (method == nil) {
+		return nil;
+	}
 
 	numArgs = method_getNumberOfArguments(method);
 
 	// get the method's name as a (char *)
 	freeMethodName = methodName = (char *)strdup(sel_getName(method_getName(method)));
-	
+
 	// cycle through the paramter list for this method.
 	// start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
 	for(k=2; k < numArgs; k++) {
@@ -455,7 +456,7 @@ Returns a NSDictionary like this:
 		}
 
 		method_getArgumentType(method, k, tmpBuf, 255);
-	
+
 		if((type = (char *)bf_get_type_from_signature(tmpBuf))==NULL) {
 			ispy_log_wtf(LOG_GENERAL, "Out of mem?");
 			break;
@@ -465,23 +466,23 @@ Returns a NSDictionary like this:
 		[param setObject:[NSString stringWithUTF8String:name] forKey:@"name"];
 		[parameters addObject:param];
 		free(type);
-	} // args   
-	
+	} // args
+
 	tmp = (char *)bf_get_friendly_method_return_type(method);
 
-	if(!tmp)
+	if (!tmp) {
 		returnType = @"XXX_unknown_type_XXX";
-	else {
+	} else {
 		returnType = [NSString stringWithUTF8String:tmp];
 		free(tmp);
 	}
-	
+
 	[methodInfo setObject:parameters forKey:@"parameters"];
 	[methodInfo setObject:returnType forKey:@"returnType"];
 	[methodInfo setObject:[NSString stringWithUTF8String:freeMethodName] forKey:@"name"];
 	[methodInfo setObject:[NSNumber numberWithInt:isInstanceMethod] forKey:@"isInstanceMethod"];
 	free(freeMethodName);
-	
+
 	return [methodInfo copy];
 }
 
@@ -547,7 +548,7 @@ Returns a NSDictionary like this:
 		const char *protocolName = protocol_getName(protocols[j]); 
 		unsigned int adopteeCount;
 		Protocol **adopteesList = protocol_copyProtocolList(protocols[j], &adopteeCount);
-	
+
 		adoptees = [[NSMutableArray alloc] init];
 		for(int i = 0; i < adopteeCount; i++) {
 			const char *adopteeName = protocol_getName(adopteesList[i]);
@@ -561,7 +562,7 @@ Returns a NSDictionary like this:
 		[protocolInfoDict setObject:adoptees forKey:@"adoptees"];
 		[protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
 		[protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
-		 
+
 		[protocolList addObject:protocolInfoDict];
 	}
 	free(protocols);
@@ -581,18 +582,20 @@ Returns a NSDictionary like this:
 	Method *classMethodList = NULL;
 	Method *instanceMethodList = NULL;
 
-	if(!className)
+	if(!className) {
 		return nil; //[methods copy];
+	}
 
-	if((classNameUTF8 = (char *)[className UTF8String]) == NULL)
+	if((classNameUTF8 = (char *)[className UTF8String]) == NULL) {
 		return nil; //[methods copy];
+	}
 
 	ispy_log_debug(LOG_GENERAL, "methodsForClass: %s", classNameUTF8);
 
 	Class cls = objc_getClass(classNameUTF8);
 	if(cls == nil)
 		return nil; //[methods copy];
-	
+
 	ispy_log_debug(LOG_GENERAL, "getClass: %s", classNameUTF8);
 	c = object_getClass(cls);
 	if(c) {
@@ -610,7 +613,7 @@ Returns a NSDictionary like this:
 	pthread_mutex_lock(&mutex_methodsForClass);
 	instanceMethodList = class_copyMethodList(cls, &numInstanceMethods);
 	pthread_mutex_unlock(&mutex_methodsForClass);
-	
+
 	ispy_log_debug(LOG_GENERAL, "got: %d", numInstanceMethods);
 	if(	(classMethodList == nil && instanceMethodList == nil) ||
 		(numClassMethods == 0 && numInstanceMethods ==0))
@@ -685,7 +688,7 @@ Returns a NSDictionary like this:
 	Class cls = objc_getClass(classNameUTF8);
 	if(cls == nil)
 		return nil; //[methods copy];
-	
+
 	c = object_getClass(cls);
 	if(c) {
 		classMethodList = class_copyMethodList(c, &numClassMethods);
@@ -696,7 +699,7 @@ Returns a NSDictionary like this:
 	}
 
 	instanceMethodList = class_copyMethodList(cls, &numInstanceMethods);
-	
+
 	if(	(classMethodList == nil && instanceMethodList == nil) ||
 		(numClassMethods == 0 && numInstanceMethods ==0))
 		return nil;
@@ -735,13 +738,13 @@ Returns a NSDictionary like this:
 
 	numClasses = objc_getClassList(NULL, 0);
 	if(numClasses <= 0)
-		return nil; //[classArray copy]; 
-	
+		return nil; //[classArray copy];
+
 	if((classes = (Class *)malloc(sizeof(Class) * numClasses)) == NULL)
 		return [classArray copy];
-	
+
 	objc_getClassList(classes, numClasses);
-	
+
 	int i=0;
 	while(i < numClasses) {
 		NSString *className = [NSString stringWithUTF8String:class_getName(classes[i])];
@@ -749,7 +752,7 @@ Returns a NSDictionary like this:
 			[classArray addObject:className];
 		i++;
 	}
-	return [classArray copy];  
+	return [classArray copy];
 }
 
 -(id)classesWithSuperClassAndProtocolInfo {
@@ -760,13 +763,13 @@ Returns a NSDictionary like this:
 
 	numClasses = objc_getClassList(NULL, 0);
 	if(numClasses <= 0)
-		return nil; //[classArray copy]; 
-	
+		return nil; //[classArray copy];
+
 	if((classes = (Class *)malloc(sizeof(Class) * numClasses)) == NULL)
 		return [classArray copy];
-	
+
 	objc_getClassList(classes, numClasses);
-	
+
 	int i=0;
 	while(i < numClasses) {
 		NSString *className = [NSString stringWithUTF8String:class_getName(classes[i])];
@@ -795,7 +798,7 @@ Returns a NSDictionary like this:
 		}
 		i++;
 	}
-	return [classArray copy];   
+	return [classArray copy];
 }
 
 /*
@@ -805,10 +808,10 @@ Returns a NSDictionary like this:
 		"className": "MyClass1",
 		"superClass": "class name",
 		"methods": {
-			
+
 		},
 		"ivars": {
-			
+
 		},
 		"properties": {
 
@@ -819,10 +822,10 @@ Returns a NSDictionary like this:
 	},
 	"MyClass2": {
 		"methods": {
-			
+
 		},
 		"ivars": {
-			
+
 		},
 		"properties": {
 
@@ -837,7 +840,7 @@ Returns a NSDictionary like this:
 -(NSDictionary *)classDump {
 	NSMutableDictionary *classDumpDict = [[NSMutableDictionary alloc] init];
 	NSArray *clsList = [self classesWithSuperClassAndProtocolInfo]; // returns an array of dictionaries
-	
+
 	NSLog(@"[iSpy] Got %d classes", [clsList count]);
 	for(int i = 0; i < [clsList count]; i++) {
 		NSMutableDictionary *cls = [[clsList objectAtIndex:i] mutableCopy];
@@ -917,7 +920,7 @@ Returns a NSDictionary like this:
 	BOOL isInstanceVals[4] = {NO, YES, NO,  YES};
 	unsigned int methodCount;
 	NSMutableArray *methods = [[NSMutableArray alloc] init];
-	
+
 	for( int i = 0; i < 4; i++ ){
 		struct objc_method_description *methodDescriptionList = protocol_copyMethodDescriptionList(protocol, isReqVals[i], isInstanceVals[i], &methodCount);
 		if(!methodDescriptionList)
@@ -974,7 +977,7 @@ Returns a NSDictionary like this:
 			free(adopteesList);
 			continue;
 		}
-	
+
 		adoptees = [[NSMutableArray alloc] init];
 		for(int i = 0; i < adopteeCount; i++) {
 			const char *adopteeName = protocol_getName(adopteesList[i]);
@@ -991,7 +994,7 @@ Returns a NSDictionary like this:
 		[protocolInfoDict setObject:adoptees forKey:@"adoptees"];
 		[protocolInfoDict setObject:[self propertiesForProtocol:protocols[j]] forKey:@"properties"];
 		[protocolInfoDict setObject:[self methodsForProtocol:protocols[j]] forKey:@"methods"];
-		 
+
 		[protocolList setObject:protocolInfoDict forKey:[NSString stringWithUTF8String:protocolName]];
 	}
 	free(protocols);
@@ -1068,7 +1071,7 @@ static char *bf_get_friendly_method_return_type(Method method) {
 	//      "The method's return type string is copied to dst. dst is filled as if strncpy(dst, parameter_type, dst_len) were called."
 	// Um, ok... but how big does my destination buffer need to be?
 	char tmpBuf[1024];
-	
+
 	// Does it pad with a NULL? Jeez. *shakes fist in Apple's general direction*
 	memset(tmpBuf, 0, 1024);
 	method_getReturnType(method, tmpBuf, 1023);
@@ -1174,7 +1177,7 @@ NSString *SHA256HMAC(NSData *theData) {
     const char *cKey  = (const char *)"This is a hardcoded but unimportant key. Don't do this at home.";
     unsigned char *cData = (unsigned char *)[theData bytes];
     unsigned char cHMAC[CC_SHA256_DIGEST_LENGTH+1];
-    
+
     if(!cData) {
     	NSLog(@"[iSpy] Error with theData in SHA256HMAC");
     	return nil;

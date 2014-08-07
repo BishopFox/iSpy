@@ -7,7 +7,7 @@
 id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 extern FILE *superLogFP;
 
-namespace bf_msgSend {  
+namespace bf_msgSend {
     static pthread_once_t key_once = PTHREAD_ONCE_INIT;
     static pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
     USED static long enabled __asm__("_enabled") = 0;
@@ -106,7 +106,7 @@ namespace bf_msgSend {
         bf_disable_msgSend_stret();
 
         ClassMap = [[iSpy sharedInstance] classWhitelist];
-        
+
         __log__("setup pthread_once\n");
         pthread_once(&key_once, make_key);
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -119,14 +119,14 @@ namespace bf_msgSend {
 // This is basically a rewrite of Subjective-C.
 // It's thread-safe. Hooray!
 #pragma mark _replaced_objc_msgSend (ARM)
-    __asm__ (   
+    __asm__ (
                 ".arm\n"        // force 4-byte ARM mode (not Thumb or variants)
                 ".text\n"       // guess what this is
-                
+
                 // label our function
                 "_replaced_objc_msgSend:\n"
-                
-                // Check if the obj_msgSend hook is enabled. 
+
+                // Check if the obj_msgSend hook is enabled.
                 // If not, just transfer control to original objc_msgSend function.
                 "ldr r12, (LEna0)\n"
 "LoadEna0:"     "ldr r12, [pc, r12]\n"
@@ -138,7 +138,7 @@ namespace bf_msgSend {
                 // If not, just transfer control to original objc_msgSend function.
                 "push {r0-r3,lr}\n"
                 "bl _is_this_method_on_whitelist\n"
-                "mov r12, r0\n" 
+                "mov r12, r0\n"
                 "pop {r0-r3,lr}\n"
                 "teq r12, #0\n"
                 "ldreq r12, (LO2)\n"
@@ -154,7 +154,7 @@ namespace bf_msgSend {
 
                 // Save the registers into the malloc'd buffer
                 "stmia r12, {r0-r3,lr}\n"
-        
+
                 // log this call to objc_msgSend
                 "bl _print_args\n"
                 "push {r0}\n"       // save the returned pointer to the JSON data
@@ -165,7 +165,7 @@ namespace bf_msgSend {
                 "pop {r2}\n"        // grab the address of the JSON data pointer
                 "stmia r12, {r2}\n" // store it at the end of the thread-specific buffer
 
-                // restore the original register values from the thread-specific buffer 
+                // restore the original register values from the thread-specific buffer
                 "mov r12, r0\n"
                 "ldmia r12, {r0-r3,lr}\n"
 
@@ -177,7 +177,7 @@ namespace bf_msgSend {
                 "push {r0-r11}\n"           // save a copy of the return value and other regs onto the stack
                 "push {r0}\n"               // save another copy of return value
                 "bl _loadBuffer\n"          // get the address of the thread-specific buffer
-                "pop {r1}\n"                // get the return value from objc_msgSend                
+                "pop {r1}\n"                // get the return value from objc_msgSend
                 "mov r12, r0\n"
                 "add r12, #20\n"
                 "ldmia r12, {r0}\n"
@@ -197,13 +197,13 @@ namespace bf_msgSend {
                 "bl _free\n"                // free() the malloc'd buffer
                 "bl _cleanUp\n"
                 "pop {r0-r3,lr}\n"          // restore the saved registers from the stack (we only care about lr)
-                
+
                 // restore the return value and other regs
-                "pop {r0-r11}\n"                
-                
+                "pop {r0-r11}\n"
+
                 // return to caller
                 "bx lr\n"
-                    
+
     "LEna0:     .long _enabled - 8 - (LoadEna0)\n"
     "LOrig0:    .long _original_objc_msgSend - 8 - (LoadOrig0)\n"
     "LOrig1:    .long _original_objc_msgSend - 8 - (LoadOrig1)\n"

@@ -6,7 +6,8 @@
 - (void)didOpen
 {
     [super didOpen];
-    [self sendMessage:@"Welcome to my WebSocket"];
+    ispy_log_info(LOG_HTTP, "Opened new WebSocket connection");
+    [self sendMessage:@"{'opcode': 'hello'}"];
 }
 
 - (void)didReceiveMessage:(NSString *)msg
@@ -17,6 +18,7 @@
 
 - (void)didClose
 {
+    ispy_log_info(LOG_HTTP, "WebSocket connection closed");
     [super didClose];
 }
 

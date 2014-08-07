@@ -1,5 +1,5 @@
 /*
-    iSpy - Bishop Fox iOS hooking framework.
+    iSpy - iOS hooking framework.
 
     Async logging framework.
     Logs are written to <app>/Documents/.ispy/logs/<facility>.log
@@ -109,7 +109,7 @@ static void ispy_log_write(unsigned int facility, unsigned int level, char *msg)
 
     free(line);
 
-    // ewww. I made this function static because of this call to free(). 
+    // ewww. I made this function static because of this call to free().
     // Nobody should be allowed to call ispy_log_write() except functions below.
     free(msg);
 }
@@ -220,7 +220,7 @@ EXPORT void ispy_log_error(unsigned int facility, const char *msg, ...) {
     }
 }
 
-/* We always log fatal */
+/* We always log "what a terrible failure" */
 EXPORT void ispy_log_wtf(unsigned int facility, const char *msg, ...) {
     char *msgBuffer;
     va_list args;

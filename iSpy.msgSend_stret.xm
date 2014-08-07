@@ -30,7 +30,7 @@ namespace bf_objc_msgSend_stret {
         pthread_setspecific(curr_stack_key_stret, 0);
         for(int i = 0; i < ISPY_MAX_RECURSION; i++) {
             pthread_key_create(&(stack_keys_stret[i]), NULL);
-            pthread_setspecific(stack_keys_stret[i], 0);    
+            pthread_setspecific(stack_keys_stret[i], 0);
         }
     }
 

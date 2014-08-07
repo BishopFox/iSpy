@@ -6,7 +6,8 @@
 /*
     Adds a nice "containsString" method to NSString
 */
-@interface NSString (iSpy) {
+@interface NSString (iSpy)
+{
 
 }
 
@@ -17,7 +18,8 @@
 
 
 /*
-	Used for the REST server HTML5 GUI
+	Parent server that controls the HTTP server and RPC server
+    and makes them talk to each other all nice like
 */
 @interface iSpyServer : NSObject {
 
@@ -27,7 +29,6 @@
 @property (assign) NSMutableDictionary *plist;
 @property (assign) RPCHandler *rpcHandler;
 -(void) configureWebServer;
--(BOOL) startWebServices;
 -(int) getListenPortFor:(NSString *) key fallbackTo: (int) fallback;
 -(NSDictionary *)dispatchRPCRequest:(NSString *)JSONString;
 

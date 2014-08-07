@@ -1,14 +1,20 @@
 #import "iSpyHTTPServer.h"
+#import "iSpyWebSocket.h"
 
 @implementation iSpyHTTPServer
 
--(void) webSocketSendAll: (NSString *) msg
+@synthesize server;
+
+-(void) webSocketBroadcast: (NSString *) msg
 {
-    /* webSockets is a NSMutableArray so we need to lock */
+    /*
+     * webSockets is a NSMutableArray so we need to lock but
+     * the sockets are async so locking shouldn't be terrible
+     */
     [webSocketsLock lock];
-    for (unsigned int index = 0; index < [webSockets count]; ++index)
+    for (iSpyWebSocket *ws in webSockets)
     {
-        [[webSockets objectAtIndex:index] sendMessage: msg];
+        [ws sendMessage: msg];
     }
     [webSocketsLock unlock];
 }

@@ -365,15 +365,17 @@ void bf_disable_msgSend_logging() {
 
 // It's safe to call this repeatedly, unlike the original MSHookFunction().
 void bf_MSHookFunction(void *func, void *repl, void **orig) {
-	if(func != repl)
+	if(func != repl) {
 		MSHookFunction(func, repl, orig);
+	}
 }
 
 void bf_unHookFunction(void *func, void *repl, void *orig) {
 	void *dummy;
 
-	if(func == repl)
+	if(func == repl) {
 		MSHookFunction((void *)func, (void *)orig, (void **)&dummy);
+	}
 }
 
 %end // end of UIApplication class extension.
@@ -421,7 +423,6 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 /*
 	Adds a useful "containsString" method to NSString.
 	For example:
-	
 		if ( [myString containsString:@"foo"] ) {
 			NSLog(@"The string contains foo!");
 		}
@@ -439,21 +440,18 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 
 
 /*
-	This code is from TrustMe: https://github.com/intrepidusgroup/trustme?source=cc
-	Define the new SecTrustEvaluate function
+	[*] This code is from TrustMe: https://github.com/intrepidusgroup/trustme?source=cc
+	[*] This code is subject to the Python v2 lic: https://github.com/intrepidusgroup/trustme/blob/master/LICENSE
+	[*] There have been no major changes to the code, other than embedding it into this application.
+	Function signature for original SecTrustEvaluate
  */
 OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result) {
-	ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: Intercepting SecTrustEvaluate() call");
+	ispy_log_debug(LOG_GENERAL, "[trustme]: Intercepting SecTrustEvaluate() call");
 	*result = kSecTrustResultProceed;
 	return errSecSuccess;
 }
 
-/*
-	This code is from TrustMe: https://github.com/intrepidusgroup/trustme?source=cc
-	Function signature for original SecTrustEvaluate
- */
-static OSStatus (*original_SecTrustEvaluate)(SecTrustRef trust,
-		SecTrustResultType *result);
+static OSStatus (*original_SecTrustEvaluate)(SecTrustRef trust, SecTrustResultType *result);
 
 // These are useful functions that we can use as overrides with MSHookMessageEx and bf_MSHookFunction.
 EXPORT int return_false() {
@@ -468,7 +466,7 @@ EXPORT int return_true() {
 /*
  ********************************************
  *** Dynamic loader constructor function. ***
- *** THIS IS THE iSpy ENTRY POINT     ***
+ ***     THIS IS THE iSpy ENTRY POINT     ***
  ********************************************
 
  This function will run the when the iSpy.dylib is loaded by the target app.
@@ -478,47 +476,35 @@ EXPORT int return_true() {
  We use it to hijack C function calls. Extend as necessary.
  */
 %ctor {
-		NSLog(@"[iSpy] *** Entry point ***");
-		NSString *bundleId = [[[NSBundle mainBundle] bundleIdentifier] copy];
-		NSMutableDictionary* plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
+	NSLog(@"[iSpy] --- >>> Entry point <<< ---");
+	NSString *bundleId = [[[NSBundle mainBundle] bundleIdentifier] copy];
+	NSMutableDictionary *plist = [[NSMutableDictionary alloc] initWithContentsOfFile:@PREFERENCEFILE];
+	NSMutableDictionary *appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
+	NSString *appKey = [NSString stringWithFormat:@"targets_%@", bundleId];
 
-		if ( ! plist) {
-			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
-			return;
-		}
+	if ( ! plist) {
 
-		// Check to see if iSpy is enabled globally
-		if ( ! [[plist objectForKey:@"settings_GlobalOnOff"] boolValue]) {
-			NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy.");
-			return;
-		}
+		NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy. Also, prefs file not found.");
 
-		// Check to see if iSpy is enabled for this specific application
-		NSMutableDictionary* appPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:@APP_PREFERENCEFILE];
-		if ( ! appPlist) {
-			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", bundleId);
-			return;
-		}
+	} else if ( ! [[plist objectForKey:@"settings_GlobalOnOff"] boolValue]) {
 
-		NSString *appKey = [NSString stringWithFormat:@"targets_%@", bundleId];
-		if ( ! [[appPlist objectForKey:appKey] boolValue]) {
-			NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel. Not injecting iSpy.", bundleId);
-			return;
-		}
+		NSLog(@"[iSpy] NOTICE: iSpy is disabled in the iDevice's settings panel, not injecting iSpy.");
+
+	} else if ( ! appPlist) {
+
+		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel (appPlist does not exist).", bundleId);
+
+	} else if ( ! [[appPlist objectForKey:appKey] boolValue]) {
+
+		NSLog(@"[iSpy] NOTICE: This application (%@) is not enabled in the iSpy settings panel; not injecting iSpy.", bundleId);
+
+	} else {
 
 		/* Green light to inject - Init all the things */
+		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", bundleId);
 		iSpy *mySpy = [iSpy sharedInstance];
 
-		// Setup SQLite threading so that the SQLite library is 100% responsible for thread safety.
-		// This must be the first thing we do, otherwise SQLite will already have been initialized and
-		// this call with silently fail.
-		int configresult = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
-		NSLog(@"[iSpy] SQLite database initialized: %d", configresult);
-		// Load preferences. Abort if prefs file not found.
-		NSLog(@"[iSpy] Initializing prefs for %@", [mySpy bundleId]);
-
 		// Initialize the BF log writing system
-		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", [mySpy bundleId]);
 	    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 	    NSString *documentsDirectory = [paths objectAtIndex:0];
 	    NSLog(@"[iSpy] Initializing log writer(s) to %@...", documentsDirectory);
@@ -542,19 +528,16 @@ EXPORT int return_true() {
 
 //		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
 //		dispatch_sync(initQ, ^{
-			bf_objc_msgSend_whitelist_startup();	
+			bf_objc_msgSend_whitelist_startup();
 			bf_init_msgSend_logging();
 //		});
-		
+
 		// Ok, this needs some explanation.
 		// There seems to be some weird intermittent crash that occurs when hijack_on() collides with
 		// something that uses/hooks syscalls; I suspect other MobileSubstrate .dylibs. By pausing for a second
 		// here, we give other libs time to load and, since installing this sleep(1), I've never seen a
 		// startup crash. This could probably do with extra investigation.
 		//sleep(1); // testing
-
-		// Hook all the things necessary for strace-style logging
-		//hijack_on(plist);
 
 		// Replace MSMessageHookEx with the iSpy variant if configured to do so
 		if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
@@ -593,12 +576,15 @@ EXPORT int return_true() {
 		// Load our own custom Theos hooks.
 		%init(bf_group);
 
-		[plist release];
-		[appPlist release];
-
 		// Start the iSpy web server
 		[[mySpy webServer] startWebServices];
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
+	}
+
+	/* Clean up */
+	[bundleId release];
+	[plist release];
+	[appPlist release];
 }
 
 

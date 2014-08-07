@@ -279,7 +279,7 @@ void showGUIPopOver() {
 	[view setContentMode:UIViewContentModeCenter];
 
 	// Load th Bishop Fox logo into a UIImageView
-	UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/images/bf-orange-alpha.png"]];
+	UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/img/bf-orange-alpha.png"]];
 	[img setContentMode:UIViewContentModeLeft];
 
 	// give everything a nice BF orange border
@@ -332,7 +332,7 @@ void showGUIPopOver() {
     NSSet *touches = [event allTouches];
     UITouch *touch = [touches anyObject];
     CALayer *touchedLayer = [touch view].layer;
-    (@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
+    NSLog(@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
 
     %orig;
 }
@@ -463,8 +463,7 @@ EXPORT int return_true() {
 }
 
 
-/*
- ********************************************
+/********************************************
  *** Dynamic loader constructor function. ***
  ***     THIS IS THE iSpy ENTRY POINT     ***
  ********************************************

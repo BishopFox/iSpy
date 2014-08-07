@@ -168,12 +168,12 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 // Requires C linkage for the msgSend stuff.
 extern "C" {
     int bf_websocket_write(const char *msg) {
-
+        // ispy_log_debug(LOG_HTTP, "[bf_websocket_write] <- %s", msg);
+        NSString *foo = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithFormat:), @"%s", msg);
         dispatch_async(wsQueue, ^{
             iSpyHTTPServer *httpServer = [[[iSpy sharedInstance] webServer] httpServer];
-            [httpServer webSocketBroadcast: [NSString stringWithFormat:@"%s", msg]];
+            [httpServer webSocketBroadcast: foo];
         });
-
         return 1;
     }
 }

@@ -243,6 +243,7 @@ extern int (*orig_dup)(u_int fd);
 %end
 */
 
+
 /********************************************
  *** End of area for putting your tweaks. ***
  ********************************************/
@@ -1932,6 +1933,10 @@ EXPORT int return_true() {
 
 		// Start the iSpy web server
 		[[mySpy webServer] startWebServices];
+		
+		static ClassMap_t *ClassMap = [[iSpy sharedInstance] classWhitelist];
+		(*ClassMap)[std::string("UIDevice")][std::string("currentDevice")] = 1;
+		//bf_enable_msgSend_logging();
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 }
 

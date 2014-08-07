@@ -38,6 +38,8 @@
 #include "iSpy.msgSend.common.h"
 
 FILE *superLogFP = NULL;
+pthread_once_t key_once = PTHREAD_ONCE_INIT;
+pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
 
 extern "C" USED int is_valid_pointer(void *ptr) {
     char vec;
@@ -58,6 +60,39 @@ extern void ___log___(const char *jank) {
     fflush(superLogFP);
 }
 
+extern "C" USED inline void increment_depth() {
+    int currentDepth = (int)pthread_getspecific(curr_stack_key);
+    currentDepth++;
+    pthread_setspecific(curr_stack_key, (void *)currentDepth);
+}
+
+extern "C" USED inline void decrement_depth() {
+    int currentDepth = (int)pthread_getspecific(curr_stack_key);
+    currentDepth--;
+    pthread_setspecific(curr_stack_key, (void *)currentDepth);
+}
+
+extern "C" USED inline int get_depth() {
+    return (int)pthread_getspecific(curr_stack_key);
+}
+
+extern "C" USED void *saveBuffer(void *buffer) {
+    increment_depth();
+    pthread_setspecific(stack_keys[get_depth()], buffer);
+    return buffer;
+}
+
+extern "C" USED void *loadBuffer() {
+    __log__("loadBuffer\n");
+    void *buffer;
+    buffer = pthread_getspecific(stack_keys[get_depth()]);
+    return buffer;
+}
+
+extern "C" USED void cleanUp() {
+    __log__("cleanUp\n");
+    decrement_depth();
+}
 
 extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
     char buf[1024];
@@ -258,7 +293,7 @@ extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va) {
 
         // start the JSON block
         __log__("sprintf\n");
-        snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"returnTypeCode\":\"%s\",\"numArgs\":%d,\"args\":[", className, methodName, isInstanceMethod, callState->returnType, realNumArgs);
+        snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"depth\":%d,\"thread\":%u,\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"returnTypeCode\":\"%s\",\"numArgs\":%d,\"args\":[", get_depth(), (unsigned int)pthread_self(), className, methodName, isInstanceMethod, callState->returnType, realNumArgs);
 
         // use this to iterate over argument names
         methodPtr = methodName;

@@ -1,7 +1,6 @@
 var jsonrpc = undefined;
 var msgSendState = false;
 
-
 var enableMsgSend = {
     "messageType":"setMsgSendLoggingState",
     "messageData": {
@@ -22,6 +21,30 @@ function escapeHtml(value) {
     return $('<div/>').text(value).html();
 }
 
+function add_objc_msg(msg) {
+    argmsg = "";
+    if ('args' in msg) {
+        for (index = 0; index < msg.args.length; ++index) {
+            argmsg = msg.args[index]['type'] + ": " + msg.args[index]['name'] + "<" + msg.args[index]['addr'] + ">";
+            msgsend += argmsg + ", ";
+        }
+    }
+    methodType = msg['isInstanceMethod'] ? "- ":"+ ";
+    $('#objc-msg-send-table').prepend(
+        $("<tr/>").append(
+            $("<td/>").text($('#objc-msg-send-table tr').length + 1)
+        ).append(
+            $("<td/>").text(msg['class'])
+        ).append(
+            $("<td/>").text(methodType + msg['method'])
+        ).append(
+            $("<td/>").text(argmsg)
+        ).append(
+            $("<td/>").text("(" + msg['returnValue']['type'] + ")" + msg['returnValue']['value'])
+        )
+    );
+}
+
 $(document).ready(function() {
 
     $("#btnMsgSendState").click(function() {
@@ -29,7 +52,6 @@ $(document).ready(function() {
             jsonrpc.send(JSON.stringify(disableMsgSend));
             msgSendState = false;
         } else {
-            alert("Enalbing objc_msgSend logging ...");
             jsonrpc.send(JSON.stringify(enableMsgSend));
             msgSendState = true;
         }
@@ -53,18 +75,7 @@ $(document).ready(function() {
         console.log(emit);
         var msg = jQuery.parseJSON(emit.data);
         if ('messageType' in msg && msg['messageType'] == "obj_msgSend") {
-            methodType = msg['isInstanceMethod'] ? "-":"+";
-            className = escapeHtml(msg['class']);
-            method = escapeHtml(msg['method']);
-            msgsend = methodType + " [" + className + "]" + method + " (";
-            if ('args' in msg) {
-                for (index = 0; index < msg.args.length; ++index) {
-                    argmsg = msg.args[index]['type'] + ": " + msg.args[index]['name'] + "<" + msg.args[index]['addr'] + ">";
-                    msgsend += argmsg + ", ";
-                }
-                msgsend += ")";
-            }
-            $('#msgsend-log').prepend(msgsend + "\n");
+            add_objc_msg(msg);
         }
     }
 

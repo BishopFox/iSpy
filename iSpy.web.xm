@@ -162,19 +162,17 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
 @end
 
-// This is the equivalent of [[iSpy_HTTPConnection connection] writeString:@"Wakka wakka"] except that it's
+// This is the equivalent of [iSpyWebSocket sendMessage:@"Wakka wakka"] except that it's
 // pure C all the way down, so it's safe to call it inside the msgSend logging routines.
 // NOT thread safe. Handle locking yourself.
 // Requires C linkage for the msgSend stuff.
 extern "C" {
-    int bf_websocket_write(const char *msg) {
-        // ispy_log_debug(LOG_HTTP, "[bf_websocket_write] <- %s", msg);
-        NSString *foo = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithFormat:), @"%s", msg);
+    void bf_websocket_write(const char *msg) {
+        NSString *json = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithFormat:), @"%s", msg);
         dispatch_async(wsQueue, ^{
             iSpyHTTPServer *httpServer = [[[iSpy sharedInstance] webServer] httpServer];
-            [httpServer webSocketBroadcast: foo];
+            [httpServer webSocketBroadcast: json];
         });
-        return 1;
     }
 }
 

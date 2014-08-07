@@ -96,8 +96,7 @@ EXPORT NSString *base64forData(NSData *theData);
 
 // These funcrions are a hacked-up way of using pure C code to send data down Web Sockets.
 // This is useful in the obj_msgSend logging code where we cannot use Objective-C.
-extern "C" int mg_websocket_write(struct mg_connection* conn, int opcode, const char *data, unsigned long data_len);
-extern "C" int bf_websocket_write(const char *msg);
+extern "C" void bf_websocket_write(const char *msg);
 
 // These are implemented in Tweak.xm
 void bf_init_msgSend_logging();

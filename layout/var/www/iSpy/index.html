@@ -57,15 +57,15 @@
                 </ul>
                 <form class="navbar-form navbar-right" role="search">
                     <a class="btn btn-inverse menuButton" id="btnMsgSendState">
-                        <i class="fa fa-apple fa-orange" id="iconMsgSendState"></i>
+                        <i class="fa fa-fw fa-apple" id="iconMsgSendState"></i>
                     </a>
 
-                    <a class="btn btn-inverse menuButton" id="btnstraceState" href="#" data-toggle="tooltip" data-original-title="Strace-style logging" data-placement="bottom">
-                        <i class="fa fa-list fa-orange" id="iconstraceState"></i>
+                    <a class="btn btn-inverse menuButton" id="btnstraceState">
+                        <i class="fa fa-fw fa-list" id="iconstraceState"></i>
                     </a>
 
-                    <a class="btn btn-inverse menuButton" id="btninstanceState" href="#" data-toggle="tooltip"  data-original-title="Objective-C instance tracking" data-placement="bottom">
-                        <i class="fa fa-sitemap fa-orange" id="iconinstanceState"></i>
+                    <a class="btn btn-inverse menuButton" id="btninstanceState">
+                        <i class="fa fa-fw fa-sitemap" id="iconinstanceState"></i>
                     </a>
                 </form>
                 <ul class="nav navbar-nav navbar-right navbar-user">
@@ -109,7 +109,23 @@
         </nav><!-- /#nav -->
         <div id="page-wrapper">
             <div class="row">
-                We got a body here!
+                <h3>
+                    <i class="fa fa-fw fa-apple"></i>
+                    objc_msgSend Log
+                </h3>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Class</th>
+                            <th>Method</th>
+                            <th>Arguments</th>
+                            <th>Return</th>
+                        </tr>
+                    </thead>
+                    <tbody id="objc-msg-send-table">
+                    </tbody>
+                </table>
             </div>
         </div><!-- /#page-wrapper -->
     </div>

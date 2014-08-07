@@ -2,3 +2,6 @@
 	path = theos
 	url = https://github.com/moloch--/theos
 
+[submodule "iSpyServer/CocoaHTTPServer"]
+	path = iSpyServer/CocoaHTTPServer
+	url = https://github.com/moloch--/CocoaHTTPServer

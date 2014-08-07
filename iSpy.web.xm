@@ -52,6 +52,8 @@
 
 
 static const int DEFAULT_WEB_PORT = 31337;
+static const char *WS_QUEUE = "com.bishopfox.iSpy.websocket";
+static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
 @implementation iSpyServer
 
@@ -69,7 +71,6 @@ static const int DEFAULT_WEB_PORT = 31337;
     // Tell server to use our custom MyHTTPConnection class.
     NSLog(@"[iSpy] Setting up iSpyHTTPConnection ..");
     [httpServer setConnectionClass:[iSpyHTTPConnection class]];
-    [httpServer setRpcCallback: @selector(dispatchRPCRequest:)];
 
     // Tell the server to broadcast its presence via Bonjour.
     // This allows browsers such as Safari to automatically discover our service.
@@ -167,9 +168,12 @@ static const int DEFAULT_WEB_PORT = 31337;
 // Requires C linkage for the msgSend stuff.
 extern "C" {
     int bf_websocket_write(const char *msg) {
-        iSpyHTTPServer *httpServer =  [[[iSpy sharedInstance] webServer] httpServer];
-        NSString *message = [NSString stringWithCString:msg length:strlen(msg)];
-        [httpServer webSocketBroadcast: message];
+
+        dispatch_async(wsQueue, ^{
+            iSpyHTTPServer *httpServer = [[[iSpy sharedInstance] webServer] httpServer];
+            [httpServer webSocketBroadcast: [NSString stringWithFormat:@"%s", msg]];
+        });
+
         return 1;
     }
 }

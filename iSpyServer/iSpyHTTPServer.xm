@@ -3,8 +3,6 @@
 
 @implementation iSpyHTTPServer
 
-@synthesize server;
-
 -(void) webSocketBroadcast: (NSString *) msg
 {
     /*

@@ -577,7 +577,6 @@ EXPORT int return_true() {
 		%init(bf_group);
 
 		// Start the iSpy web server
-		[[mySpy webServer] startWebServices];
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 	}
 

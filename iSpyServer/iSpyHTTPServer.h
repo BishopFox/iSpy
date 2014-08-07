@@ -9,10 +9,8 @@
 
 @interface iSpyHTTPServer : HTTPServer
 {
-    id server;
-}
 
-@property(nonatomic) id server;
+}
 
 -(void) webSocketBroadcast: (NSString *) msg;
 

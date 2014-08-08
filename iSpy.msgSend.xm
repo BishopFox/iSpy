@@ -6,10 +6,10 @@
 
 id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 extern FILE *superLogFP;
+extern pthread_once_t key_once;
+extern pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
 
-namespace bf_msgSend {
-    static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-    static pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
+namespace bf_msgSend {  
     USED static long enabled __asm__("_enabled") = 0;
     USED static void *original_objc_msgSend __asm__("_original_objc_msgSend");
     USED __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
@@ -33,40 +33,6 @@ namespace bf_msgSend {
             pthread_key_create(&(stack_keys[i]), NULL);
             pthread_setspecific(stack_keys[i], 0);
         }
-    }
-
-    extern "C" USED inline void increment_depth() {
-        int currentDepth = (int)pthread_getspecific(curr_stack_key);
-        currentDepth++;
-        pthread_setspecific(curr_stack_key, (void *)currentDepth);
-    }
-
-    extern "C" USED inline void decrement_depth() {
-        int currentDepth = (int)pthread_getspecific(curr_stack_key);
-        currentDepth--;
-        pthread_setspecific(curr_stack_key, (void *)currentDepth);
-    }
-
-    extern "C" USED inline int get_depth() {
-        return (int)pthread_getspecific(curr_stack_key);
-    }
-
-    extern "C" USED void *saveBuffer(void *buffer) {
-        increment_depth();
-        pthread_setspecific(stack_keys[get_depth()], buffer);
-        return buffer;
-    }
-
-    extern "C" USED void *loadBuffer() {
-        __log__("loadBuffer\n");
-        void *buffer;
-        buffer = pthread_getspecific(stack_keys[get_depth()]);
-        return buffer;
-    }
-
-    extern "C" USED void cleanUp() {
-        __log__("cleanUp\n");
-        decrement_depth();
     }
 
     extern "C" USED void *print_args(id self, SEL _cmd, ...) {

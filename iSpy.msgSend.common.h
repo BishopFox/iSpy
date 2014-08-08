@@ -22,12 +22,13 @@ struct objc_callState {
 #define __log__(stuff) {}
 #endif
 
-#define ISPY_MAX_RECURSION 84
+#define ISPY_MAX_RECURSION 128 // crazy big
 
 extern "C" USED int is_valid_pointer(void *ptr);
 extern "C" USED const char *get_param_value(id x);
 extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va);
 extern "C" USED char *parameter_to_JSON(char *typeCode, void *paramVal);
+extern "C" int is_this_method_on_whitelist(id Cls, SEL selector);
 void ___log___(const char *jank);
 
 #endif

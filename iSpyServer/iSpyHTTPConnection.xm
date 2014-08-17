@@ -1,11 +1,4 @@
-#import "CocoaHTTPServer/HTTPMessage.h"
-#import "CocoaHTTPServer/HTTPResponse.h"
-#import "CocoaHTTPServer/GCDAsyncSocket.h"
-#import "../iSpy.common.h"
 #import "iSpyHTTPConnection.h"
-#import "iSpyStaticFileResponse.h"
-#import "iSpyWebSocket.h"
-
 
 @implementation iSpyHTTPConnection
 
@@ -16,9 +9,8 @@
 - (NSObject<HTTPResponse> *)httpResponseForMethod:(NSString *)method URI:(NSString *)path
 {
     ispy_log_info(LOG_HTTP, "%s - %s", [method UTF8String], [path UTF8String]);
-    return [super httpResponseForMethod:method URI:path];
+//     return [super httpResponseForMethod:method URI:path];
 
-/*
     NSString *filePath = [self filePathForURI:path allowDirectory:NO];
     BOOL isDir = NO;
 
@@ -27,7 +19,6 @@
         return [[iSpyStaticFileResponse alloc] initWithFilePath:filePath forConnection:self];
     }
     return nil;
-*/
 }
 
 - (WebSocket *)webSocketForURI:(NSString *) path

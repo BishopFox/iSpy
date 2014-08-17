@@ -25,8 +25,8 @@ iSpy_FILES = \
 	iSpy.rpc.xm \
 	iSpyServer/iSpyHTTPServer.xm \
 	iSpyServer/iSpyHTTPConnection.xm \
-	iSpyServer/iSpyWebSocket.xm
-#	iSpyServer/iSpyStaticFileResponse.xm
+	iSpyServer/iSpyWebSocket.xm \
+	iSpyServer/iSpyStaticFileResponse.xm
 
 
 iSpy_FRAMEWORKS = UIKit MobileCoreServices

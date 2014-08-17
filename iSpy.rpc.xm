@@ -60,7 +60,7 @@
 -(NSDictionary *) setMsgSendLoggingState:(NSDictionary *) args {
 	NSString *state = [args objectForKey:@"state"];
 
-	if(!state || ( ! [state isEqualToString:@"true"] && ! [state isEqualToString:@"false"] )) {
+	if( ! state || ( ! [state isEqualToString:@"true"] && ! [state isEqualToString:@"false"] )) {
 		ispy_log_debug(LOG_HTTP, "setMsgSendLoggingState: Invalid state");
 		return @{
 			@"status":@"error",

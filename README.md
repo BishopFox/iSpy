@@ -1,6 +1,11 @@
 iSpy Assessment Framework
 =========================
 
+Current Release
+----------------
+The current release is a *developer preview*; code is subject to change, and may be unstable.
+
+
 To build
 --------
 	git clone https://github.com/BishopFox/iSpy --recursive

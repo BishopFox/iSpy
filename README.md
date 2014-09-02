@@ -3,11 +3,13 @@ iSpy Assessment Framework
 
 Current Release
 ----------------
-The current release is a **developer preview**; code is subject to change, and may be unstable.
+The current release is a **developer preview**; code is subject to change, and *will be* unstable. However, we appreciate code contributions, feature requests, and bug reports. We currently do not have binary releases, stay tuned!
 
 
 To build
 --------
+You will need an OSX machine with Xcode 5.
+
 	git clone https://github.com/BishopFox/iSpy --recursive
 	make
 	make package
@@ -57,4 +59,5 @@ Launch one of your target apps.
 Point your desktop browser at http://yourdevice:31337/
 Have fun :)
 
+Check the device logs for details, if multiple instances of iSpy are run the port number may differ slightly.
 

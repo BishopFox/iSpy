@@ -3,7 +3,7 @@ iSpy Assessment Framework
 
 Current Release
 ----------------
-The current release is a *developer preview*; code is subject to change, and may be unstable.
+The current release is a **developer preview**; code is subject to change, and may be unstable.
 
 
 To build
@@ -22,6 +22,9 @@ case of running "brew install dpkg" to get up and running.
 
 To install
 ----------
+The easiest way to get all of the iOS dependancies (applist, prefloader) is to simply install Veency from Cydia.
+
+
 SCP the com.bishopfox.iSpy<version-number>.deb file onto your iDevice.
 SSH onto your iDevice and change into the directory containing the .deb.
 Then:

@@ -128,14 +128,17 @@ id *appClassWhiteList = NULL;
 	char *imageName = (char *)class_getImageName(objc_getClass([className UTF8String]));
 	char *p = NULL;
 
-	if(!imageName)
+	if(!imageName) {
 		return false;
+	}
 
-	if(!(p = strrchr(imageName, '/')))
+	if(!(p = strrchr(imageName, '/'))) {
 		return false;
+	}
 
-	if(strncmp(imageName, [[[NSProcessInfo processInfo] arguments][0] UTF8String], p-imageName-1) == 0)
+	if(strncmp(imageName, [[[NSProcessInfo processInfo] arguments][0] UTF8String], p-imageName-1) == 0) {
 		return true;
+	}
 
 	return false;
 }

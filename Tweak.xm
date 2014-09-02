@@ -255,12 +255,13 @@ void showGUIPopOver() {
 	// call the original method first
 	//%orig;
 
-	NSLog(@"[iSpy] App: %@", [UIApplication sharedApplication]);
+	NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
 
 	// Only ever run this function once. We should probably use GCD for this.
 	static bool hasRunOnce = false;
-	if(hasRunOnce)
+	if (hasRunOnce) {
 		return;
+	}
 	hasRunOnce = true;
 
 	// create a UIView object to hold the overlay
@@ -325,6 +326,15 @@ void showGUIPopOver() {
 
 
 %hook UIApplication
+
+-(void) init {
+	// Register for the "UIApplicationDidBecomeActiveNotification" notification.
+	// Use it to trigger our GUI overlay.
+	[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+       	showGUIPopOver();
+	}];
+	return %orig;
+}
 
 // This is neat - it hooks all user input events and can be used to log them :)
 -(void) sendEvent:(UIEvent*)event

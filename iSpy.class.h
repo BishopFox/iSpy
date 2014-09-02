@@ -51,6 +51,7 @@
 @property (assign) ClassMap_t *classWhitelist;
 
 +(iSpy *)sharedInstance;
+-(void)initializeAllTheThings;
 -(NSDictionary *) getNetworkInfo;
 -(NSString *) instance_dumpAllInstancesWithPointers;
 -(NSString *) instance_dumpAppInstancesWithPointers;

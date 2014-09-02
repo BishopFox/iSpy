@@ -98,7 +98,6 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
 -(id)init {
     [super init];
-    [self configureWebServer];
     return self;
 }
 

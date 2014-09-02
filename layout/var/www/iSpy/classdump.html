@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iSpy</title>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/local.css" />
+    <script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/ispy/main.js"></script>
+
+    <!-- you need to include the shieldui css and js assets in order for the charts to work -->
+    <link rel="stylesheet" type="text/css" href="/css/shieldui-all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/all.min.css" />
+    <link id="gridcss" rel="stylesheet" type="text/css" href="/css/dark-bootstrap-all.min.css" />
+    <link rel="stylesheet" href="/css/slidebars.min.css">
+    <link rel="stylesheet" href="/css/slidebars-theme.css">
+    <script type="text/javascript" src="/js/shieldui-all.min.js"></script>
+    <script type="text/javascript" src="/js/gridData.js"></script>
+    <script src="/js/slidebars.min.js"></script>
+</head>
+
+<style>
+    .bf-panel {
+        box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.3); /* Shadow cast onto the slidebars when opened. */
+        background-color: #181818;
+        margin-top: 10px;
+        margin-left: -10px;
+    }
+
+    .fa-pad {
+        padding-right: 6px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        width: 30px;
+    }
+
+    .menu-pad {
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+</style>
+<body>
+    <div id="wrapper" style="margin-top: -40px; margin-left: -40px; padding-bottom: 20px;" class="bf-panel">
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <!--<a class="navbar-brand sb-toggle-left" href="index.html"><img src="img/bf.png"></a>-->
+                <a class="navbar-brand sb-toggle-left" href="#"><img src="img/bf-shield.svg" width="28" style="margin-top: -3px"> </a>
+            </div>
+            <div class="collapse navbar-collapse navbar-ex1-collapse ">
+                <form class="navbar-form navbar-right" role="search">
+                    <a class="btn btn-inverse menuButton" id="btnMsgSendState">
+                        <i class="fa fa-fw fa-apple" id="iconMsgSendState"></i>
+                    </a>
+                    <a class="btn btn-inverse menuButton" id="btnstraceState">
+                        <i class="fa fa-fw fa-list" id="iconstraceState"></i>
+                    </a>
+                    <a class="btn btn-inverse menuButton" id="btninstanceState">
+                        <i class="fa fa-fw fa-sitemap" id="iconinstanceState"></i>
+                    </a>
+                </form>
+                <ul class="nav navbar-nav navbar-user">
+                    <li class="dropdown messages-dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"> 
+                            <i class="fa fa-lg fa-bars"></i>&nbsp;
+                            Class Browser<!-- <span class="badge">2</span>-->
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="menu-pad selected"><a href="#"><i class="fa fa-cubes fa-pad"></i>Classes</a></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-exchange fa-pad"></i>Protocols</a></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-cube fa-pad"></i>Instances</a></li>
+                            <li class="divider"></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-code fa-pad"></i>Generate Headers</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-user">
+                    
+                    <!-- <li class="divider-vertical"></li> -->
+                    
+                    <li class="dropdown messages-dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"> 
+                            <i class="fa fa-lg fa-share-alt"></i>&nbsp;
+                            Call Tracing
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="menu-pad"><a href="#" ><i class="fa fa-bolt fa-pad"></i>View real-time logs</a></li>
+                            <li class="menu-pad"><a href="#" ><i class="fa fa-cog fa-pad"></i>Settings</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-user navbar-right">
+                    <li >
+                        <form class="navbar-search">
+                            <input type="text" placeholder="Search" class="form-control">
+                        </form>
+                    </li>
+                </ul>
+            </div> 
+        </nav><!-- /#nav -->
+    </div>
+
+    <div id="sb-site">   
+        <div id="page-wrapper" class="bf-panel">
+            <div id="class-browser">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h2>App Info</h2>
+                    </div>
+                    <div class="col-lg-4">
+                        <h2>Stats</h2>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="bs-example">
+                            <div class="list-group">
+                                    <dl class="dl-horizontal list-group-item">
+                                        <dt>Application Identifier</dt>
+                                        <dd>com.foo.appname</dd>
+                                        <dt>Path</dt>
+                                        <dd>/var/mobile/Applications/xxxxxxxx</dd>
+                                    </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="bs-example">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <span class="badge">1234</span>
+                                    Number of classes
+                                </li>
+                                <li class="list-group-item">
+                                    <span class="badge">42</span>
+                                    Number of protocols
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.row -->
+
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="bs-example">
+                            <div class="list-group">
+                                <a href="#" class="list-group-item active">
+                                    <b>Stuff Goes Here</b>
+                                </a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /#page-wrapper -->
+    </div>
+
+    <div class="sb-slidebar sb-left" style="padding-top: 50px;">
+        <nav>
+            <ul class="sb-menu" >
+                <li class="sb-close"><span><h4 style="padding-left: 10px">Hidden Panel Stuff</h4></span></li>
+                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-tasks"></i> Item 2</a></li>
+                <li class="sb-close selected"><a href="classdump.html"><i class="fa fa-fw fa-list-alt"></i> Item 3</a></li>
+                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-globe"></i> Item 4</a></li>
+                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-cog"></i> Item 5</a></li>
+            </ul>
+        </nav>
+    </div>
+</body>
+
+<script>
+    (function($) {
+        $(document).ready(function() {
+            $.slidebars();
+        });
+    }) (jQuery);
+
+    //Add Hover effect to menus
+    jQuery('ul.nav li.dropdown').hover(function() {
+        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).show();
+    }, function() {
+        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).hide();
+    });
+
+</script>
+
+
+
+</html>

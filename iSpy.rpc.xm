@@ -83,6 +83,83 @@
 	return @{ @"REPLY_TEST":args };
 }
 
+-(NSDictionary *) ASLR:(NSDictionary *)args {
+	return @{ @"ASLR": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] };
+}
+
+/*
+args = NSDictionary containing an object ("classes"), which is is an NSArray of NSDictionaries, like so:
+{
+	"classes": [
+		{
+			"class": "ClassName1",
+			"methods": [ @"Method1", @"Method2", ... ]
+		},
+		{
+			"class": "ClassName2",
+			"methods": [ @"MethodX", @"MethodY", ... ]
+		},
+		...
+	]
+}
+
+If "methods" is nil, assume all methods in class.
+*/
+-(NSDictionary *) addMethodsToWhitelist:(NSDictionary *)args {
+    int i, numClasses, m, numMethods;
+    static std::tr1::unordered_map<std::string, std::tr1::unordered_map<std::string, int> > WhitelistClassMap;
+
+    NSArray *classes = [args objectForKey:@"classes"];
+    if(classes == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class list"
+    	};
+    }
+
+	numClasses = [classes count];
+
+    // Iterate through all the class names, adding each one to our lookup table
+    for(i = 0; i < numClasses; i++) {
+    	NSDictionary *itemToAdd = [classes objectAtIndex:i];
+    	NSString *name = [itemToAdd objectForKey:@"class"];
+    	if(!name) {
+    		continue;
+    	}
+
+    	NSArray *methods = [itemToAdd objectForKey:@"methods"];
+    	if(!methods) {
+    		continue;
+    	}
+
+    	numMethods = [methods count];
+    	if(!numMethods) {
+    		continue;
+    	}
+
+    	for(m = 0; m < numMethods; m++) {
+    		NSString *methodName = [methods objectAtIndex:m];
+    		if(!methodName) {
+    			continue;
+    		}
+    		std::string *classNameString = new std::string([name UTF8String]);
+    		std::string *methodNameString = new std::string([methodName UTF8String]);
+    		if(!classNameString || !methodNameString) {
+    			if(methodNameString)
+    				delete methodNameString;
+    			if(classNameString)
+    				delete classNameString;
+    			continue;
+    		}
+    		ispy_log_debug(LOG_GENERAL, "[Whitelist] Adding [%s %s]", classNameString->c_str(), methodNameString->c_str());
+            whitelist_add_method(classNameString, methodNameString);
+    		delete methodNameString;
+    		delete classNameString;
+    	}
+    }
+    return @{ @"status": @"OK" };
+}
+
 @end
 
 

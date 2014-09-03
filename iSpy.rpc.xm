@@ -322,6 +322,15 @@ If "methods" is nil, assume all methods in class.
     };
 }
 
+-(NSDictionary *) applicationIcon:(NSDictionary *)args {
+	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
+	NSData *PNG = UIImagePNGRepresentation(appIcon);
+	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
+	return @{
+		@"status":@"OK",
+		@"JSON":[NSString stringWithFormat:@"data:image/png;bas64,%@", base64PNG]
+	};
+}
 @end
 
 

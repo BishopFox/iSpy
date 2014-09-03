@@ -6,12 +6,6 @@
 #include <vector>
 #include <memory>
 
-// Typically we will want to ignore this crap, although we can turn it back on if we really want it.
-// It's basically a bunch of methods inherited from NSObject. 
-// Yes, it's hardcoded but this isn't the place to change it:
-// Do so by creating a new list and changing the pointer (bf_objc_msgSend_captured_class->uninterestingMethods) on a per-class basis.
-//const char *bf_msgSend_uninterestingList = "|retain|dealloc|alloc|init|release|class|load|initialize|allocWithZone:|copy|copyWithZone:|mutableCopy|mutableCopyWithZone:|new|class|superclass|isSubClassOfClass:|instancesRespondToSelector|";
-
 extern void whitelist_add_method(std::string *className, std::string *methodName) {
     ClassMap_t *ClassMap = [[iSpy sharedInstance] classWhitelist];
     (*ClassMap)[*className][*methodName] = 1;

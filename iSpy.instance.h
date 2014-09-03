@@ -16,8 +16,10 @@ typedef std::tr1::unordered_map<unsigned int, unsigned int> InstanceMap_t;
 -(void) clear;
 -(NSArray *)instancesOfAllClasses;  
 -(NSArray *) instancesOfAppClasses;
-//-(unsigned int) numInstances;
-//-(NSArray *) instancePointers;
+-(id)instanceAtAddress:(NSString *)addr; 
+// Don't call these
+-(id)__instanceAtAddress:(NSString *)addr;
+-(NSArray *)__dumpInstance:(id)instance;
 @end
 
 // Hooks

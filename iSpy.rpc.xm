@@ -379,6 +379,22 @@ If "methods" is nil, assume all methods in class.
 */
 
 
+-(NSDictionary *) instanceAtAddress:(NSDictionary *)args {
+	NSString *addr = [args objectForKey:@"address"];
+    if(addr == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty address value"
+    	};
+    }
+
+    return @{
+    	@"status":@"OK",
+    	@"JSON": [[InstanceTracker sharedInstance] instanceAtAddress:addr]
+    };
+}
+
+
 -(NSDictionary *) instancesOfAppClasses:(NSDictionary *)args {
 	return @{
 		@"status":@"OK",

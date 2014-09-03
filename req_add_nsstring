@@ -1,0 +1,10 @@
+{
+	"messageType": "addMethodsToWhitelist", 
+	"messageData": {
+			"classes": [
+				{ "class":"NSString", "methods": [ "stringWithFormat", "stringWithString", "stringWithUTF8String", "UTF8String" ] },
+				{ "class":"NSURLConnection", "methods": [] }
+			]
+	}
+}
+

@@ -30,7 +30,6 @@
 @property (assign) RPCHandler *rpcHandler;
 -(void) configureWebServer;
 -(int) getListenPortFor:(NSString *) key fallbackTo: (int) fallback;
--(NSDictionary *)dispatchRPCRequest:(NSString *)JSONString;
 
 @end
 
@@ -51,6 +50,7 @@
 @property (assign) ClassMap_t *classWhitelist;
 
 +(iSpy *)sharedInstance;
+-(void)initializeAllTheThings;
 -(NSDictionary *) getNetworkInfo;
 -(NSString *) instance_dumpAllInstancesWithPointers;
 -(NSString *) instance_dumpAppInstancesWithPointers;

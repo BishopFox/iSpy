@@ -47,6 +47,7 @@
 #import <QuartzCore/QuartzCore.h>
 #import "typestring.h"
 #import "iSpy.rpc.h"
+#include <execinfo.h>
 
 static NSString *changeDateToDateString(NSDate *date);
 static char *bf_get_friendly_method_return_type(Method method);
@@ -107,19 +108,31 @@ id *appClassWhiteList = NULL;
 +(iSpy *)sharedInstance {
 	static iSpy *sharedInstance;
 	static dispatch_once_t once;
+
 	dispatch_once(&once, ^{
 		sharedInstance = [[self alloc] init];
-		NSLog(@"[iSpy] Alloc the iSpyServer ...");
-		[sharedInstance setWebServer:[[iSpyServer alloc] init]];
-		[sharedInstance setGlobalStatusStr:@""];
-		NSLog(@"[iSpy] Setting the bundleIdentifier");
-		[sharedInstance setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
-		[sharedInstance setIsInstanceTrackingEnabled: NO];
-		NSLog(@"[iSpy] Setting up RPCHandler ...");
-		[[sharedInstance webServer] setRpcHandler:[[RPCHandler alloc] init]];
-		sharedInstance->_trackedInstances = [[NSMutableDictionary alloc] init];
 	});
 	return sharedInstance;
+}
+
+-(void)initializeAllTheThings {
+	static dispatch_once_t once;
+	
+	dispatch_once(&once, ^{
+		NSLog(@"[iSpy] Initializing singleton ...");
+		NSLog(@"[iSpy] Alloc the iSpyServer ...");
+		[self setWebServer:[[iSpyServer alloc] init]];
+		[self setGlobalStatusStr:@""];
+		NSLog(@"[iSpy] Setting the bundleIdentifier");
+		[self setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
+		[self setIsInstanceTrackingEnabled: NO];
+		NSLog(@"[iSpy] Setting up RPCHandler ...");
+		[[self webServer] setRpcHandler:[[RPCHandler alloc] init]];
+		self->_trackedInstances = [[NSMutableDictionary alloc] init];
+		NSLog(@"[iSpy] Configuring web server ...");
+		[[self webServer] configureWebServer];
+		NSLog(@"[iSpy] Initialization complete.");
+	});
 }
 
 // Given the name of a class, this returns true if the class is declared in the target app, false if not.
@@ -128,14 +141,17 @@ id *appClassWhiteList = NULL;
 	char *imageName = (char *)class_getImageName(objc_getClass([className UTF8String]));
 	char *p = NULL;
 
-	if(!imageName)
+	if(!imageName) {
 		return false;
+	}
 
-	if(!(p = strrchr(imageName, '/')))
+	if(!(p = strrchr(imageName, '/'))) {
 		return false;
+	}
 
-	if(strncmp(imageName, [[[NSProcessInfo processInfo] arguments][0] UTF8String], p-imageName-1) == 0)
+	if(strncmp(imageName, [[[NSProcessInfo processInfo] arguments][0] UTF8String], p-imageName-1) == 0) {
 		return true;
+	}
 
 	return false;
 }

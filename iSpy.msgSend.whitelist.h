@@ -8,6 +8,8 @@ typedef std::pair<std::string, MethodMap_t> ClassPair_t;
 
 // Helper functions
 void bf_objc_msgSend_whitelist_startup();
+void whitelist_add_method(std::string *className, std::string *methodName);
+void whitelist_remove_method(std::string *className, std::string *methodName);
 
 
 #endif // __ISPY_OBJC_MSGSEND_WHITELIST__

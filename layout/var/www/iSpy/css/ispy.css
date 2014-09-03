@@ -1,0 +1,18 @@
+.bf-panel {
+    box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.3); /* Shadow cast onto the slidebars when opened. */
+    background-color: #181818;
+    margin-top: 10px;
+    margin-left: -10px;
+}
+
+.fa-pad {
+    padding-right: 6px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    width: 30px;
+}
+
+.menu-pad {
+    padding-left: 3px;
+    padding-right: 3px;
+}

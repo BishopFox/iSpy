@@ -581,7 +581,7 @@ EXPORT int return_true() {
 
 		if ([[plist objectForKey:@"settings_InstanceTracking"] boolValue]) {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
-			[tracker setEnabled:true];
+			[tracker start];
 		} else {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
 		}

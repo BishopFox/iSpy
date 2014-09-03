@@ -11,7 +11,7 @@ extern void bf_MSHookFunction(void *func, void *repl, void **orig); // Tweak.xm
 
 @implementation InstanceTracker
 
-+(InstanceTracker *)sharedInstance {
++(InstanceTracker *) sharedInstance {
 	static InstanceTracker *sharedInstance;
 	static dispatch_once_t once;
 	static InstanceMap_t instanceMap;
@@ -26,11 +26,25 @@ extern void bf_MSHookFunction(void *func, void *repl, void **orig); // Tweak.xm
 	return sharedInstance;
 }
 
--(void)installHooks {
+-(void) installHooks {
 	ispy_log_debug(LOG_GENERAL, "Hooking Objective-C class create/dispose functions...");
 	bf_MSHookFunction((void *)class_createInstance, (void *)bf_class_createInstance, (void **)&orig_class_createInstance);
 	bf_MSHookFunction((void *)object_dispose, (void *)bf_object_dispose, (void **)&orig_object_dispose);
 	ispy_log_debug(LOG_GENERAL, "Done.");
+}
+
+-(void) start {
+	[self clear];
+	[self setEnabled:true];
+}
+
+-(void) stop {
+	[self setEnabled:false];
+}
+
+-(void) clear {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	(*instanceMap).clear();
 }
 
 @end

@@ -328,7 +328,7 @@ If "methods" is nil, assume all methods in class.
 	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
 	return @{
 		@"status":@"OK",
-		@"JSON":[NSString stringWithFormat:@"data:image/png;bas64,%@", base64PNG]
+		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
 	};
 }
 @end

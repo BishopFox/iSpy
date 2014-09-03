@@ -436,7 +436,7 @@ Returns a NSDictionary like this:
 	NSString *returnType;
 	char *freeMethodName, *methodName, *tmp;
 
-	if(cls == NULL || selector == NULL || cls == nil || selector == nil)
+	if(cls == nil || selector == nil)
 		return nil;
 
 	if([cls instancesRespondToSelector:selector] == YES) {
@@ -445,10 +445,12 @@ Returns a NSDictionary like this:
 		method = class_getClassMethod(object_getClass(cls), selector);
 		isInstanceMethod = false;
 	} else {
+		NSLog(@"Method not found");
 		return nil;
 	}
 
 	if (method == nil) {
+		NSLog(@"Method returned nil");
 		return nil;
 	}
 

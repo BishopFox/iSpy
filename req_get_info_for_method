@@ -1,0 +1,8 @@
+{
+	"messageType": "infoForMethod", 
+	"messageData": {
+			"class":"NSString",
+			"method":"UTF8String"
+	}
+}
+

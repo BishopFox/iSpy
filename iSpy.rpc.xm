@@ -75,16 +75,25 @@
 		[[iSpy sharedInstance] msgSend_disableLogging];
 	}
 
-	return @{ @"status":state };
+	return @{
+		@"status":state,
+		@"JSON":@""
+	};
 }
 
 
 -(NSDictionary *) testJSONRPC:(NSDictionary *)args {
-	return @{ @"REPLY_TEST":args };
+	return @{
+		@"status":@"OK",
+		@"JSON":args
+	};
 }
 
 -(NSDictionary *) ASLR:(NSDictionary *)args {
-	return @{ @"ASLR": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] };
+	return @{
+		@"status":@"OK",
+		@"JSON": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] 
+	};
 }
 
 /*
@@ -157,14 +166,17 @@ If "methods" is nil, assume all methods in class.
     		delete classNameString;
     	}
     }
-    return @{ @"status": @"OK" };
+    return @{
+    	@"status": @"OK",
+    	@"JSON":@""
+    };
 }
 
 -(NSDictionary *) classList:(NSDictionary *)args {
 	NSArray *classes = [[iSpy sharedInstance] classes];
 	return @{ 
 		@"status": @"OK",
-		@"classes": classes 
+		@"JSON": classes 
 	};
 }
 
@@ -172,7 +184,7 @@ If "methods" is nil, assume all methods in class.
 	NSArray *classes = [[iSpy sharedInstance] classesWithSuperClassAndProtocolInfo];
 	return @{ 
 		@"status": @"OK",
-		@"classes": classes 
+		@"JSON": classes 
 	};
 }
 
@@ -195,7 +207,7 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"methods": methods
+    	@"JSON": methods
     };
 }
 
@@ -218,7 +230,7 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"properties": properties
+    	@"JSON": properties
     };
 }
 
@@ -241,7 +253,7 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"protocols": protocols
+    	@"JSON": protocols
     };
 }
 
@@ -264,10 +276,51 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"iVars": iVars
+    	@"JSON": iVars
     };
 }
 
+-(NSDictionary *) infoForMethod:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+	NSString *methodName = [args objectForKey:@"method"];
+	if(className == nil || methodName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class and/or name"
+    	};
+    }
+
+    Class cls = objc_getClass([className UTF8String]);
+    if(cls == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"That class doesn't exist"
+    	};	
+    }
+
+    SEL selector = sel_registerName([methodName UTF8String]);
+    if(selector == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"That selector name was bad"
+    	};
+    }
+
+    NSLog(@"class: %@ // method: %s", cls, [methodName UTF8String]);
+
+    NSDictionary *infoDict = [[iSpy sharedInstance] infoForMethod:selector inClass:cls];
+    if(infoDict == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Error fetching information for that class/method"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": infoDict
+    };
+}
 
 @end
 

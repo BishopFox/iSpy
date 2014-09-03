@@ -442,6 +442,14 @@ If "methods" is nil, assume all methods in class.
 	};
 }
 
+
+-(NSDictionary *) keyChainItems:(NSDictionary *)args {
+	return @{
+		@"status":@"OK",
+		@"JSON": [[iSpy sharedInstance] keyChainItems]
+	};
+}
+
 @end
 
 

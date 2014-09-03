@@ -205,6 +205,7 @@ id *appClassWhiteList = NULL;
 	NSMutableDictionary *keychainDict = [[NSMutableDictionary alloc] init];
 	// genp, inet, idnt, cert, keys
 	NSArray *items = [NSArray arrayWithObjects:(id)kSecClassGenericPassword, kSecClassInternetPassword, kSecClassIdentity, kSecClassCertificate, kSecClassKey, nil];
+	NSArray *descs = [NSArray arrayWithObjects:(id)@"Generic Passwords", @"Internet Passwords", @"Identities", @"Certificates", @"Keys", nil];
 	int i = 0, j, count;
 
 	count = [items count];
@@ -217,34 +218,35 @@ id *appClassWhiteList = NULL;
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnRef];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnData];
 
-		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) != noErr)
-			continue;
+		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) == noErr) {
+			// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
+			for(j = 0; j < [keychainItems count]; j++) {
+				NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
+				for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
+					// We don't need the v_Ref attribute; it's just an obkect representation of a cert, which we already have.
+					if([key isEqual:@"v_Ref"])
+					   [[keychainItems objectAtIndex:j] removeObjectForKey:key];
 
-		// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
-		for(j = 0; j < [keychainItems count]; j++) {
-			NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
-			for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
-				// We don't need the v_Ref attribute; it's just an obkect representation of a cert, which we already have.
-				if([key isEqual:@"v_Ref"])
-				   [[keychainItems objectAtIndex:j] removeObjectForKey:key];
+					// Is this some kind of NSData/__NSFSData/etc?
+					if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
+						NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:key] encoding:NSUTF8StringEncoding];
+						if(str == nil)
+							str = @"";
+						[[keychainItems objectAtIndex:j] setObject:str forKey:key];
+					}
 
-				// Is this some kind of NSData/__NSFSData/etc?
-				else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
-					NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:key] encoding:NSUTF8StringEncoding];
-					if(str == nil)
-						str = @"";
-					[[keychainItems objectAtIndex:j] setObject:str forKey:key];
+					// how about NSDate?
+					else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(isEqualToDate:)]) {
+						[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
+					}
+
+					NSLog(@"Data: %@ (class: %@) = %@", key, [[[keychainItems objectAtIndex:j] objectForKey:key] class], [[keychainItems objectAtIndex:j] objectForKey:key]);
 				}
-
-				// how about NSDate?
-				else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(isEqualToDate:)]) {
-					[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
-				}
-
-				NSLog(@"Data: %@ (class: %@) = %@", key, [[[keychainItems objectAtIndex:j] objectForKey:key] class], [[keychainItems objectAtIndex:j] objectForKey:key]);
 			}
+		} else {
+			keychainItems = [[NSMutableArray alloc] initWithObjects:@"", nil];
 		}
-		[keychainDict setObject:keychainItems forKey:[items objectAtIndex:i]];
+		[keychainDict setObject:keychainItems forKey:[descs objectAtIndex:i]];
 	} while(++i < count);
 
 	return [keychainDict copy];

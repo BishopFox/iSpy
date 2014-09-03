@@ -206,6 +206,14 @@ id *appClassWhiteList = NULL;
 	// genp, inet, idnt, cert, keys
 	NSArray *items = [NSArray arrayWithObjects:(id)kSecClassGenericPassword, kSecClassInternetPassword, kSecClassIdentity, kSecClassCertificate, kSecClassKey, nil];
 	NSArray *descs = [NSArray arrayWithObjects:(id)@"Generic Passwords", @"Internet Passwords", @"Identities", @"Certificates", @"Keys", nil];
+	NSDictionary *kSecAttrs = @{ 
+		@"ak":  @"kSecAttrAccessibleWhenUnlocked",
+		@"ck":  @"kSecAttrAccessibleAfterFirstUnlock",
+		@"dk":  @"kSecAttrAccessibleAlways",
+		@"aku": @"kSecAttrAccessibleWhenUnlockedThisDeviceOnly",
+		@"cku": @"kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly",
+		@"dku": @"kSecAttrAccessibleAlwaysThisDeviceOnly"
+	};
 	int i = 0, j, count;
 
 	count = [items count];
@@ -223,9 +231,10 @@ id *appClassWhiteList = NULL;
 			for(j = 0; j < [keychainItems count]; j++) {
 				NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
 				for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
-					// We don't need the v_Ref attribute; it's just an obkect representation of a cert, which we already have.
-					if([key isEqual:@"v_Ref"])
-					   [[keychainItems objectAtIndex:j] removeObjectForKey:key];
+					// We don't need the v_Ref attribute; it's just an another representation of v_data that won't serialize to JSON. Pfft.
+					if([key isEqual:@"v_Ref"]) {
+						[[keychainItems objectAtIndex:j] removeObjectForKey:key];
+					}
 
 					// Is this some kind of NSData/__NSFSData/etc?
 					if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
@@ -240,6 +249,8 @@ id *appClassWhiteList = NULL;
 						[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
 					}
 
+					[[keychainItems objectAtIndex:j] setObject:[kSecAttrs objectForKey:[[keychainItems objectAtIndex:j] objectForKey:@"pdmn"]] forKey:@"v_pdmn"];
+
 					NSLog(@"Data: %@ (class: %@) = %@", key, [[[keychainItems objectAtIndex:j] objectForKey:key] class], [[keychainItems objectAtIndex:j] objectForKey:key]);
 				}
 			}
@@ -249,7 +260,7 @@ id *appClassWhiteList = NULL;
 		[keychainDict setObject:keychainItems forKey:[descs objectAtIndex:i]];
 	} while(++i < count);
 
-	return [keychainDict copy];
+	return keychainDict;
 }
 
 -(unsigned int)ASLR {

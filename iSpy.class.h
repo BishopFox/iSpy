@@ -30,6 +30,7 @@
 @property (assign) RPCHandler *rpcHandler;
 -(void) configureWebServer;
 -(int) getListenPortFor:(NSString *) key fallbackTo: (int) fallback;
+-(NSDictionary *)dispatchRPCRequest:(NSString *) JSONString;
 
 @end
 

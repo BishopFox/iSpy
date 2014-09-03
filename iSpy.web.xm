@@ -131,6 +131,49 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
     return lport;
 }
 
+-(NSDictionary *)dispatchRPCRequest:(NSString *) JSONString {
+    NSData *RPCRequest = [JSONString dataUsingEncoding:NSUTF8StringEncoding];
+    if ( ! RPCRequest)
+    {
+        ispy_log_error(LOG_HTTP, "Could not convert websocket payload into NSData");
+        return nil;
+    }
+
+    // create a dictionary from the JSON request
+    NSDictionary *RPCDictionary = [NSJSONSerialization JSONObjectWithData:RPCRequest options:kNilOptions error:nil];
+    if ( ! RPCDictionary)
+    {
+        ispy_log_error(LOG_HTTP, "invalid RPC request, couldn't deserialze the JSON data.");
+        return nil;
+    }
+
+    // is this a valid request? (does it contain both "messageType" and "messageData" entries?)
+    if ( ! [RPCDictionary objectForKey:@"messageType"] || ! [RPCDictionary objectForKey:@"messageData"])
+    {
+        ispy_log_error(LOG_HTTP, "Invalid RPC request; must have messageType and messageData.");
+        return nil;
+    }
+
+    // Verify that the iSpy RPC handler class can execute the requested selector
+    NSString *selectorString = [RPCDictionary objectForKey:@"messageType"];
+    SEL selectorName = sel_registerName([[NSString stringWithFormat:@"%@:", selectorString] UTF8String]);
+    if ( ! selectorName)
+    {
+        ispy_log_error(LOG_HTTP, "selectorName was null.");
+        return nil;
+    }
+    if ( ! [[self rpcHandler] respondsToSelector:selectorName] )
+    {
+        ispy_log_error(LOG_HTTP, "doesn't respond to selector");
+        return nil;
+    }
+
+    // Do it!
+    ispy_log_debug(LOG_HTTP, "Dispatching request for: %s", [selectorString UTF8String]);
+    NSMutableDictionary *responseDict = [[self rpcHandler] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];
+    return responseDict;
+}
+
 @end
 
 // This is the equivalent of [iSpyWebSocket sendMessage:@"Wakka wakka"] except that it's

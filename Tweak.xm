@@ -213,6 +213,7 @@ extern CFReadStreamRef (*orig_CFReadStreamCreateForHTTPRequest)(CFAllocatorRef a
 extern CFDictionaryRef (*orig_CFNetworkCopySystemProxySettings)(void);
 extern SecCertificateRef (*orig_SecCertificateCreateWithData)(CFAllocatorRef allocator, CFDataRef data);
 extern int (*orig_dup)(u_int fd);
+void heh();
 
 /*************************************************************
  *** This is where you should put your own Theos tweaks.   ***
@@ -510,8 +511,10 @@ EXPORT int return_true() {
 	} else {
 
 		/* Green light to inject - Init all the things */
+		heh();
 		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", bundleId);
 		iSpy *mySpy = [iSpy sharedInstance];
+		[mySpy initializeAllTheThings];
 
 		// Initialize the BF log writing system
 	    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -595,4 +598,38 @@ EXPORT int return_true() {
 	[appPlist release];
 }
 
-
+void heh() {
+NSLog(@" 777777777777777777777777777777777777              ,77777777777777777777777777+ ");
+NSLog(@"  777777777777777777777777777777777777            777777777777777777777777777   ");
+NSLog(@"   777777777777777777777777777777777777:         777777777777777777777777777    ");
+NSLog(@"    +77777777777777777777777777777777777         77777777777777777777777777     ");
+NSLog(@"      7777777777777777777777777777777777         7777777777777777777777777      ");
+NSLog(@"       777777777777777777777777777777777         77777777777777777777777:       ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"               777777777777777777777777          777777777777777                ");
+NSLog(@"                ~77777777777777777777            77777777777777                 ");
+NSLog(@"                  77777777777777777=             777777777777+                  ");
+NSLog(@"                   7777777777777777,             77777777777,                   ");
+NSLog(@"                    77777777777777777            7777777777                     ");
+NSLog(@"                     77777777777777777+          777777777                      ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                              7777777777                                        ");
+NSLog(@"                               777777777                                        ");
+NSLog(@"                                I7777777                                        ");
+NSLog(@"                                 ,777777                                        ");
+NSLog(@"                                   77777                                        ");
+NSLog(@"                                    7777                                        ");
+NSLog(@"                                     777                                        ");
+NSLog(@"                                      I7                                        ");
+NSLog(@"                                       :                                        ");
+}

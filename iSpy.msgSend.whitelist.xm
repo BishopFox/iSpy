@@ -12,10 +12,24 @@
 // Do so by creating a new list and changing the pointer (bf_objc_msgSend_captured_class->uninterestingMethods) on a per-class basis.
 //const char *bf_msgSend_uninterestingList = "|retain|dealloc|alloc|init|release|class|load|initialize|allocWithZone:|copy|copyWithZone:|mutableCopy|mutableCopyWithZone:|new|class|superclass|isSubClassOfClass:|instancesRespondToSelector|";
 
+extern void whitelist_add_method(std::string *className, std::string *methodName) {
+    ClassMap_t *ClassMap = [[iSpy sharedInstance] classWhitelist];
+    (*ClassMap)[*className][*methodName] = 1;
+}
+
+extern void whitelist_remove_method(std::string *className, std::string *methodName) {
+    ClassMap_t *ClassMap = [[iSpy sharedInstance] classWhitelist];
+    (*ClassMap)[*className][*methodName] = 0;
+}
+
 void bf_objc_msgSend_whitelist_startup() {
     int i, numClasses, m, numMethods, count=0;
     static std::tr1::unordered_map<std::string, std::tr1::unordered_map<std::string, int> > WhitelistClassMap;
 
+    // Set the singleton pointer to the hashmap
+    [[iSpy sharedInstance] setClassWhitelist:&WhitelistClassMap];
+
+    // Get a list of all the classes in the app
     NSArray *classes = [[iSpy sharedInstance] classes];
 	numClasses = [classes count];
     
@@ -45,20 +59,20 @@ void bf_objc_msgSend_whitelist_startup() {
     		if(!methodName) {
     			continue;
     		}
-    		std::string *nameString = new std::string([name UTF8String]);
+    		std::string *classNameString = new std::string([name UTF8String]);
     		std::string *methodNameString = new std::string([methodName UTF8String]);
-    		if(!nameString || !methodNameString) {
+    		if(!classNameString || !methodNameString) {
     			if(methodNameString)
     				delete methodNameString;
-    			if(nameString)
-    				delete nameString;
+    			if(classNameString)
+    				delete classNameString;
     			continue;
     		}
-    		ispy_log_debug(LOG_GENERAL, "[Whitelist (%d) %d / %d] adding [%s %s]", ++count, i, m, nameString->c_str(), methodNameString->c_str());
-    		WhitelistClassMap[(*nameString)][(*methodNameString)] = 1;
+    		ispy_log_debug(LOG_GENERAL, "[Whitelist (%d) %d / %d] adding [%s %s]", ++count, i, m, classNameString->c_str(), methodNameString->c_str());
+            whitelist_add_method(classNameString, methodNameString);
     		[methodName release];
     		delete methodNameString;
-    		delete nameString;
+    		delete classNameString;
     	}
     	[name release];
     	[methods release];
@@ -66,7 +80,6 @@ void bf_objc_msgSend_whitelist_startup() {
     [classes release];
 
     ispy_log_debug(LOG_GENERAL, "[whitelist] Added %d of %d classes to the whitelist. Adding to iSpy class...", i, numClasses);
-    [[iSpy sharedInstance] setClassWhitelist:&WhitelistClassMap];
     ispy_log_debug(LOG_GENERAL, "[whitelist] All done!\n");
     
 }

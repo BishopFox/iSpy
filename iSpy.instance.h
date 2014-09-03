@@ -11,9 +11,13 @@ typedef std::tr1::unordered_map<unsigned int, unsigned int> InstanceMap_t;
 
 +(InstanceTracker *) sharedInstance;
 -(void) installHooks;
+-(void) start;
+-(void) stop;
+-(void) clear;
+-(NSArray *)instancesOfAllClasses;  
+-(NSArray *) instancesOfAppClasses;
 //-(unsigned int) numInstances;
 //-(NSArray *) instancePointers;
-//-(NSDictionary *) instances;
 @end
 
 // Hooks

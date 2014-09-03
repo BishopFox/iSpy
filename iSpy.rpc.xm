@@ -373,6 +373,20 @@ If "methods" is nil, assume all methods in class.
     };
 }
 
+
+/*
+	Instance RPC
+*/
+
+
+-(NSDictionary *) instancesOfAppClasses:(NSDictionary *)args {
+	return @{
+		@"status":@"OK",
+		@"JSON":[[InstanceTracker sharedInstance] instancesOfAppClasses]
+	};
+}
+
+
 /*
 	App info RPC
 */

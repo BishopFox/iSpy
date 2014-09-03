@@ -47,6 +47,42 @@ extern void bf_MSHookFunction(void *func, void *repl, void **orig); // Tweak.xm
 	(*instanceMap).clear();
 }
 
+-(NSArray *) instancesOfAllClasses {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	NSMutableArray *instances = [[NSMutableArray alloc] init];
+
+	for(InstanceMap_t::const_iterator it = (*instanceMap).begin(); it != (*instanceMap).end(); ++it) {
+		[instances addObject:[NSString stringWithFormat:@"0x%x", it->first]];
+	}
+
+	return (NSArray *)instances;
+}
+
+-(NSArray *) instancesOfAppClasses {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	NSMutableArray *instances = [[NSMutableArray alloc] init];
+
+	for(InstanceMap_t::const_iterator it = (*instanceMap).begin(); it != (*instanceMap).end(); ++it) {
+		id obj = (id)it->first;
+		if(!obj)
+			continue;
+
+		const char *className = object_getClassName(obj);
+		if(!className)
+			continue;
+
+		if(false == [iSpy isClassFromApp:[NSString stringWithUTF8String:className]])
+			continue;
+
+		NSMutableDictionary *instanceData = [[NSMutableDictionary alloc] init];
+		[instanceData setObject:[NSString stringWithFormat:@"0x%x", it->first] forKey:@"address"];
+		[instanceData setObject:[NSString stringWithUTF8String:className] forKey:@"class"];
+		[instances addObject:(NSDictionary *)instanceData];
+	}
+
+	return (NSArray *)instances;
+}
+
 @end
 
 /*

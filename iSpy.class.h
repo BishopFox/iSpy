@@ -85,6 +85,7 @@
 -(NSDictionary *)classDumpClass:(NSString *)className;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
++(BOOL)isClassFromApp:(NSString *)className;
 @end
 
 

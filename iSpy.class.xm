@@ -183,13 +183,14 @@ id *appClassWhiteList = NULL;
  */
 
 -(void) instance_enableTracking {
-	bf_enable_instance_tracker();
+	[[InstanceTracker sharedInstance] setEnabled:true];
 }
 
 -(void) instance_disableTracking {
-	bf_disable_instance_tracker();
+	[[InstanceTracker sharedInstance] setEnabled:false];
 }
 
+/*
 // Dumps a list of all the instances in the runtime, including all Apple's classes like NSString, etc. 
 // Generates a ton of output.
 // Human-readable text.
@@ -261,9 +262,10 @@ id *appClassWhiteList = NULL;
 -(void) instance_searchInstances:(NSString *)forName {
 	return;
 }
+*/
 
 -(BOOL) instance_getTrackingState {
-	return bf_get_instance_tracking_state();
+	return [[InstanceTracker sharedInstance] enabled];
 }
 
 -(id)instance_atAddress:(NSString *)addr {

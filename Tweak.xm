@@ -577,10 +577,11 @@ EXPORT int return_true() {
 
 		// Enable instance tracking if configured to do so
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
-		bf_init_instance_tracker();
+		InstanceTracker *tracker = [InstanceTracker sharedInstance];
+
 		if ([[plist objectForKey:@"settings_InstanceTracking"] boolValue]) {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is enabled in preferences. Starting up with tracker enabled.");
-			bf_enable_instance_tracker();
+			[tracker setEnabled:true];
 		} else {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
 		}

@@ -322,6 +322,61 @@ If "methods" is nil, assume all methods in class.
     };
 }
 
+
+/*
+	Protocol RPC
+*/
+
+-(NSDictionary *) methodsForProtocol:(NSDictionary *)args {
+	NSString *protocolName = [args objectForKey:@"protocol"];
+    if(protocolName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocol name"
+    	};
+    }
+
+    NSArray *methods = [[iSpy sharedInstance] methodsForProtocol:objc_getProtocol([protocolName UTF8String])];
+    if(methods == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty methods list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": methods
+    };
+}
+
+-(NSDictionary *) propertiesForProtocol:(NSDictionary *)args {
+	NSString *protocolName = [args objectForKey:@"protocol"];
+    if(protocolName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocol name"
+    	};
+    }
+
+    NSArray *properties = [[iSpy sharedInstance] propertiesForProtocol:objc_getProtocol([protocolName UTF8String])];
+    if(properties == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty properties list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": properties
+    };
+}
+
+/*
+	App info RPC
+*/
+
 -(NSDictionary *) applicationIcon:(NSDictionary *)args {
 	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
 	NSData *PNG = UIImagePNGRepresentation(appIcon);
@@ -331,6 +386,14 @@ If "methods" is nil, assume all methods in class.
 		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
 	};
 }
+
+-(NSDictionary *) bundleID:(NSDictionary *)args {
+	return @{
+		@"status":@"OK",
+		@"JSON":[[iSpy sharedInstance] bundleId]
+	};
+}
+
 @end
 
 

@@ -1,0 +1,7 @@
+{
+	"messageType": "methodsForProtocol", 
+	"messageData": {
+			"protocol":"UIApplicationDelegate"
+	}
+}
+

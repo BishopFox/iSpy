@@ -160,6 +160,22 @@ If "methods" is nil, assume all methods in class.
     return @{ @"status": @"OK" };
 }
 
+-(NSDictionary *) classList:(NSDictionary *)args {
+	NSArray *classes = [[iSpy sharedInstance] classes];
+	return @{ 
+		@"status": @"OK",
+		@"classes": classes 
+	};
+}
+
+-(NSDictionary *) classListWithProtocolInfo:(NSDictionary *)args {
+	NSArray *classes = [[iSpy sharedInstance] classesWithSuperClassAndProtocolInfo];
+	return @{ 
+		@"status": @"OK",
+		@"classes": classes 
+	};
+}
+
 @end
 
 

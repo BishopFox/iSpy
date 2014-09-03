@@ -387,10 +387,20 @@ If "methods" is nil, assume all methods in class.
 	};
 }
 
--(NSDictionary *) bundleID:(NSDictionary *)args {
+-(NSDictionary *) appInfo:(NSDictionary *)args {
+	NSDictionary *infoDict = [[NSBundle mainBundle] infoDictionary];
+	NSArray *keys = [infoDict allKeys];
+	NSMutableDictionary *interestingProperties = [[NSMutableDictionary alloc] init];
+
+	for(int i=0; i < [keys count]; i++) {
+		id obj = [keys objectAtIndex:i];
+		if([[infoDict objectForKey:obj] class] == objc_getClass("__NSCFString")) {
+			[interestingProperties setObject:[NSString stringWithString:[infoDict objectForKey:obj]] forKey:obj];
+		}
+	}
 	return @{
 		@"status":@"OK",
-		@"JSON":[[iSpy sharedInstance] bundleId]
+		@"JSON": interestingProperties
 	};
 }
 

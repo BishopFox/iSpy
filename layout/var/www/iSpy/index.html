@@ -3,25 +3,101 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>iSpy</title>
     <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/animate.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/local.css" />
+    <link rel="stylesheet" type="text/css" href="/css/ispy.css" />
     <script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
     <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/underscore.min.js"></script>
+    <script type="text/javascript" src="/js/backbone.min.js"></script>
+
+    <!-- iSpy Application Files -->
     <script type="text/javascript" src="/js/ispy/main.js"></script>
+    <script type="text/javascript" src="/js/ispy/models.js"></script>
+    <script type="text/javascript" src="/js/ispy/collections.js"></script>
+    <script type="text/javascript" src="/js/ispy/views.js"></script>
+    <script type="text/javascript" src="/js/ispy/router.js"></script>
 
     <!-- you need to include the shieldui css and js assets in order for the charts to work -->
     <link rel="stylesheet" type="text/css" href="/css/shieldui-all.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/all.min.css" />
     <link id="gridcss" rel="stylesheet" type="text/css" href="/css/dark-bootstrap-all.min.css" />
+    <link rel="stylesheet" href="/css/slidebars.min.css">
+    <link rel="stylesheet" href="/css/slidebars-theme.css">
     <script type="text/javascript" src="/js/shieldui-all.min.js"></script>
-    <script type="text/javascript" src="/js/gridData.js"></script>
+    <script type="text/javascript" src="/js/slidebars.min.js"></script>
 </head>
 
+<!-- iSpy Templates -->
+<script id="ClassDumpTemplate" type="text/template">
+    Application Summary
+</script>
+
+<script id="ClassDumpTemplate" type="text/template">
+    Class Dump
+</script>
+
+<script id="ObjcClassTemplate" type="text/template">
+    <%= title > <button> Foobar </button>
+</script>
+
+
+
+<script>
+$(document).ready(function() {
+
+    /* Menu Setup */
+    $.slidebars();
+    jQuery('ul.nav li.dropdown').hover(function() {
+        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).show();
+    }, function() {
+        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).hide();
+    });
+
+    /* WebSocket Setup */
+    var jsonrpc_url = "ws://" + window.location.host + "/jsonrpc";
+    console.log("[*] Connecting to json-rpc server -> " + jsonrpc_url);
+    jsonrpc = new WebSocket(jsonrpc_url);
+
+    /* WebSocket Opened */
+    jsonrpc.onopen = function() {
+        console.log("[*] Successfully connected to remote rpc server!");
+        $("#activity-monitor").removeClass("fa-eye-slash");
+        $("#activity-monitor").addClass("fa-refresh fa-spin");
+    }
+
+    /* WebSocket Message */
+    jsonrpc.onmessage = function(emit) {
+        console.log(emit);
+        var msg = jQuery.parseJSON(emit.data);
+        if ('messageType' in msg && msg['messageType'] == "obj_msgSend") {
+            add_objc_msg(msg);
+        }
+    }
+
+    /* WebSocket Closed */
+    jsonrpc.onclose = function() {
+        console.log("[!] Connection to server lost!");
+        $("#activity-monitor").removeClass("fa-refresh fa-spin");
+        $("#activity-monitor").addClass("fa-eye-slash");
+    }
+
+    /* Init router and start backbone history */
+    var router = new iSpy.Router;
+    console.log(router);
+    Backbone.history.start();
+
+
+});
+
+</script>
+
 <body>
-    <div id="wrapper">
+    <div class="bf-panel" id="wrapper" style="margin-top: -40px; margin-left: -40px; padding-bottom: 20px;">
         <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
@@ -30,14 +106,40 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">iSpy</a>
+                <a class="navbar-brand sb-toggle-left" href="#">
+                    <i class="fa fa-fw fa-bars"></i>
+                </a>
             </div>
-            <div class="collapse navbar-collapse navbar-ex1-collapse">
-                <ul id="active" class="nav navbar-nav side-nav">
-                    <li class="selected"><a href="index.html"><i class="fa fa-bullseye"></i> Dashboard</a></li>
-                    <li><a href="portfolio.html"><i class="fa fa-fw fa-tasks"></i> Objc_msgSend</a></li>
-                    <li><a href="classdump.html"><i class="fa fa-fw fa-list-alt"></i> Class Browser</a></li>
+            <div class="collapse navbar-collapse navbar-ex1-collapse ">
+                <ul class="nav navbar-nav navbar-user">
+                    <li class="dropdown messages-dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-fw fa-lg fa-code"></i>&nbsp;
+                            Class Browser<!-- <span class="badge">2</span>-->
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-cubes fa-pad"></i>Classes</a></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-exchange fa-pad"></i>Protocols</a></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-cube fa-pad"></i>Instances</a></li>
+                            <li class="divider"></li>
+                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-file-code-o fa-pad"></i>Generate Headers</a></li>
+                        </ul>
+                    </li>
                 </ul>
+                <ul class="nav navbar-nav navbar-user">
+                    <!-- <li class="divider-vertical"></li> -->
+                    <li class="dropdown messages-dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-lg fa-share-alt"></i>&nbsp;
+                            Call Tracing
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-bolt fa-pad"></i>View real-time logs</a></li>
+                            <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-cog fa-pad"></i>Settings</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <!--
                 <form class="navbar-form navbar-right" role="search">
                     <a class="btn btn-inverse menuButton" id="btnMsgSendState">
                         <i class="fa fa-fw fa-apple" id="iconMsgSendState"></i>
@@ -49,66 +151,147 @@
                         <i class="fa fa-fw fa-sitemap" id="iconinstanceState"></i>
                     </a>
                 </form>
-                <ul class="nav navbar-nav navbar-right navbar-user">
-                    <li class="dropdown messages-dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <i class="fa fa-envelope"></i>
-                            Messages <span class="badge">2</span>
-                            <b class="caret"></b>
-                        </a>
-                        <ul class="dropdown-menu">
-
-                            <li class="dropdown-header">2 New Messages</li>
-                            <li class="message-preview">
-                                <a href="#">
-                                    <span class="avatar"><i class="fa fa-bell"></i>
-                                    </span>
-                                    <span class="message">Security alert</span>
-                                </a>
-                            </li>
-                            <li class="divider"></li>
-                            <li class="message-preview">
-                                <a href="#">
-                                    <span class="avatar"><i class="fa fa-bell"></i>
-                                    </span>
-                                    <span class="message">Security alert</span>
-                                </a>
-                            </li>
-                            <li class="divider"></li>
-                            <li><a href="#">Go to Inbox <span class="badge">2</span></a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="divider-vertical"></li>
-                    <li>
+                <ul class="nav navbar-nav navbar-user navbar-right">
+                    <li >
                         <form class="navbar-search">
                             <input type="text" placeholder="Search" class="form-control">
                         </form>
                     </li>
                 </ul>
+                -->
+                <ul class="nav navbar-nav navbar-user navbar-right">
+                    <li>
+                        <a href="#" ><i id="activity-monitor" class="fa fa-fw fa-eye-slash"></i></a>
+                    </li>
+                </ul>
             </div>
         </nav><!-- /#nav -->
-        <div id="page-wrapper">
-            <div class="row">
-                <h3>
-                    <i class="fa fa-fw fa-apple"></i>
-                    objc_msgSend Log
-                </h3>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Class</th>
-                            <th>Method</th>
-                            <th>Arguments</th>
-                            <th>Return</th>
-                        </tr>
-                    </thead>
-                    <tbody id="objc-msg-send-table">
-                    </tbody>
-                </table>
+    </div>
+    <!-- Main -->
+    <div id="sb-site" class="animated fadeIn">
+        <div id="main-content" class="bf-panel">
+            <div id="class-browser">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h2>App Info</h2>
+                    </div>
+                    <div class="col-lg-4">
+                        <h2>Stats</h2>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="bs-example">
+                            <div class="list-group">
+                                    <dl class="dl-horizontal list-group-item">
+                                        <dt>Application Identifier</dt>
+                                        <dd>com.foo.appname</dd>
+                                        <dt>Path</dt>
+                                        <dd>/var/mobile/Applications/xxxxxxxx</dd>
+                                    </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="bs-example">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <span class="badge">1234</span>
+                                    Number of classes
+                                </li>
+                                <li class="list-group-item">
+                                    <span class="badge">42</span>
+                                    Number of protocols
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- /.row -->
+
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="bs-example">
+                            <div class="list-group">
+                                <a href="#" class="list-group-item active">
+                                    <img src="/img/bf-shield.svg" width="28" style="margin-top: -3px" />
+                                    <strong>iSpy</strong>
+                                </a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                                <a href="#" class="list-group-item">Things</a>
+                                <a href="#" class="list-group-item">Nonsense</a>
+                                <a href="#" class="list-group-item">Foofafrob</a>
+                                <a href="#" class="list-group-item">Like, whatever</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div><!-- /#page-wrapper -->
+    </div><!-- /#sb-site -->
+
+    <!-- Hidden Sidebar -->
+    <div class="sb-slidebar sb-left" style="padding-top: 50px;">
+        <nav>
+            <ul class="sb-menu" >
+                <li class="sb-close">
+                    <span>
+                        <h4 style="padding-left: 10px">
+                            <img src="/img/bf-shield.svg" width="28" style="margin-top: -3px" />
+                            iSpy
+                        </h4>
+                    </span>
+                </li>
+                <li id="" class="sb-close"><a href="#"><i class="fa fa-fw fa-tasks"></i>Summary</a></li>
+                <li id="" class="sb-close"><a href="#classdump"><i class="fa fa-fw fa-list-alt"></i>Class Dump</a></li>
+                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-globe"></i> Item 4</a></li>
+                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-cog"></i> Item 5</a></li>
+            </ul>
+        </nav>
     </div>
 </body>
+
 </html>

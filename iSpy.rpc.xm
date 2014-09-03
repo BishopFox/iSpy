@@ -199,6 +199,76 @@ If "methods" is nil, assume all methods in class.
     };
 }
 
+-(NSDictionary *) propertiesForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *properties = [[iSpy sharedInstance] propertiesForClass:className];
+    if(properties == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty properties list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"properties": properties
+    };
+}
+
+-(NSDictionary *) protocolsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *protocols = [[iSpy sharedInstance] protocolsForClass:className];
+    if(protocols == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocols list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"protocols": protocols
+    };
+}
+
+-(NSDictionary *) iVarsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *iVars = [[iSpy sharedInstance] iVarsForClass:className];
+    if(iVars == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty iVars list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"iVars": iVars
+    };
+}
+
+
 @end
 
 

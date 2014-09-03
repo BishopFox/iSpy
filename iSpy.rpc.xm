@@ -176,6 +176,29 @@ If "methods" is nil, assume all methods in class.
 	};
 }
 
+-(NSDictionary *) methodsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *methods = [[iSpy sharedInstance] methodListForClass:className];
+    if(methods == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty methods list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"methods": methods
+    };
+}
+
 @end
 
 

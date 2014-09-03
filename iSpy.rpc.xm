@@ -172,6 +172,12 @@ If "methods" is nil, assume all methods in class.
     };
 }
 
+
+/*
+ * 	Classes and internals
+ */
+
+
 -(NSDictionary *) classList:(NSDictionary *)args {
 	NSArray *classes = [[iSpy sharedInstance] classes];
 	return @{ 
@@ -324,8 +330,8 @@ If "methods" is nil, assume all methods in class.
 
 
 /*
-	Protocol RPC
-*/
+ *	Protocol RPC
+ */
 
 -(NSDictionary *) methodsForProtocol:(NSDictionary *)args {
 	NSString *protocolName = [args objectForKey:@"protocol"];
@@ -375,8 +381,8 @@ If "methods" is nil, assume all methods in class.
 
 
 /*
-	Instance RPC
-*/
+ *	Instance RPC
+ */
 
 
 -(NSDictionary *) instanceAtAddress:(NSDictionary *)args {
@@ -404,13 +410,14 @@ If "methods" is nil, assume all methods in class.
 
 
 /*
-	App info RPC
-*/
+ *	App info RPC
+ */
 
 -(NSDictionary *) applicationIcon:(NSDictionary *)args {
 	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
 	NSData *PNG = UIImagePNGRepresentation(appIcon);
 	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
+	
 	return @{
 		@"status":@"OK",
 		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
@@ -428,6 +435,7 @@ If "methods" is nil, assume all methods in class.
 			[interestingProperties setObject:[NSString stringWithString:[infoDict objectForKey:obj]] forKey:obj];
 		}
 	}
+
 	return @{
 		@"status":@"OK",
 		@"JSON": interestingProperties

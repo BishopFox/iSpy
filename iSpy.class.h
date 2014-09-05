@@ -53,15 +53,15 @@
 +(iSpy *)sharedInstance;
 -(void)initializeAllTheThings;
 -(NSDictionary *) getNetworkInfo;
+/*
 -(NSString *) instance_dumpAllInstancesWithPointers;
 -(NSString *) instance_dumpAppInstancesWithPointers;
 -(NSArray *) instance_dumpAppInstancesWithPointersArray;
+-(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
 -(int) instance_numberOfTrackedInstances;
 -(void) instance_searchInstances:(NSString *)forName;
+*/
 -(BOOL) instance_getTrackingState;
--(id)instance_atAddress:(NSString *)addr;
--(id)instance_dumpInstance:(id)instance;
--(id)instance_dumpInstanceAtAddress:(NSString *)addr;
 -(void) instance_enableTracking;
 -(void) instance_disableTracking;
 -(NSDictionary *)keyChainItems;
@@ -80,9 +80,9 @@
 -(NSDictionary *)protocolDump;
 -(NSDictionary *)classDump;
 -(NSDictionary *)classDumpClass:(NSString *)className;
--(NSDictionary *) instance_dumpAppInstancesWithPointersDict;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
++(BOOL)isClassFromApp:(NSString *)className;
 @end
 
 

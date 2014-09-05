@@ -3,164 +3,185 @@
 #include "iSpy.class.h"
 #include "iSpy.instance.h"
 
-static struct bf_instance *instanceList;
-
-// We need the original class instantiation / destruction functions declared in Tweak.xm
 id (*orig_class_createInstance)(Class cls, size_t extraBytes);
 id (*orig_object_dispose)(id obj);
+extern void bf_MSHookFunction(void *func, void *repl, void **orig);
 
-static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-static pthread_key_t thr_key;
-static pthread_mutex_t mutex_create = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t mutex_dispose = PTHREAD_MUTEX_INITIALIZER;
-static bool instanceTrackingIsEnabled = false;
+@implementation InstanceTracker
 
-extern void bf_MSHookFunction(void *func, void *repl, void **orig); // Tweak.xm
++(InstanceTracker *) sharedInstance {
+	static InstanceTracker *sharedInstance;
+	static dispatch_once_t once;
+	static InstanceMap_t instanceMap;
 
-// guaranteed to run only once
-static void make_key() {
-	pthread_key_create(&thr_key, NULL);
+	dispatch_once(&once, ^{
+		sharedInstance = [[self alloc] init];
+		[sharedInstance setEnabled:false];
+		[sharedInstance installHooks];
+		[sharedInstance setInstanceMap:&instanceMap];
+	});
+
+	return sharedInstance;
+}
+
+-(void) installHooks {
 	ispy_log_debug(LOG_GENERAL, "Hooking Objective-C class create/dispose functions...");
 	bf_MSHookFunction((void *)class_createInstance, (void *)bf_class_createInstance, (void **)&orig_class_createInstance);
 	bf_MSHookFunction((void *)object_dispose, (void *)bf_object_dispose, (void **)&orig_object_dispose);
-	ispy_log_debug(LOG_GENERAL, "Done. Instance tracking is not yet enabled...");
+	ispy_log_debug(LOG_GENERAL, "Done.");
 }
 
-extern void bf_init_instance_tracker() {
-	pthread_once(&key_once, make_key);
+-(void) start {
+	[self clear];
+	[self setEnabled:true];
 }
 
-EXPORT void bf_enable_instance_tracker() {
-	ispy_log_debug(LOG_GENERAL, "Enabling instance tracker");
-	instanceTrackingIsEnabled = true;
+-(void) stop {
+	[self setEnabled:false];
 }
 
-EXPORT void bf_disable_instance_tracker() {
-	ispy_log_debug(LOG_GENERAL, "Disabling instance tracker");
-	instanceTrackingIsEnabled = false;
+-(void) clear {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	(*instanceMap).clear();
 }
 
-EXPORT bool bf_get_instance_tracking_state() {
-	return instanceTrackingIsEnabled;
+-(NSArray *) instancesOfAllClasses {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	NSMutableArray *instances = [[NSMutableArray alloc] init];
+
+	for(InstanceMap_t::const_iterator it = (*instanceMap).begin(); it != (*instanceMap).end(); ++it) {
+		[instances addObject:[NSString stringWithFormat:@"0x%x", it->first]];
+	}
+
+	return (NSArray *)instances;
 }
 
-struct bf_instance *bf_get_instance_list_ptr() {
-	return instanceList;
+-(NSArray *) instancesOfAppClasses {
+	InstanceMap_t *instanceMap = [self instanceMap];
+	NSMutableArray *instances = [[NSMutableArray alloc] init];
+
+	for(InstanceMap_t::const_iterator it = (*instanceMap).begin(); it != (*instanceMap).end(); ++it) {
+		id obj = (id)it->first;
+		if(!obj)
+			continue;
+
+		const char *className = object_getClassName(obj);
+		if(!className)
+			continue;
+
+		if(false == [iSpy isClassFromApp:[NSString stringWithUTF8String:className]])
+			continue;
+
+		NSMutableDictionary *instanceData = [[NSMutableDictionary alloc] init];
+		[instanceData setObject:[NSString stringWithFormat:@"0x%x", it->first] forKey:@"address"];
+		[instanceData setObject:[NSString stringWithUTF8String:className] forKey:@"class"];
+		[instances addObject:(NSDictionary *)instanceData];
+	}
+
+	return (NSArray *)instances;
 }
 
-// Hook the Objective-C runtime class instantiator and record all of the newly instantiated objects
+// Given a hex address (eg. 0xdeafbeef) dumps the class data from the object at that address.
+// Returns an object as discussed in instance_dumpInstance, below.
+// This is exposed to /api/instance/0xdeadbeef << replace deadbeef with an actual address.
+-(id)instanceAtAddress:(NSString *)addr {
+	return [self __dumpInstance:[self __instanceAtAddress:addr]];
+}
+
+// Given a string in the format @"0xdeadbeef", this first converts the string to an address, then
+// returns an opaque Objective-C object at that address.
+// The runtime can treat this return value just like any other object.
+// BEWARE: give this an incorrect/invalid address and you'll return a duff pointer. Caveat emptor.
+-(id)__instanceAtAddress:(NSString *)addr {
+	return (id)strtoul([addr UTF8String], (char **)NULL, 16);
+}
+
+// Make sure to pass a valid pointer (instance) to this method!
+// In return it'll give you an array. Each element in the array represents an iVar and comprises a dictionary.
+// Each element in the dictionary represents the name, type, and value of the iVar.
+-(NSArray *)__dumpInstance:(id)instance {
+	void *ptr;
+	iSpy *mySpy = [iSpy sharedInstance];
+	NSArray *iVars = [mySpy iVarsForClass:[NSString stringWithUTF8String:object_getClassName(instance)]];
+	int i;
+	NSMutableArray *iVarData = [[NSMutableArray alloc] init];
+
+	for(i=0; i< [iVars count]; i++) {
+		NSDictionary *iVar = [iVars objectAtIndex:i];
+		NSEnumerator *e = [iVar keyEnumerator];
+		id key;
+
+		while((key = [e nextObject])) {
+			NSMutableDictionary *iVarInfo = [[NSMutableDictionary alloc] init];
+			[iVarInfo setObject:key forKey:@"name"];
+
+			object_getInstanceVariable(instance, [key UTF8String], &ptr );
+
+			// Dumb check alert!
+			// The logic goes like this. All parameter types have a style guide.
+			// e.g. If the type of argument we're examining is an Objective-C class, the first letter of its name
+			// will be a capital letter. We can dump these with ease using the Objective-C runtime.
+			// Similarly, anything from the C world should have a lower case first letter.
+			// Now, we can easily leverage the Objective-C runtime to dump class data. but....
+			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints.
+			// Of course we could dump strings (char*) too, but we need to write code to handle that.
+			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
+			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
+			// of how to deal with this shit.
+			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
+			char *type = (char *)[[iVar objectForKey:key] UTF8String];
+
+			if(islower(*type)) {
+				char *boolVal = (char *)ptr;
+				if(strcmp(type, "char") == 0) {
+					[iVarInfo setObject:@"BOOL" forKey:@"type"];
+					[iVarInfo setObject:[NSString stringWithFormat:@"%d", (int)boolVal&0xff] forKey:@"value"];
+				} else {
+					[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
+					[iVarInfo setObject:[NSString stringWithFormat:@"[%s] pointer @ %p", type, ptr] forKey:@"value"];
+				}
+			} else {
+				// This is likely to be an Objective-C class. Hey, what's the worst that could happen if it's not?
+				// That would be a segfault. Signal 11. Do not pass go, do not collect a stack trace.
+				// This is a shady janky-ass mofo of a function.
+				[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
+				[iVarInfo setObject:[NSString stringWithFormat:@"%@", ptr] forKey:@"value"];
+			}
+			[iVarData addObject:iVarInfo];
+			[iVarInfo release];
+		}
+	}
+
+	return (NSArray *)[iVarData copy];
+}
+
+@end
+
+/*
+ * Private methods used to hook the Objective-C runtime create/destroy functions
+ */
+
 id bf_class_createInstance(Class cls, size_t extraBytes) {
 	id newInstance = orig_class_createInstance(cls, extraBytes);
-	if(instanceTrackingIsEnabled) {
-		// there has to be a better  way...
-		pthread_mutex_lock(&mutex_create);
-		
-		bf_add_instance_entry(newInstance);
-		
-		// ...than fucking pthread mutexes...
-		pthread_mutex_unlock(&mutex_create);
+	InstanceTracker *tracker = [InstanceTracker sharedInstance];
+
+	if([tracker enabled] && newInstance) {
+		InstanceMap_t *instanceMap = [tracker instanceMap];
+		(*instanceMap)[(unsigned int)newInstance] = (unsigned int)newInstance;
 	}
+
 	return newInstance;
 }
 
-// Hook the Objective-C object destroyer and remove instantiated objects from our list
 id bf_object_dispose(id obj) {
-	if(instanceTrackingIsEnabled) {
-		// ...because they slow shit down...
-		pthread_mutex_lock(&mutex_dispose);
-		
-		bf_remove_instance_entry(obj);
-		
-		// ...like a motherfucker...
-		pthread_mutex_unlock(&mutex_dispose);
-	}
-	// ...but without them we're not thread safe and we die...
-	orig_object_dispose(obj);
+	InstanceTracker *tracker = [InstanceTracker sharedInstance];
 
-	// ...so fuck it. yay pthreads.
+	if([tracker enabled] && obj) {
+		InstanceMap_t *instanceMap = [tracker instanceMap];
+		(*instanceMap).erase((unsigned int)obj);	
+	}
+
+	orig_object_dispose(obj);
 	return nil;
 }
 
-// Allocate and inialize a new list entry for a single instance
-struct bf_instance *bf_alloc_instance_entry() {
-	struct bf_instance *list;
-
-	list = (struct bf_instance *)malloc((size_t)sizeof(struct bf_instance));
-	if( ! list )
-		return NULL;
-	
-	list->next = NULL;
-	list->name = NULL;
-	list->instance = NULL;
-
-	return list;
-}
-
-
-
-// Add an entry to our list that records a class instance
-void bf_add_instance_entry(id instance) {
-	struct bf_instance *l;
-
-	// allocate a new list entry
-	l = bf_alloc_instance_entry();
-	if( ! l )
-		return;
-
-	// set the properties for this class instance
-	l->name = (char *)object_getClassName(instance);
-	l->instance = instance;
-	l->next = NULL;
-	l->prev = NULL;
-
-	// If this is the first entry we've made, create a new list
-	if(instanceList == NULL) {
-		instanceList = l;
-	// otherwise just insert this node at the head of the list.
-	} else {
-		instanceList->prev = l;
-		l->next = instanceList;
-		instanceList = l;
-	}
-}
-
-// Remove an instance from our records
-void bf_remove_instance_entry(id instance) {
-	struct bf_instance *tmp, *tmpNext, *tmpPrev;
-
-	// Yeesh... initialize your pointers, sheeple.
-	if(instanceList == NULL)
-		return;
-
-	if(instance == nil)
-		return;
-
-	// save a pointer to the head of the list
-	tmp = instanceList;
-
-	// Search the linked list for the specified entry
-	while(tmp) {
-		if(tmp->instance && (tmp->instance == instance))
-			break;
-		tmp = tmp->next;
-	}
-
-	// return if we didn't find the instance
-	if(tmp == NULL)
-		return;
-
-	// remove the node from the list by juggling pointers
-	tmpNext = tmp->next;
-	tmpPrev = tmp->prev;
-	if(tmpNext)
-		tmpNext->prev = tmpPrev;
-	if(tmpPrev)
-		tmpPrev->next = tmpNext;
-
-	// If we're deleting the first node in the list then point the list pointer at the next node.
-	if(instanceList == tmp)
-		instanceList = tmpNext;
-	
-	// so long and thanks for all the phish
-	free(tmp);
-}

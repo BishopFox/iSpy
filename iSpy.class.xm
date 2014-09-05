@@ -183,162 +183,16 @@ id *appClassWhiteList = NULL;
  */
 
 -(void) instance_enableTracking {
-	bf_enable_instance_tracker();
+	[[InstanceTracker sharedInstance] start];
 }
 
 -(void) instance_disableTracking {
-	bf_disable_instance_tracker();
-}
-
-// Dumps a list of all the instances in the runtime, including all Apple's classes like NSString, etc. 
-// Generates a ton of output.
-// Human-readable text.
--(NSString *) instance_dumpAllInstancesWithPointers {
-	struct bf_instance *p = bf_get_instance_list_ptr();
-	NSString *instances = @"";
-
-	while(p) {
-		instances = [NSString stringWithFormat:@"%@\n%p => %s", instances, p->instance, p->name];
-		p=p->next;
-	}
-	return instances;
-}
-
-// Returns a human-readable list of runtime class instances, restricted to application-defined classes.
-// Dumps the corresponding pointers, too.
-// You can then grab handles to instances in Cycript by using "x = new Instance(0xwhatever)" syntax.
--(NSString *) instance_dumpAppInstancesWithPointers {
-	NSString *result = @"";
-	for(NSArray *arr in [self instance_dumpAppInstancesWithPointersArray]) {
-		result = [NSString stringWithFormat:@"%@%.10s => %s\n", result, [[arr objectAtIndex:1] UTF8String], [[arr objectAtIndex:0] UTF8String]];
-	}
-	return result;
-}
-
-// Returns a computer parsable array of runtime class instances, restricted to application-defined classes.
-// [ {class_description, class_name}, {class_description, class_name}, ... ]
--(NSArray *) instance_dumpAppInstancesWithPointersArray {
-	NSMutableArray *instances = [[NSMutableArray alloc] init];
-	struct bf_instance *p = bf_get_instance_list_ptr();
-
-	while(p) {
-		if( p->name && p->instance && [iSpy isClassFromApp:[NSString stringWithUTF8String:p->name]] ) {
-			[instances addObject:[NSArray arrayWithObjects:[NSString stringWithCString:p->name encoding:NSUTF8StringEncoding], [NSString stringWithFormat:@"%p", p->instance], nil]];
-		}
-		p=p->next;
-	}
-
-	return [instances copy];
-}
-
--(NSDictionary *) instance_dumpAppInstancesWithPointersDict {
-	NSMutableDictionary *instances = [[NSMutableDictionary alloc] init];
-	struct bf_instance *p = bf_get_instance_list_ptr();
-
-	while(p) {
-		if( p->name && p->instance && [iSpy isClassFromApp:[NSString stringWithUTF8String:p->name]] ) {
-			[instances setObject:[NSString stringWithFormat:@"%p", p->instance] forKey:[NSString stringWithCString:p->name encoding:NSUTF8StringEncoding]];
-		}
-		p=p->next;
-	}
-
-	return [instances copy];
-}
-
-// Does a brute-force search of the linked list of currently tracked instances.
-// Returns the number of tracked instances.
--(int) instance_numberOfTrackedInstances {
-	int i = 0;
-	struct bf_instance *p = bf_get_instance_list_ptr();
-
-	while(p) {
-		p=p->next;
-		i++;
-	}
-	return i;
-}
-
--(void) instance_searchInstances:(NSString *)forName {
-	return;
+	[[InstanceTracker sharedInstance] stop];
 }
 
 -(BOOL) instance_getTrackingState {
-	return bf_get_instance_tracking_state();
+	return [[InstanceTracker sharedInstance] enabled];
 }
-
--(id)instance_atAddress:(NSString *)addr {
-	// Given a string in the format @"0xdeadbeef", this first converts the string to an address, then
-	// returns an opaque Objective-C object at that address.
-	// The runtime can treat this return value just like any other object.
-	// BEWARE: give this an incorrect/invalid address and you'll return a duff pointer. Caveat emptor.
-	return (id)strtoul([addr UTF8String], (char **)NULL, 16);
-}
-
-// Given a hex address (eg. 0xdeafbeef) dumps the class data from the object at that address.
-// Returns an object as discussed in instance_dumpInstance, below.
-// This is exposed to /api/instance/0xdeadbeef << replace deadbeef with an actual address.
--(id)instance_dumpInstanceAtAddress:(NSString *)addr {
-	return [self instance_dumpInstance:[self instance_atAddress:addr]];
-}
-
-// Make sure to pass a valid pointer (instance) to this method!
-// In return it'll give you an array. Each element in the array represents an iVar and comprises a dictionary.
-// Each element in the dictionary represents the name, type, and value of the iVar.
--(id)instance_dumpInstance:(id)instance {
-	void *ptr;
-	NSArray *iVars = [self iVarsForClass:[NSString stringWithUTF8String:object_getClassName(instance)]];
-	int i;
-	NSMutableArray *iVarData = [[NSMutableArray alloc] init];
-
-	for(i=0; i< [iVars count]; i++) {
-		NSDictionary *iVar = [iVars objectAtIndex:i];
-		NSEnumerator *e = [iVar keyEnumerator];
-		id key;
-
-		while((key = [e nextObject])) {
-			NSMutableDictionary *iVarInfo = [[NSMutableDictionary alloc] init];
-			[iVarInfo setObject:key forKey:@"name"];
-
-			object_getInstanceVariable(instance, [key UTF8String], &ptr );
-
-			// Dumb check alert!
-			// The logic goes like this. All parameter types have a style guide.
-			// e.g. If the type of argument we're examining is an Objective-C class, the first letter of its name
-			// will be a capital letter. We can dump these with ease using the Objective-C runtime.
-			// Similarly, anything from the C world should have a lower case first letter.
-			// Now, we can easily leverage the Objective-C runtime to dump class data. but....
-			// The C environment ain't so easy. Easy stuff is booleans (just a "char") or ints.
-			// Of course we could dump strings (char*) too, but we need to write code to handle that.
-			// As iSpy matures we'll do just that. Meantime, you'll get (a) the type of the var you're looking at,
-			// (b) a pointer to that var. Do as you please with it. BOOLs (really just chars) are already taken care of as an example
-			// of how to deal with this shit.
-			// TODO: there are better ways to do this. See obj_mgSend logging stuff. FIXME.
-			char *type = (char *)[[iVar objectForKey:key] UTF8String];
-
-			if(islower(*type)) {
-				char *boolVal = (char *)ptr;
-				if(strcmp(type, "char") == 0) {
-					[iVarInfo setObject:@"BOOL" forKey:@"type"];
-					[iVarInfo setObject:[NSString stringWithFormat:@"%d", (int)boolVal&0xff] forKey:@"value"];
-				} else {
-					[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
-					[iVarInfo setObject:[NSString stringWithFormat:@"[%s] pointer @ %p", type, ptr] forKey:@"value"];
-				}
-			} else {
-				// This is likely to be an Objective-C class. Hey, what's the worst that could happen if it's not?
-				// That would be a segfault. Signal 11. Do not pass go, do not collect a stack trace.
-				// This is a shady janky-ass mofo of a function.
-				[iVarInfo setObject:[iVar objectForKey:key] forKey:@"type"];
-				[iVarInfo setObject:[NSString stringWithFormat:@"%@", ptr] forKey:@"value"];
-			}
-			[iVarData addObject:iVarInfo];
-			[iVarInfo release];
-		}
-	}
-
-	return [iVarData copy];
-}
-
 
 /*
  *
@@ -351,49 +205,60 @@ id *appClassWhiteList = NULL;
 	NSMutableDictionary *keychainDict = [[NSMutableDictionary alloc] init];
 	// genp, inet, idnt, cert, keys
 	NSArray *items = [NSArray arrayWithObjects:(id)kSecClassGenericPassword, kSecClassInternetPassword, kSecClassIdentity, kSecClassCertificate, kSecClassKey, nil];
+	NSArray *descs = [NSArray arrayWithObjects:(id)@"Generic Passwords", @"Internet Passwords", @"Identities", @"Certificates", @"Keys", nil];
+	NSDictionary *kSecAttrs = @{ 
+		@"ak":  @"kSecAttrAccessibleWhenUnlocked",
+		@"ck":  @"kSecAttrAccessibleAfterFirstUnlock",
+		@"dk":  @"kSecAttrAccessibleAlways",
+		@"aku": @"kSecAttrAccessibleWhenUnlockedThisDeviceOnly",
+		@"cku": @"kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly",
+		@"dku": @"kSecAttrAccessibleAlwaysThisDeviceOnly"
+	};
 	int i = 0, j, count;
 
 	count = [items count];
 	do {
 		NSMutableArray *keychainItems = nil;
-		NSLog(@"[iSpy] Area: %@", [items objectAtIndex:i]);
 		[genericQuery setObject:(id)[items objectAtIndex:i] forKey:(id)kSecClass];
 		[genericQuery setObject:(id)kSecMatchLimitAll forKey:(id)kSecMatchLimit];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnAttributes];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnRef];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnData];
 
-		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) != noErr)
-			continue;
+		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) == noErr) {
+			// Loop through the keychain entries, logging them.
+			for(j = 0; j < [keychainItems count]; j++) {
+				for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
+					// We don't need the v_Ref attribute; it's just an another representation of v_data that won't serialize to JSON. Pfft.
+					if([key isEqual:@"v_Ref"]) {
+						[[keychainItems objectAtIndex:j] removeObjectForKey:key];
+					}
 
-		// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
-		for(j = 0; j < [keychainItems count]; j++) {
-			NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
-			for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
-				// We don't need the v_Ref attribute; it's just an obkect representation of a cert, which we already have.
-				if([key isEqual:@"v_Ref"])
-				   [[keychainItems objectAtIndex:j] removeObjectForKey:key];
+					// Is this some kind of NSData/__NSFSData/etc?
+					// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
+					if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
+						NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:key] encoding:NSUTF8StringEncoding];
+						if(str == nil)
+							str = @"";
+						[[keychainItems objectAtIndex:j] setObject:str forKey:key];
+					}
 
-				// Is this some kind of NSData/__NSFSData/etc?
-				else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
-					NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:key] encoding:NSUTF8StringEncoding];
-					if(str == nil)
-						str = @"";
-					[[keychainItems objectAtIndex:j] setObject:str forKey:key];
+					// how about NSDate?
+					else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(isEqualToDate:)]) {
+						[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
+					}
+
+					// add a human-readable kSecAttr value to the "v_pdmn" key. It's only for UI purposes.
+					[[keychainItems objectAtIndex:j] setObject:[kSecAttrs objectForKey:[[keychainItems objectAtIndex:j] objectForKey:@"pdmn"]] forKey:@"v_pdmn"];
 				}
-
-				// how about NSDate?
-				else if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(isEqualToDate:)]) {
-					[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
-				}
-
-				NSLog(@"Data: %@ (class: %@) = %@", key, [[[keychainItems objectAtIndex:j] objectForKey:key] class], [[keychainItems objectAtIndex:j] objectForKey:key]);
 			}
+		} else {
+			keychainItems = [[NSMutableArray alloc] initWithObjects:@"", nil];
 		}
-		[keychainDict setObject:keychainItems forKey:[items objectAtIndex:i]];
+		[keychainDict setObject:keychainItems forKey:[descs objectAtIndex:i]];
 	} while(++i < count);
 
-	return [keychainDict copy];
+	return keychainDict;
 }
 
 -(unsigned int)ASLR {
@@ -436,7 +301,7 @@ Returns a NSDictionary like this:
 	NSString *returnType;
 	char *freeMethodName, *methodName, *tmp;
 
-	if(cls == NULL || selector == NULL || cls == nil || selector == nil)
+	if(cls == nil || selector == nil)
 		return nil;
 
 	if([cls instancesRespondToSelector:selector] == YES) {
@@ -445,10 +310,12 @@ Returns a NSDictionary like this:
 		method = class_getClassMethod(object_getClass(cls), selector);
 		isInstanceMethod = false;
 	} else {
+		NSLog(@"Method not found");
 		return nil;
 	}
 
 	if (method == nil) {
+		NSLog(@"Method returned nil");
 		return nil;
 	}
 

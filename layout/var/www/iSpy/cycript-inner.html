@@ -1,0 +1,36 @@
+<html>
+<head>
+	<link rel="stylesheet" href="/css/main.css">
+</head>
+
+<body spellcheck="false">
+	<main id="cycriptWrapper"></main>
+	<script src="/js/main.js"></script>
+	<script src="/js/ext.js"></script> 
+</body>
+
+<script>
+	$(document).ready(function() {
+	    /* WebSocket Setup */
+	    var cycript_url = "ws://" + window.location.host + "/cycript";
+	    console.log("[*] Connecting to cycript server -> " + cycript_url);
+	    cycript = new WebSocket(cycript_url);
+
+	    /* WebSocket Opened */
+	    cycript.onopen = function() {
+	        console.log("[*] Successfully connected to remote cycript server!");
+	    }
+
+	    /* WebSocket Message */
+	    cycript.onmessage = function(emit) {
+	        console.log(emit);
+	    }
+
+	    /* WebSocket Closed */
+	    cycript.onclose = function() {
+	        console.log("[!] Connection to server lost!");
+	    }
+	});
+</script>
+
+</html>

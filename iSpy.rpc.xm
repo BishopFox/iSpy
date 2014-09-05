@@ -75,16 +75,25 @@
 		[[iSpy sharedInstance] msgSend_disableLogging];
 	}
 
-	return @{ @"status":state };
+	return @{
+		@"status":state,
+		@"JSON":@""
+	};
 }
 
 
 -(NSDictionary *) testJSONRPC:(NSDictionary *)args {
-	return @{ @"REPLY_TEST":args };
+	return @{
+		@"status":@"OK",
+		@"JSON":args
+	};
 }
 
 -(NSDictionary *) ASLR:(NSDictionary *)args {
-	return @{ @"ASLR": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] };
+	return @{
+		@"status":@"OK",
+		@"JSON": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] 
+	};
 }
 
 /*
@@ -157,14 +166,23 @@ If "methods" is nil, assume all methods in class.
     		delete classNameString;
     	}
     }
-    return @{ @"status": @"OK" };
+    return @{
+    	@"status": @"OK",
+    	@"JSON":@""
+    };
 }
+
+
+/*
+ * 	Classes and internals
+ */
+
 
 -(NSDictionary *) classList:(NSDictionary *)args {
 	NSArray *classes = [[iSpy sharedInstance] classes];
 	return @{ 
 		@"status": @"OK",
-		@"classes": classes 
+		@"JSON": classes 
 	};
 }
 
@@ -172,7 +190,263 @@ If "methods" is nil, assume all methods in class.
 	NSArray *classes = [[iSpy sharedInstance] classesWithSuperClassAndProtocolInfo];
 	return @{ 
 		@"status": @"OK",
-		@"classes": classes 
+		@"JSON": classes 
+	};
+}
+
+-(NSDictionary *) methodsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *methods = [[iSpy sharedInstance] methodListForClass:className];
+    if(methods == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty methods list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": methods
+    };
+}
+
+-(NSDictionary *) propertiesForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *properties = [[iSpy sharedInstance] propertiesForClass:className];
+    if(properties == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty properties list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": properties
+    };
+}
+
+-(NSDictionary *) protocolsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *protocols = [[iSpy sharedInstance] protocolsForClass:className];
+    if(protocols == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocols list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": protocols
+    };
+}
+
+-(NSDictionary *) iVarsForClass:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+    if(className == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class name"
+    	};
+    }
+
+    NSArray *iVars = [[iSpy sharedInstance] iVarsForClass:className];
+    if(iVars == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty iVars list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": iVars
+    };
+}
+
+-(NSDictionary *) infoForMethod:(NSDictionary *)args {
+	NSString *className = [args objectForKey:@"class"];
+	NSString *methodName = [args objectForKey:@"method"];
+	if(className == nil || methodName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty class and/or name"
+    	};
+    }
+
+    Class cls = objc_getClass([className UTF8String]);
+    if(cls == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"That class doesn't exist"
+    	};	
+    }
+
+    SEL selector = sel_registerName([methodName UTF8String]);
+    if(selector == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"That selector name was bad"
+    	};
+    }
+
+    NSLog(@"class: %@ // method: %s", cls, [methodName UTF8String]);
+
+    NSDictionary *infoDict = [[iSpy sharedInstance] infoForMethod:selector inClass:cls];
+    if(infoDict == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Error fetching information for that class/method"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": infoDict
+    };
+}
+
+
+/*
+ *	Protocol RPC
+ */
+
+-(NSDictionary *) methodsForProtocol:(NSDictionary *)args {
+	NSString *protocolName = [args objectForKey:@"protocol"];
+    if(protocolName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocol name"
+    	};
+    }
+
+    NSArray *methods = [[iSpy sharedInstance] methodsForProtocol:objc_getProtocol([protocolName UTF8String])];
+    if(methods == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty methods list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": methods
+    };
+}
+
+-(NSDictionary *) propertiesForProtocol:(NSDictionary *)args {
+	NSString *protocolName = [args objectForKey:@"protocol"];
+    if(protocolName == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty protocol name"
+    	};
+    }
+
+    NSArray *properties = [[iSpy sharedInstance] propertiesForProtocol:objc_getProtocol([protocolName UTF8String])];
+    if(properties == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty properties list"
+    	};
+    }
+
+    return @{
+    	@"status": @"OK",
+    	@"JSON": properties
+    };
+}
+
+
+/*
+ *	Instance RPC
+ */
+
+
+-(NSDictionary *) instanceAtAddress:(NSDictionary *)args {
+	NSString *addr = [args objectForKey:@"address"];
+    if(addr == nil) {
+    	return @{ 
+    		@"status": @"error",
+    		@"errorMessage": @"Empty address value"
+    	};
+    }
+
+    return @{
+    	@"status":@"OK",
+    	@"JSON": [[InstanceTracker sharedInstance] instanceAtAddress:addr]
+    };
+}
+
+
+-(NSDictionary *) instancesOfAppClasses:(NSDictionary *)args {
+	return @{
+		@"status":@"OK",
+		@"JSON":[[InstanceTracker sharedInstance] instancesOfAppClasses]
+	};
+}
+
+
+/*
+ *	App info RPC
+ */
+
+-(NSDictionary *) applicationIcon:(NSDictionary *)args {
+	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
+	NSData *PNG = UIImagePNGRepresentation(appIcon);
+	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
+	
+	return @{
+		@"status":@"OK",
+		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
+	};
+}
+
+-(NSDictionary *) appInfo:(NSDictionary *)args {
+	NSDictionary *infoDict = [[NSBundle mainBundle] infoDictionary];
+	NSArray *keys = [infoDict allKeys];
+	NSMutableDictionary *interestingProperties = [[NSMutableDictionary alloc] init];
+
+	for(int i=0; i < [keys count]; i++) {
+		id obj = [keys objectAtIndex:i];
+		if([[infoDict objectForKey:obj] class] == objc_getClass("__NSCFString")) {
+			[interestingProperties setObject:[NSString stringWithString:[infoDict objectForKey:obj]] forKey:obj];
+		}
+	}
+
+	return @{
+		@"status":@"OK",
+		@"JSON": interestingProperties
+	};
+}
+
+
+-(NSDictionary *) keyChainItems:(NSDictionary *)args {
+	return @{
+		@"status":@"OK",
+		@"JSON": [[iSpy sharedInstance] keyChainItems]
 	};
 }
 

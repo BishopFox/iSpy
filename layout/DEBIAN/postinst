@@ -1,0 +1,7 @@
+#!/bin/sh
+
+chown root:wheel /Library/LaunchDaemons/com.bishopfox.sshd.plist
+chmod 644 /Library/LaunchDaemons/com.bishopfox.sshd.plist
+launchctl load /Library/LaunchDaemons/com.bishopfox.sshd.plist
+launchctl start com.bishopfox.sshd
+

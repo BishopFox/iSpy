@@ -1,0 +1,6 @@
+#!/bin/sh
+
+launchctl stop com.bishopfox.sshd
+launchctl unload /Library/LaunchDaemons/com.bishopfox.sshd.plist
+rm -f /Library/LaunchDaemons/com.bishopfox.sshd.plist
+

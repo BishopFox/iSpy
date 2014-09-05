@@ -73,10 +73,6 @@ $(document).ready(function() {
     /* WebSocket Message */
     jsonrpc.onmessage = function(emit) {
         console.log(emit);
-        var msg = jQuery.parseJSON(emit.data);
-        if ('messageType' in msg && msg['messageType'] == "obj_msgSend") {
-            add_objc_msg(msg);
-        }
     }
 
     /* WebSocket Closed */

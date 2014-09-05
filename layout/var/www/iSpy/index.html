@@ -94,6 +94,11 @@ $(document).ready(function() {
 
 });
 
+function launchCycript() {
+    newwindow=window.open("cycript-inner.html",'Cycript','height=600,width=1000');
+    if (window.focus) {newwindow.focus()}
+}
+
 </script>
 
 <body>
@@ -137,6 +142,12 @@ $(document).ready(function() {
                             <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-bolt fa-pad"></i>View real-time logs</a></li>
                             <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-cog fa-pad"></i>Settings</a></li>
                         </ul>
+                    </li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-user">
+                    <li>
+                        <a href="#" onclick="launchCycript()"><i id="cycript-launcher" class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
                     </li>
                 </ul>
                 <!--

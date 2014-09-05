@@ -40,6 +40,10 @@ FILE *superLogFP = NULL;
 pthread_once_t key_once = PTHREAD_ONCE_INIT;
 pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
 
+// Sometimes we NEED to know if a pointer is mapped into addressible space, otherwise we
+// may dereference something that's a pointer to unmapped space, which will go boom.
+// This uses mincore(2) to ask the XNU kernel if a pointer is within a mapped page.
+// Assumes a page size of 4096 (true on 32-bit iOS).
 extern "C" USED int is_valid_pointer(void *ptr) {
     char vec;
     int ret;
@@ -94,7 +98,6 @@ extern "C" USED void cleanUp() {
 }
 
 extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
-    char buf[1024];
     __log__("======= _show_retval entry ======\n");
 
     struct objc_callState *callState = (struct objc_callState *)threadBuffer;
@@ -102,9 +105,7 @@ extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
 
     if(!callState)
         return threadBuffer;
-    sprintf(buf, "show_retval intro %p // %p // %p\n", callState, callState->json, callState->returnType);
-    __log__(buf);
-
+    
     if(callState->returnType && callState->returnType[0] != 'v') {
         char *returnValueJSON = parameter_to_JSON(callState->returnType, returnValue);
         size_t len = (size_t)strlen(callState->json) + strlen(returnValueJSON) + 54;
@@ -117,9 +118,13 @@ extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
         snprintf(newJSON, len, "%s}\n", callState->json);
     }
     
+    // Squirt this call data over to the listening web socket
     bf_websocket_write(newJSON);
     __log__(newJSON);
     
+    // Now check to see if anything else interesting should be done with this call.
+    // E.g. Should we be checking to see if it's on the "interesting" list?
+
     free(newJSON);
     free(callState->returnType);
     free(callState->json);
@@ -356,6 +361,7 @@ extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va) {
     sprintf(foo, "print_args outro %p // %p // %p\n", callState, callState->json, callState->returnType);
     __log__(foo);
     __log__("======= print_args_v exit =====\n");
+
     return (void *)callState; // caller must free this and its internal pointers, but only after we're completely done (ie. after we've logged the return value)
 }
 

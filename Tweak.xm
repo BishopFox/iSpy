@@ -28,6 +28,8 @@
 #include <mach-o/nlist.h>
 #include <netinet/in.h>
 #include <semaphore.h>
+#include <stdlib.h>
+#include <spawn.h>
 #include <CFNetwork/CFNetwork.h>
 #include <CFNetwork/CFProxySupport.h>
 #include <CoreFoundation/CFString.h>
@@ -214,6 +216,7 @@ extern CFDictionaryRef (*orig_CFNetworkCopySystemProxySettings)(void);
 extern SecCertificateRef (*orig_SecCertificateCreateWithData)(CFAllocatorRef allocator, CFDataRef data);
 extern int (*orig_dup)(u_int fd);
 void heh();
+void launch_cycript();
 
 /*************************************************************
  *** This is where you should put your own Theos tweaks.   ***
@@ -598,6 +601,225 @@ EXPORT int return_true() {
 	[plist release];
 	[appPlist release];
 }
+
+/*
+
+int listen_socket(const int listen_port)
+{
+    struct sockaddr_in a;
+    int s;
+    int yes = 1;
+
+    // get a fresh juicy socket
+    if((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("ERROR: socket()");
+        return -1;
+    }
+    
+    // make sure it's quickly reusable
+    if(setsockopt(s, SOL_SOCKET, SO_REUSEADDR,  (char *) &yes, sizeof(yes)) < 0) {
+        perror("ERROR: setsockopt()");
+        close(s);
+        return -1;
+    }
+    
+    // listen on all of the hosts interfaces/addresses (0.0.0.0)
+    memset(&a, 0, sizeof(a));
+    a.sin_port = htons(listen_port);
+    a.sin_addr.s_addr = htonl(INADDR_ANY);
+    a.sin_family = AF_INET;
+    if(bind(s, (struct sockaddr *) &a, sizeof(a)) < 0) {
+        perror("ERROR: bind()");
+        close(s);
+        return -1;
+    }
+    listen(s, 10);
+    return s;
+}
+
+
+pid_t doexec(int sock, pid_t pid) {
+    char buf[128];
+    pid_t sshPID;
+    
+    // Setup the command and environment
+    snprintf(buf, 128, "/usr/bin/cycript -p %d", pid);
+    const char *prog[] = { "/usr/bin/ssh", "-t", "-t", "-p", "1337", "-i", "/var/mobile/.ssh/id_rsa", "-o", "StrictHostKeyChecking no", "mobile@127.0.0.1", buf, NULL };
+    const char *envp[] =  { "TERM=xterm-256color", NULL };
+
+    // redirect stdin, stdout and stderr to the slave end of our PTY
+    dup2(sock, 0);
+    dup2(0, 1);
+    dup2(0, 2);
+    
+    // attach cycript to our process
+    posix_spawn(&sshPID, prog[0], NULL, NULL, (char **)prog, (char **)envp);
+    return sshPID;
+}
+
+#ifndef max
+    int max(const int x, const int y) {
+        return (x > y) ? x : y;
+    }
+#endif
+    
+
+int shovel_data(const int fd1, const int fd2) {
+    fd_set rd, wr, er;  
+    char c, buf1[BUF_SIZE], buf2[BUF_SIZE];
+    int r, nfds;
+    int buf1_avail = 0, buf1_written = 0;
+    int buf2_avail = 0, buf2_written = 0;
+    
+    // Loop forever. This requires a CTRL-C or disconnected socket to abort.
+    while(1) {
+        // ensure things are sane each time around
+        nfds = 0;
+        FD_ZERO(&rd);
+        FD_ZERO(&wr);
+        FD_ZERO(&er);
+        
+        // setup the arrays for monitoring OOB, read, and write events on the 2 sockets
+        if(buf1_avail < BUF_SIZE) {
+           FD_SET(fd1, &rd);
+           nfds = max(nfds, fd1);
+        }
+        if(buf2_avail < BUF_SIZE) {
+           FD_SET(fd2, &rd);
+           nfds = max(nfds, fd2);
+        }
+        if((buf2_avail - buf2_written) > 0) {
+           FD_SET(fd1, &wr);
+           nfds = max(nfds, fd1);
+        }
+        if((buf1_avail - buf1_written) > 0) {
+           FD_SET(fd2, &wr);
+           nfds = max(nfds, fd2);
+        }
+        FD_SET(fd1, &er);
+        nfds = max(nfds, fd1);
+        FD_SET(fd2, &er);
+        nfds = max(nfds, fd2);
+        
+        // wait for something interesting to happen on a socket, or abort in case of error
+        if(select(nfds + 1, &rd, &wr, &er, NULL) == -1)
+            return 1;
+    
+        // OOB data ready
+        if(FD_ISSET(fd1, &er)) {
+            if(recv(fd1, &c, 1, MSG_OOB) < 1) {
+                return 1;
+            } else {
+                if(send(fd2, &c, 1, MSG_OOB) < 1) {
+                    return 1;
+                }
+            }
+        }
+        if(FD_ISSET(fd2, &er)) {
+            if(recv(fd2, &c, 1, MSG_OOB) < 1) {
+                return 1;
+            } else {
+                if(send(fd1, &c, 1, MSG_OOB) < 1) {
+                    return 1;
+                }
+            }
+        }
+        
+        // Data ready to read from socket(s)
+        if(FD_ISSET(fd1, &rd)) {
+            if((r = read(fd1, buf1 + buf1_avail, 1)) < 1)
+                return 1;
+            else
+                buf1_avail += r;
+        }
+        if(FD_ISSET(fd2, &rd)) {
+            if((r = read(fd2, buf2 + buf2_avail, 1))  < 1)
+                return 1;
+            else
+                buf2_avail += r;
+        }
+        
+        // Data ready to write to socket(s)
+        if(FD_ISSET(fd1, &wr)) {
+            if((r = write(fd1, buf2 + buf2_written, 1)) < 1)
+                return 1;
+            else
+                buf2_written += r;
+        }
+        if(FD_ISSET(fd2, &wr)) {
+            if((r = write(fd2, buf1 + buf1_written, 1)) < 1)
+                return 1;
+            else
+                buf1_written += r;
+        }
+        // Check to ensure written data has caught up with the read data
+        if(buf1_written == buf1_avail)
+            buf1_written = buf1_avail = 0;
+        if(buf2_written == buf2_avail)
+            buf2_written = buf2_avail = 0;
+    }
+}
+
+
+void launch_cycript() {
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        pid_t realPID = getpid();
+
+        if(fork() > 0) {
+            struct sockaddr_in targetAddr;
+            int sock = 0;
+            do {
+                if(sock != 0) {
+                    ispy_log_debug(LOG_GENERAL, "Couldn't listen(2) on port 11111, sleeping...");
+                    sleep(1);
+                }
+                sock = listen_socket(11111);
+            } while(sock < 0);
+            unsigned int i = sizeof(targetAddr);
+
+            while(1) {
+                // Wait for someone to connect
+                ispy_log_debug(LOG_GENERAL, "Waiting for connection");
+                int remoteSock = accept(sock, (struct sockaddr *)&targetAddr, &i);
+                if(remoteSock < 0) {
+                    ispy_log_debug(LOG_GENERAL, "Connection barfed. Sleeping...");
+                    sleep(1);
+                    continue;
+                }
+
+                // create PTY
+                ispy_log_debug(LOG_GENERAL, "Setting up PTY");
+                int fdm = open("/dev/ptmx", O_RDWR);
+                grantpt(fdm);
+                unlockpt(fdm);
+                int fds = open(ptsname(fdm), O_RDWR, 0666);
+
+                // Launch cycript using SSH
+                ispy_log_debug(LOG_GENERAL, "Launching. rem: %d // fdm: %d // fds: %d", remoteSock, fdm, fds);
+                int SSHPID = doexec(fds, realPID);
+                
+                // and shovel data between the network socket and the PTY
+                ispy_log_debug(LOG_GENERAL, "Shoveling...");
+                shovel_data(remoteSock, fdm);
+                ispy_log_debug(LOG_GENERAL, "Done shoveling");
+
+                // Kill SSH and cycript
+                kill(SSHPID, 15);
+                sleep(1);
+                kill(SSHPID, 9); // nighty night
+                
+                // reap the zombies
+                int statStuff;
+                waitpid(SSHPID, &statStuff, WNOHANG);
+
+                // fix up the sockets
+                close(fds);
+                close(remoteSock);
+            }
+        }
+    });
+}
+*/
 
 void heh() {
 NSLog(@" 777777777777777777777777777777777777              ,77777777777777777777777777+ ");

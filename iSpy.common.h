@@ -32,7 +32,6 @@
 #define PREFERENCEFILE      "/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Settings.plist"
 #define APP_PREFERENCEFILE  "/private/var/mobile/Library/Preferences/com.bishopfox.iSpy.Targets.plist"
 
-
 /* System family socket address */
 struct sockaddr_sys {
 	u_char ss_len; /* sizeof(struct sockaddr_sys) */

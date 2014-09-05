@@ -10,7 +10,7 @@ struct objc_selector
 
 struct objc_callState {
 	char *json;
-	char *returnType; 
+	char *returnType;
 };
 
 // uncomment this for /tmp/bf.log - be aware this will basically grind your app to a halt. Use only in coding emergencies.

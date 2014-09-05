@@ -61,3 +61,36 @@ Have fun :)
 
 Check the device logs for details, if multiple instances of iSpy are run the port number may differ slightly.
 
+Cycript Integration
+-------------------
+This is a gaping security hole, so if you want it you have to enable it by hand.
+
+	Yens-iPad:/tmp root# su - mobile
+	Yens-iPad:~ mobile$ mkdir .ssh
+	Yens-iPad:~ mobile$ cd .ssh
+	Yens-iPad:~/.ssh mobile$ ssh-keygen
+	
+	Generating public/private rsa key pair.
+	Enter file in which to save the key (/var/mobile/.ssh/id_rsa):
+	Enter passphrase (empty for no passphrase):
+	Enter same passphrase again:
+	Your identification has been saved in /var/mobile/.ssh/id_rsa.
+	Your public key has been saved in /var/mobile/.ssh/id_rsa.pub.
+	The key fingerprint is:
+	d8:0f:ed:b0:fc:4e:20:43:96:16:0b:9f:58:03:91:5d mobile@Yens-iPad
+	The key's randomart image is:
+	+--[ RSA 2048]----+
+	|    +=+.E        |
+	|    .=.*         |
+	|    . O          |
+	|     + o .       |
+	|      + S .      |
+	|       + B       |
+	|        o +      |
+	|         o       |
+	|         .o      |
+	+-----------------+
+
+	Yens-iPad:~/.ssh mobile$ cat id_rsa.pub >> authorized_keys
+
+After that it'll work.

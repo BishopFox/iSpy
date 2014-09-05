@@ -1,0 +1,5 @@
+#!/bin/sh
+
+launchctl load /Library/LaunchDaemons/com.bishopfox.sshd.plist
+launchctl start com.bishopfox.sshd
+

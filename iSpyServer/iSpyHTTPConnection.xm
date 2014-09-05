@@ -4,6 +4,7 @@
 #import "CocoaHTTPServer/HTTPDataResponse.h"
 #import "iSpyStaticFileResponse.h"
 #import "iSpyWebSocket.h"
+#import "cycriptWebSocket.h"
 #import "../iSpy.common.h"
 #import "../iSpy.class.h"
 #import "iSpyHTTPConnection.h"
@@ -74,9 +75,20 @@
 {
     /* TODO: Validate origin */
 //    NSString *origin = [request headerField:@"Origin"];
+    id iws;
 
     if ([path isEqualToString:@"/jsonrpc"]) {
-        return [[iSpyWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        ispy_log_debug(LOG_HTTP, "WebSocket setup for /jsonrpc");
+        iws = [[iSpyWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        NSLog(@"WS: %@", iws);
+        return iws;
+    }
+
+    if ([path isEqualToString:@"/cycript"]) {
+        ispy_log_debug(LOG_HTTP, "WebSocket setup for /cycript");
+        iws = [[CycriptWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        NSLog(@"WS: %@", iws);
+        return iws;
     }
 
     return nil;

@@ -19,7 +19,7 @@ namespace bf_msgSend {
         if(Cls && selector) {
             std::string className(object_getClassName(Cls));
             std::string methodName(sel_getName(selector));
-            return ( (*ClassMap)[className][methodName] == 1 );
+            return ( (*ClassMap)[className][methodName] != WHITELIST_NOT_PRESENT );
         }
         else
             return NO;

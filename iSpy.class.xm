@@ -219,7 +219,6 @@ id *appClassWhiteList = NULL;
 	count = [items count];
 	do {
 		NSMutableArray *keychainItems = nil;
-		NSLog(@"[iSpy] Area: %@", [items objectAtIndex:i]);
 		[genericQuery setObject:(id)[items objectAtIndex:i] forKey:(id)kSecClass];
 		[genericQuery setObject:(id)kSecMatchLimitAll forKey:(id)kSecMatchLimit];
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnAttributes];
@@ -227,9 +226,8 @@ id *appClassWhiteList = NULL;
 		[genericQuery setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnData];
 
 		if (SecItemCopyMatching((CFDictionaryRef)genericQuery, (CFTypeRef *)&keychainItems) == noErr) {
-			// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
+			// Loop through the keychain entries, logging them.
 			for(j = 0; j < [keychainItems count]; j++) {
-				NSLog(@"Data: %@", [keychainItems objectAtIndex:j]);
 				for(NSString *key in [[keychainItems objectAtIndex:j] allKeys]) {
 					// We don't need the v_Ref attribute; it's just an another representation of v_data that won't serialize to JSON. Pfft.
 					if([key isEqual:@"v_Ref"]) {
@@ -237,6 +235,7 @@ id *appClassWhiteList = NULL;
 					}
 
 					// Is this some kind of NSData/__NSFSData/etc?
+					// NSJSONSerializer won't parse NSDate or NSData, so we convert any of those into NSString for later JSON-ification.
 					if([[[keychainItems objectAtIndex:j] objectForKey:key] respondsToSelector:@selector(bytes)]) {
 						NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:key] encoding:NSUTF8StringEncoding];
 						if(str == nil)
@@ -249,9 +248,8 @@ id *appClassWhiteList = NULL;
 						[[keychainItems objectAtIndex:j] setObject:changeDateToDateString([[keychainItems objectAtIndex:j] objectForKey:key]) forKey:key];
 					}
 
+					// add a human-readable kSecAttr value to the "v_pdmn" key. It's only for UI purposes.
 					[[keychainItems objectAtIndex:j] setObject:[kSecAttrs objectForKey:[[keychainItems objectAtIndex:j] objectForKey:@"pdmn"]] forKey:@"v_pdmn"];
-
-					NSLog(@"Data: %@ (class: %@) = %@", key, [[[keychainItems objectAtIndex:j] objectForKey:key] class], [[keychainItems objectAtIndex:j] objectForKey:key]);
 				}
 			}
 		} else {

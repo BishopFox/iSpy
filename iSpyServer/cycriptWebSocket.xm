@@ -9,7 +9,6 @@
     }
 #endif
 
-
 @implementation CycriptWebSocket
 
 - (void)didOpen {

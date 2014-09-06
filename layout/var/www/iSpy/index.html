@@ -95,6 +95,12 @@ function launchCycript() {
     if (window.focus) {newwindow.focus()}
 }
 
+function launchShell(el) {
+    console.log(el.getAttribute("command"));
+    newwindow=window.open("shell-inner.html?" + el.getAttribute("command"),'Shell','height=600,width=1000');
+    if (window.focus) {newwindow.focus()}
+}
+
 </script>
 
 <body>
@@ -143,7 +149,13 @@ function launchCycript() {
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" onclick="launchCycript()"><i id="cycript-launcher" class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
+                        <a href="#" onclick="launchShell(this)" command="/usr/bin/cycript -p @@PID@@"><i id="cycript-launcher" class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
+                    </li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-user">
+                    <li>
+                        <a href="#" onclick="launchShell(this)" command=""><i id="shell-launcher" class="fa fa-fw fa-terminal fa-lg"></i></a>
                     </li>
                 </ul>
                 <!--

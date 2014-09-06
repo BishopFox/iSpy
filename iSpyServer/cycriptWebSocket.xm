@@ -4,7 +4,7 @@
 #include <termios.h>
 
 #ifndef max
-    int max(const int x, const int y) {
+    static int max(const int x, const int y) {
         return (x > y) ? x : y;
     }
 #endif
@@ -120,7 +120,7 @@ static pid_t doexec(int sock, pid_t pid) {
     
     // Setup the command and environment
     snprintf(buf, 128, "/usr/bin/cycript -p %d", pid);
-    const char *prog[] = { "/usr/bin/screen", "/usr/bin/ssh", "-t", "-t", "-p", "1337", "-i", "/var/mobile/.ssh/id_rsa", "-o", "StrictHostKeyChecking no", "mobile@127.0.0.1", buf, NULL };
+    const char *prog[] = { "/usr/bin/ssh", "-t", "-t", "-p", "1337", "-i", "/var/mobile/.ssh/id_rsa", "-o", "StrictHostKeyChecking no", "mobile@127.0.0.1", buf, NULL };
     const char *envp[] =  { "TERM=xterm-256color", NULL };
 
     // redirect stdin, stdout and stderr to the slave end of our PTY

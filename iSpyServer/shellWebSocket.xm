@@ -1,7 +1,10 @@
-#import "shellWebSocket.h"
+#import "ShellWebSocket.h"
 #include <spawn.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+
+#define BUFSIZE 65536
+#define MAX_READ_FAILURES 3
 
 #ifndef max
     static int max(const int x, const int y) {
@@ -9,16 +12,15 @@
     }
 #endif
 
-static void doexec(const char *command);
-static int forkNewPTY(int *master, int *slave);
-
 @implementation ShellWebSocket
 
+// callback for CocoaHTTPServer WebSocket class
 - (void)didOpen {
     [super didOpen];
     ispy_log_debug(LOG_HTTP, "Opened new Shell WebSocket connection");
 }
 
+// callback for CocoaHTTPServer WebSocket class
 - (void)didReceiveMessage:(NSString *)msg {
     //ispy_log_debug(LOG_HTTP, "WebSocket Shell message: %s", [msg UTF8String]);
     char *data = (char *) [msg UTF8String];
@@ -39,167 +41,188 @@ static int forkNewPTY(int *master, int *slave);
     }
     // if we get an "E" message, it's a launch command
     else if(data[0] == 'E') {
-        NSString *cmd = [NSString stringWithUTF8String:&data[1]];
-
         // handle templated variables:
         //  @@PID@@ = current PID
-        cmd = [cmd stringByReplacingOccurrencesOfString:@"@@PID@@" withString:[NSString stringWithFormat:@"%d", getpid()]];
-        [self setCmdLine:cmd];
-        ispy_log_debug(LOG_HTTP, "WS: received E command: %s", [cmd UTF8String]);
+        NSString *encodedCmd = [NSString stringWithUTF8String:&data[1]];
+        NSString *decodedCmd = [encodedCmd  stringByReplacingOccurrencesOfString:@"@@PID@@"
+                                            withString:[NSString stringWithFormat:@"%d", getpid()]];
+        ispy_log_debug(LOG_HTTP, "WS: received E command: %s", [decodedCmd UTF8String]);
+        
+        [self setCmdLine:decodedCmd];
+        
+        // launch the command. This handles PTY allocation, forking, execve(), etc.
         [self runShell];
     }
 }
 
-- (void)didClose {
+// callback for CocoaHTTPServer WebSocket class
+-(void)didClose {
     ispy_log_debug(LOG_HTTP, "WebSocket Shell connection closed, waiting...");
     int info;
 
-    kill([self SSHPID], SIGQUIT); // ask nicely
-    kill([self SSHPID], SIGTERM); // be forceful
-    kill([self SSHPID], SIGKILL); // dick punch
+    // we need to stop the SSH client and user-specifiec program.
+    kill([self sshPID], SIGQUIT); // ask nicely
+    kill([self sshPID], SIGTERM); // be forceful
+    kill([self sshPID], SIGKILL); // dick punch
 
+    // let the duct settle
     sleep(1);
     
-    waitpid([self SSHPID], &info, WNOHANG);
+    // be a good netizen
+    waitpid([self sshPID], &info, WNOHANG);
+
     ispy_log_debug(LOG_HTTP, "Zombies reaped. Closing...");
+    
+    // child process, PTY, websocket, etc are all gone. Session over.
     [super didClose];
 }
 
--(pid_t) runShell {
-    pid_t sshPID;
-    int fdm, fds; 
-  
-    // create PTY
+-(void) runShell {
+    // create PTY. This will fork(2) here.
     ispy_log_debug(LOG_HTTP, "Setting up PTY");
-    sshPID = forkNewPTY(&fdm, &fds);
-
-    // did the PTY allocator barf?
-    if(sshPID == -1) {
+    if([self forkNewPTY] == -1 || self.sshPID == -1) {
         [self stop];
-        return -1;
+        return;
     }
 
-    // setup the data structures
-    [self setSSHPID:sshPID];
-    [self setMasterPTY:fdm];
-    [self setSlavePTY:fds];
-
-    // child / slave / exec'd process
-    if(sshPID == 0) {
-        doexec([[self cmdLine] UTF8String]);
+    // child process will execve(ssh) on the new PTY
+    if(self.sshPID == 0) {
+        [self doexec];
         // never returns
     }
 
-    // Ok, we're the master / parent / main app
-
-    // throw the shoveler ( [SSH PTY] --> [websocket] ) into a background thread
+    // start a background thread to shovel data from the master PTY to the websocket
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        fd_set rd;
-        char buf[65535];
-        int r, nfds, fd1;
-        static int failCount = 0;
-
-        fd1 = [self masterPTY];
-        ispy_log_debug(LOG_HTTP, "Dispatcher. FD = %d", fd1);
-
-        // Loop forever.
-        while(1) {
-            // ensure things are sane each time around
-            nfds = 0;
-            FD_ZERO(&rd);
-            FD_SET(fd1, &rd);
-            nfds = max(nfds, fd1);
-            
-            // wait for something interesting to happen on a socket, or abort in case of error
-            if(select(nfds + 1, &rd, NULL, NULL, NULL) == -1) {
-                ispy_log_debug(LOG_HTTP, "DISCONNECT by select");
-                close([self masterPTY]);
-                [self stop];
-                return;
-            }
-            
-            // Data ready to read from socket(s)
-            if(FD_ISSET(fd1, &rd)) {
-                memset(buf, 0, 65535);
-                if((r = read(fd1, buf, 65534)) < 1) {
-                    ispy_log_debug(LOG_HTTP, "READ failure", ++failCount);
-                    // allow for startup delays
-                    if(failCount == 3) {
-                        ispy_log_debug(LOG_HTTP, "DISCONNECT by read");
-                        close([self masterPTY]);
-                        if(self->isStarted)
-                            [self stop];
-                        return;
-                    }
-                    sleep(1);
-                } else {
-                    if(r) { // only send messages with length > 0
-                        failCount=0;
-                        [self sendMessage:[NSString stringWithUTF8String:buf]];
-                        //ispy_log_debug(LOG_HTTP, "msg from shell: %s", buf);
-                    }
-                }
-            }
-        }
+        [self pipeDataToWebsocket];
     });
 
-    return sshPID;
+    return;
 }
 
-@end
+-(void) pipeDataToWebsocket {
+    fd_set readSet;
+    char buf[BUFSIZE];
+    int numBytes, numFileDescriptors;
+    static int failCount = 0;
 
-static int forkNewPTY(int *master, int *slavefd) {
-    pid_t childPID;
-    int slave, fdm;
-    
+    int fdMasterPTY = [self masterPTY];
+    ispy_log_debug(LOG_HTTP, "pipeDataToWebsocket from master PTY %d", fdMasterPTY);
+
+    // Loop forever.
+    while(1) {
+        // ensure things are sane each time around
+        numFileDescriptors = 0;
+        FD_ZERO(&readSet);
+        FD_SET(fdMasterPTY, &readSet);
+        numFileDescriptors = max(numFileDescriptors, fdMasterPTY);
+        
+        // wait for something interesting to happen on a socket, or abort in case of error
+        if(select(numFileDescriptors + 1, &readSet, NULL, NULL, NULL) == -1) {
+            ispy_log_debug(LOG_HTTP, "DISCONNECT by select");
+            close([self masterPTY]);
+            [self stop];
+            return;
+        }
+        
+        // Data ready to read from socket(s)
+        if(FD_ISSET(fdMasterPTY, &readSet)) {
+            // clear the read buffer
+            memset(buf, 0, BUFSIZE);
+
+            // read the contents of the slave PTY queue, or BUFSIZE-1, whichever is smaller
+            if((numBytes = read(fdMasterPTY, buf, BUFSIZE-1)) < 1) {
+                // Ok, crap. A read(2) error occured. 
+                // Maybe the child process hasn't started yet.
+                // Maybe the child process terminated.
+                // Let's handle this a little gracefully.
+                ispy_log_debug(LOG_HTTP, "READ failure (%d of %d)", ++failCount, MAX_READ_FAILURES);
+                
+                // retry the read(2) operation 3 times before giving up
+                if(failCount == MAX_READ_FAILURES) {
+                    ispy_log_debug(LOG_HTTP, "Three consecutive read(2) failures. Abandon ship.");
+                    
+                    // the master PTY needs to be closed.
+                    close([self masterPTY]);
+
+                    // if we haven't aready done so, shutdown this websocket
+                    if(self->isStarted)
+                        [self stop];
+
+                    return;
+                }
+
+                sleep(1); // pause to let things settle before retrying
+            // Ok, we got some data!
+            } else {
+                // reset the failure counter. 
+                failCount=0; 
+
+                // pass the data from the child process to the websocket, where it's passed to the browser.
+                [self sendMessage:[NSString stringWithUTF8String:buf]];
+                //ispy_log_debug(LOG_HTTP, "msg from shell: %s", buf);
+            }
+        }
+    } 
+}
+
+-(int) forkNewPTY {
     // open a handle to a master PTY 
-    if((fdm = open("/dev/ptmx", O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
+    if((self.masterPTY = open("/dev/ptmx", O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
         ispy_log_debug(LOG_HTTP, "ERROR could not open /dev/ptmx");
         return -1;
     }
 
     // establish proper ownership of PTY device
-    if(grantpt(fdm) == -1) {
+    if(grantpt(self.masterPTY) == -1) {
         ispy_log_debug(LOG_HTTP, "ERROR could not grantpt()");
         return -1;    
     }
 
     // unlock slave PTY device associated with master PTY device
-    if(unlockpt(fdm) == -1) {
+    if(unlockpt(self.masterPTY) == -1) {
         ispy_log_debug(LOG_HTTP, "ERROR could not unlockpt()");
         return -1;
     }
 
-    *master = fdm;
-
     // child
-    if((childPID = fork()) == 0) {
-        if((slave = open(ptsname(fdm), O_RDWR | O_NOCTTY)) == -1) {
-            ispy_log_debug(LOG_HTTP, "ERROR could not open ptsname(%s)", ptsname(fdm));
-            _exit(0);
+    if((self.sshPID = fork()) == 0) {
+        if((self.slavePTY = open(ptsname(self.masterPTY), O_RDWR | O_NOCTTY)) == -1) {
+            ispy_log_debug(LOG_HTTP, "ERROR could not open ptsname(%s)", ptsname(self.masterPTY));
+            return -1;
         }
         // setup PTY and redirect stdin, stdout, stderr to it
-        *slavefd = slave;
         setsid();
-        ioctl(slave, TIOCSCTTY, 0);
-        dup2(slave, 0);
-        dup2(slave, 1);
-        dup2(slave, 2);
+        ioctl(self.slavePTY, TIOCSCTTY, 0);
+        dup2(self.slavePTY, 0);
+        dup2(self.slavePTY, 1);
+        dup2(self.slavePTY, 2);
+        close(self.masterPTY);
         return 0;
     } 
     // parent
     else {
-        return childPID;
+        return self.sshPID;
     }
 }
 
-static void doexec(const char *command) {
+-(void) doexec {
     // Setup the command and environment
-    const char *prog[] = { "/usr/bin/ssh", "-t", "-t", "-p", "1337", "-i", "/var/mobile/.ssh/id_rsa", "-o", "StrictHostKeyChecking no", "mobile@127.0.0.1", command, NULL };
+    const char *prog[] = { 
+        "/usr/bin/ssh", 
+        "-t", "-t", 
+        "-p", "1337", 
+        "-i", "/var/mobile/.ssh/id_rsa", 
+        "-o", "StrictHostKeyChecking no", 
+        "mobile@127.0.0.1", 
+        [[self cmdLine] UTF8String], 
+        NULL
+    };
     const char *envp[] =  { "TERM=xterm-256color", NULL };
 
     // attach shell to our process
     execve((const char *)prog[0], (char **)prog, (char **)envp);
     // never returns
 }
+
+@end
 

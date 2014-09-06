@@ -11,6 +11,11 @@
 @property (assign) int slavePTY;
 @property (assign) int masterPTY;
 @property (assign) NSString *cmdLine;
-@property (assign) NSDictionary *serviceList;
-@property (assign) pid_t SSHPID;
+@property (assign) pid_t sshPID;
+
+-(void) pipeDataToWebsocket;
+-(void) runShell;
+-(int) forkNewPTY;
+-(void) doexec;
+
 @end

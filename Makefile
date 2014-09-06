@@ -26,7 +26,7 @@ iSpy_FILES = \
 	iSpyServer/iSpyHTTPServer.xm \
 	iSpyServer/iSpyHTTPConnection.xm \
 	iSpyServer/iSpyWebSocket.xm \
-	iSpyServer/ShellWebSocket.xm \
+	iSpyServer/shellWebSocket.xm \
 	iSpyServer/iSpyStaticFileResponse.xm
 
 

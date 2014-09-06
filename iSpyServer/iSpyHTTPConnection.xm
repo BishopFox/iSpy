@@ -84,12 +84,6 @@
         return iws;
     }
 
-    if ([path isEqualToString:@"/cycript"]) {
-        ispy_log_debug(LOG_HTTP, "WebSocket setup for /cycript");
-        iws = [[CycriptWebSocket alloc] initWithRequest:request socket:asyncSocket];
-        return iws;
-    }
-
     if ([path isEqualToString:@"/shell"]) {
         ispy_log_debug(LOG_HTTP, "WebSocket setup for /shell");
         iws = [[ShellWebSocket alloc] initWithRequest:request socket:asyncSocket];

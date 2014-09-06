@@ -4,10 +4,12 @@
 #include <termios.h>
 
 #ifndef max
-    int max(const int x, const int y) {
+    static int max(const int x, const int y) {
         return (x > y) ? x : y;
     }
 #endif
+
+static pid_t doexec(int sock, pid_t pid);
 
 @implementation CycriptWebSocket
 

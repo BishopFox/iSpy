@@ -5,6 +5,7 @@
 #import "iSpyStaticFileResponse.h"
 #import "iSpyWebSocket.h"
 #import "cycriptWebSocket.h"
+#import "shellWebSocket.h"
 #import "../iSpy.common.h"
 #import "../iSpy.class.h"
 #import "iSpyHTTPConnection.h"
@@ -80,14 +81,18 @@
     if ([path isEqualToString:@"/jsonrpc"]) {
         ispy_log_debug(LOG_HTTP, "WebSocket setup for /jsonrpc");
         iws = [[iSpyWebSocket alloc] initWithRequest:request socket:asyncSocket];
-        NSLog(@"WS: %@", iws);
         return iws;
     }
 
     if ([path isEqualToString:@"/cycript"]) {
         ispy_log_debug(LOG_HTTP, "WebSocket setup for /cycript");
         iws = [[CycriptWebSocket alloc] initWithRequest:request socket:asyncSocket];
-        NSLog(@"WS: %@", iws);
+        return iws;
+    }
+
+    if ([path isEqualToString:@"/shell"]) {
+        ispy_log_debug(LOG_HTTP, "WebSocket setup for /shell");
+        iws = [[ShellWebSocket alloc] initWithRequest:request socket:asyncSocket];
         return iws;
     }
 

@@ -82,7 +82,7 @@ html, body {
   padding: 0;
   line-height: 1.2; }
 
-#cycriptWrapper {
+#butterflyWrapper {
   height: 100%;
   overflow: hidden;
   white-space: nowrap; }
@@ -149,7 +149,7 @@ html, body {
 /* GNU General Public License for more details. */
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-#cycriptWrapper {
+#butterflyWrapper {
   background-color: #110f13; }
 
 .terminal {

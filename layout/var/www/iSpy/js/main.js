@@ -1,5 +1,5 @@
 (function() {
-  var $, State, Terminal, cancel, cols, open_ts, quit, rows, s,
+  var State, Terminal, cancel, cols, open_ts, quit, rows, s,
     __slice = [].slice,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -9,9 +9,10 @@
 
   open_ts = (new Date()).getTime();
 
-  $ = document.querySelectorAll.bind(document);
+//  $ = document.querySelectorAll.bind(document);
 
   document.addEventListener('DOMContentLoaded', function() {
+    console.log("main.js is running");
     var bench, cbench, ctl, send, term, ws, ws_url;
     send = function(data) {
       return ws.send('S' + data);
@@ -29,11 +30,11 @@
     } else {
       ws_url = 'ws://';
     }
-    ws_url += document.location.host + '/cycript';
+    ws_url += document.location.host + "/shell";
     ws = new WebSocket(ws_url);
     ws.addEventListener('open', function() {
       console.log("WebSocket open", arguments);
-      ws.send('R' + term.cols + ',' + term.rows);
+      ws.send('E' + $('#butterflyWrapper').attr('command'));
       return open_ts = (new Date()).getTime();
     });
     ws.addEventListener('error', function() {
@@ -56,7 +57,7 @@
         return open('', '_self').close();
       }
     });
-    term = new Terminal($('#cycriptWrapper')[0], send, ctl);
+    term = new Terminal($('#butterflyWrapper')[0], send, ctl);
     addEventListener('beforeunload', function() {
       if (!quit) {
         return 'This will exit the terminal session';

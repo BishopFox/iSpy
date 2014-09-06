@@ -1,0 +1,23 @@
+<html>
+<head>
+	<link rel="stylesheet" href="/css/main.css">
+</head>
+
+<script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+<script type="text/javascript" src="/js/ext.js"></script> 
+
+<body spellcheck="false">
+	<main id="butterflyWrapper"></main>
+</body>
+
+<script>
+	$(document).ready(function() {
+		console.log("doc ready");
+		$("#butterflyWrapper").attr("command", decodeURIComponent(document.location.search.substring(1)));
+	});
+
+</script>
+
+
+</html>

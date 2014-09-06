@@ -11,5 +11,3 @@
 @property (assign) int cycriptSocket;
 
 @end
-
-static pid_t doexec(int sock, pid_t pid);

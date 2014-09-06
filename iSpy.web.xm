@@ -170,8 +170,11 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
     // Do it!
     ispy_log_debug(LOG_HTTP, "Dispatching request for: %s", [selectorString UTF8String]);
-    NSMutableDictionary *responseDict = [[self rpcHandler] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];
-    return responseDict;
+    NSDictionary *responseDict = [[self rpcHandler] performSelector:selectorName withObject:[RPCDictionary objectForKey:@"messageData"]];
+    NSMutableDictionary *mutableResponse = [responseDict mutableCopy];
+    [mutableResponse setObject:selectorString forKey:@"messageType"];
+    ispy_log_debug(LOG_HTTP, "Created valid response for %s", [selectorString UTF8String]);
+    return mutableResponse;
 }
 
 @end

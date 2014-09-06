@@ -11,22 +11,22 @@ iSpy.Router = Backbone.Router.extend({
 
     index: function() {
         console.log("[Router] -> Index");
-        iSpyEvents.trigger('iosapp:index');
+        iSpy.Events.trigger('iosapp:index');
     },
 
     iosapp: function() {
         console.log("[Router] -> iOSApp | Index");
-        iSpyEvents.trigger('iosapp:index');
+        iSpy.Events.trigger('iosapp:index');
     },
 
     classdump: function() {
         console.log("[Router] -> Class Dump | Index");
-        iSpyEvents.trigger('classdump:index');
+        iSpy.Events.trigger('classdump:index');
     },
 
     notfound: function() {
         console.log("[Router] -> Not Found | Index");
-        iSpyEvents.trigger('notfound:index');
+        iSpy.Events.trigger('notfound:index');
     },
 
 });

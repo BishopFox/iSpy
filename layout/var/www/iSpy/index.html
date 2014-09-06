@@ -15,13 +15,6 @@
     <script type="text/javascript" src="/js/underscore.min.js"></script>
     <script type="text/javascript" src="/js/backbone.min.js"></script>
 
-    <!-- iSpy Application Files -->
-    <script type="text/javascript" src="/js/ispy/main.js"></script>
-    <script type="text/javascript" src="/js/ispy/models.js"></script>
-    <script type="text/javascript" src="/js/ispy/collections.js"></script>
-    <script type="text/javascript" src="/js/ispy/views.js"></script>
-    <script type="text/javascript" src="/js/ispy/router.js"></script>
-
     <!-- you need to include the shieldui css and js assets in order for the charts to work -->
     <link rel="stylesheet" type="text/css" href="/css/shieldui-all.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/all.min.css" />
@@ -33,18 +26,48 @@
 </head>
 
 <!-- iSpy Templates -->
-<script id="ClassDumpTemplate" type="text/template">
-    Application Summary
+<script id="iosapp-index" type="text/template">
+    <div class="container">
+        <h2> Application Summary </h2>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="bs-example">
+                    <div class="list-group">
+                            <dl class="dl-horizontal list-group-item">
+                                <dt>Application Identifier</dt>
+                                <dd>com.foo.appname</dd>
+                                <dt>Path</dt>
+                                <dd>/var/mobile/Applications/xxxxxxxx</dd>
+                            </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="bs-example">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <span class="badge">1234</span>
+                            Number of classes
+                        </li>
+                        <li class="list-group-item">
+                            <span class="badge">42</span>
+                            Number of protocols
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div><!-- /.row -->
+    </div>
 </script>
 
-<script id="ClassDumpTemplate" type="text/template">
-    Class Dump
+<script id="classdump-index" type="text/template">
+    <div class="container">
+        <h2> Class Dump </h2>
+        <div class="row">
+        foobar
+        </div><!-- /.row -->
+    </div>
 </script>
-
-<script id="ObjcClassTemplate" type="text/template">
-    <%= title > <button> Foobar </button>
-</script>
-
 
 
 <script>
@@ -82,12 +105,6 @@ $(document).ready(function() {
         $("#activity-monitor").addClass("fa-eye-slash");
     }
 
-    /* Init router and start backbone history */
-    var router = new iSpy.Router;
-    console.log(router);
-    Backbone.history.start();
-
-
 });
 
 function launchCycript() {
@@ -121,8 +138,8 @@ function launchShell(el) {
                 <ul class="nav navbar-nav navbar-user">
                     <li class="dropdown messages-dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <i class="fa fa-fw fa-lg fa-code"></i>&nbsp;
-                            Class Browser<!-- <span class="badge">2</span>-->
+                            <i class="fa fa-fw fa-lg fa-code"></i>
+                            &nbsp; Class Browser
                         </a>
                         <ul class="dropdown-menu">
                             <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-cubes fa-pad"></i>Classes</a></li>
@@ -187,108 +204,8 @@ function launchShell(el) {
         </nav><!-- /#nav -->
     </div>
     <!-- Main -->
-    <div id="sb-site" class="animated fadeIn">
-        <div id="main-content" class="bf-panel">
-            <div id="class-browser">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <h2>App Info</h2>
-                    </div>
-                    <div class="col-lg-4">
-                        <h2>Stats</h2>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="bs-example">
-                            <div class="list-group">
-                                    <dl class="dl-horizontal list-group-item">
-                                        <dt>Application Identifier</dt>
-                                        <dd>com.foo.appname</dd>
-                                        <dt>Path</dt>
-                                        <dd>/var/mobile/Applications/xxxxxxxx</dd>
-                                    </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="bs-example">
-                            <ul class="list-group">
-                                <li class="list-group-item">
-                                    <span class="badge">1234</span>
-                                    Number of classes
-                                </li>
-                                <li class="list-group-item">
-                                    <span class="badge">42</span>
-                                    Number of protocols
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div><!-- /.row -->
-
-                <div class="row">
-                    <div class="col-lg-3">
-                        <div class="bs-example">
-                            <div class="list-group">
-                                <a href="#" class="list-group-item active">
-                                    <img src="/img/bf-shield.svg" width="28" style="margin-top: -3px" />
-                                    <strong>iSpy</strong>
-                                </a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                                <a href="#" class="list-group-item">Things</a>
-                                <a href="#" class="list-group-item">Nonsense</a>
-                                <a href="#" class="list-group-item">Foofafrob</a>
-                                <a href="#" class="list-group-item">Like, whatever</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div id="sb-site" class="container-fluid fill" style="min-height: 100%;">
+        <div id="page-wrapper" class="container animated fadeIn">
         </div><!-- /#page-wrapper -->
     </div><!-- /#sb-site -->
 
@@ -304,13 +221,29 @@ function launchShell(el) {
                         </h4>
                     </span>
                 </li>
-                <li id="" class="sb-close"><a href="#"><i class="fa fa-fw fa-tasks"></i>Summary</a></li>
-                <li id="" class="sb-close"><a href="#classdump"><i class="fa fa-fw fa-list-alt"></i>Class Dump</a></li>
-                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-globe"></i> Item 4</a></li>
-                <li class="sb-close"><a href="portfolio.html"><i class="fa fa-fw fa-cog"></i> Item 5</a></li>
+                <li id="" class="sb-close">
+                    <a href="#">
+                        <i class="fa fa-fw fa-tasks"></i>
+                        &nbsp; iOS App
+                    </a>
+                </li>
+                <li id="" class="sb-close">
+                    <a href="#classdump">
+                        <i class="fa fa-fw fa-list-alt"></i>
+                        &nbsp; Class Dump
+                    </a>
+                </li>
             </ul>
         </nav>
     </div>
 </body>
+
+<!-- iSpy Application Files -->
+<script type="text/javascript" src="/js/ispy/namespace.js"></script>
+<script type="text/javascript" src="/js/ispy/models/ios-app.js"></script>
+<script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
+<script type="text/javascript" src="/js/ispy/views/classdump-views.js"></script>
+<script type="text/javascript" src="/js/ispy/routers/router.js"></script>
+<script type="text/javascript" src="/js/ispy/app.js"></script>
 
 </html>

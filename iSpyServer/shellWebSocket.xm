@@ -1,4 +1,4 @@
-#import "shellWebSocket.h"
+#import "ShellWebSocket.h"
 #include <spawn.h>
 #include <sys/ioctl.h>
 #include <termios.h>

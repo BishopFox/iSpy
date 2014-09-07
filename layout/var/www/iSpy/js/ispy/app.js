@@ -1,3 +1,7 @@
+/*
+ *  iSpy Main Entry Point
+ */
+
 iSpy.Events.on("ispy:connection-opened", function() {
 
     console.log("[iSpy] Connection opened; creating views and models");
@@ -7,6 +11,7 @@ iSpy.Events.on("ispy:connection-opened", function() {
     /* Create the main views */
     new iSpy.Views.iOSAppIndex({model: ios_app});
     new iSpy.Views.ClassDumpIndex();
+    new iSpy.Views.CycriptIndex();
 
     new iSpy.Router();
     Backbone.history.start();

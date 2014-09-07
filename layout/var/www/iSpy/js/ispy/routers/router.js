@@ -5,6 +5,7 @@ iSpy.Router = Backbone.Router.extend({
     routes: {
         '': 'index',
         'iosapp': 'iosapp',
+        'cycript': 'cycript',
         'classdump': 'classdump',
         'fourohfour': 'notfound',
     },
@@ -17,6 +18,11 @@ iSpy.Router = Backbone.Router.extend({
     iosapp: function() {
         console.log("[Router] -> iOSApp | Index");
         iSpy.Events.trigger('iosapp:index');
+    },
+
+    cycript: function() {
+        console.log("[Router] -> Cycript | Index");
+        iSpy.Events.trigger('cycript:index');
     },
 
     classdump: function() {

@@ -6,15 +6,17 @@
 
 Backbone.sync = function(method, model, options) {
 
-    console.log("[Backone.Sync] method | model | options ");
-    console.log(method);
-    console.log(model);
-    console.log(options);
+//    console.log("[Backone.Sync] method | model | options ");
+//    console.log(method);
+//    console.log(model);
+//    console.log(options);
 
     if (method === "read") {
-        var readMessage = JSON.stringify(model.rpcRead);
-        console.log("[Backone.Sync:Read] -> " + readMessage);
-        iSpy.SyncSocket.send(readMessage);
+        for (var index = 0; index < model.rpcRead.length; ++index) {
+            var readMessage = JSON.stringify(model.rpcRead[index]);
+            console.log("[Backone.Sync:Read] -> " + readMessage);
+            iSpy.SyncSocket.send(readMessage);
+        }
     }
 
 };

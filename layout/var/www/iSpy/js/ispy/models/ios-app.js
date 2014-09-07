@@ -6,23 +6,25 @@ iSpy.Models.iOSApp = Backbone.Model.extend({
         CFBundleDisplayName: 'iOS App',
         CFBundleIdentifier: 'com.foobar',
         CFBundleVersion: '1337',
+        ASLROffset: 0,
     },
 
 
     initialize: function() {
         console.log("[Models|iOSApp] initialize");
-        iSpy.Events.on('ispy:appInfo', this.updateAppInfo, this);
+        iSpy.Events.on('ispy:appInfo', this.set, this);
+        iSpy.Events.on('ispy:ASLR', this.set, this);
     },
 
-    updateAppInfo: function(data) {
-        console.log("[Models|iOSApp] updateAppInfo: " + data);
-        console.log(data);
-        this.set(data);
-    },
-
-    rpcRead: {
-        "messageType": "appInfo",
-        "messageData": {}
-    },
+    rpcRead: [
+        {
+            "messageType": "ASLR",
+            "messageData": {}
+        },
+        {
+            "messageType": "appInfo",
+            "messageData": {}
+        },
+    ],
 
 });

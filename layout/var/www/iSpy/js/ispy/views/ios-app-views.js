@@ -14,6 +14,7 @@ iSpy.Views.iOSAppIndex = Backbone.View.extend({
 
     indexEvent: function() {
         console.log("[Views|iOSAppIndex] indexEvent fired, fecthing data for model");
+        this.render();
         this.model.fetch();
     },
 

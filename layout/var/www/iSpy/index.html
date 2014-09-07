@@ -28,7 +28,9 @@
 <!-- iSpy Templates -->
 <script id="iosapp-index" type="text/template">
     <div class="container">
-        <h2> Application Summary </h2>
+        <h2>
+            <%= CFBundleDisplayName %>
+        </h2>
         <div class="row">
             <div class="col-lg-8">
                 <div class="bs-example">
@@ -36,8 +38,12 @@
                             <dl class="dl-horizontal list-group-item">
                                 <dt>Application Identifier</dt>
                                 <dd><%= CFBundleIdentifier %></dd>
-                                <dt>Path</dt>
-                                <dd>/var/mobile/Applications/xxxxxxxx</dd>
+                                <dt>Version</dt>
+                                <dd><%= CFBundleVersion %></dd>
+                            </dl>
+                            <dl class="dl-horizontal list-group-item">
+                                <dt>ASLR Offset</dt>
+                                <dd>0x<%= parseInt(ASLROffset, 16) %></dd>
                             </dl>
                     </div>
                 </div>
@@ -215,7 +221,7 @@ function launchShell(el) {
     </div>
 </body>
 
-<!-- iSpy Application Setup Files -->
+<!-- iSpy Application Files -->
 <script type="text/javascript" src="/js/ispy/namespace.js"></script>
 <script type="text/javascript" src="/js/ispy/backbone-sync.js"></script>
 <script type="text/javascript" src="/js/ispy/app.js"></script>

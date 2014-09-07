@@ -26,15 +26,18 @@ window.iSpy = {
     iSpy.SyncSocket.onmessage = function(emit) {
         console.log(emit);
         var message = $.parseJSON(emit.data);
-        if (message['status'] === "OK") {
+        if ( ! ('status' in message)) {
+            console.log("[SyncSocket] Malformed JSON message from server; no status.");
+        } else if (message['status'] === "OK") {
             console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
             console.log(message["JSON"]);
             iSpy.Events.trigger("ispy:" + message["messageType"], message["JSON"]);
         } else if (message['status'] === "error") {
             console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
             iSpy.Events.trigger("ispy:error", message["JSON"]);
+            alert("ERROR: "+ message["JSON"]);
         } else {
-            console.log("[SyncSocket] Malformed JSON message from server; no status.");
+            console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
         }
     }
 

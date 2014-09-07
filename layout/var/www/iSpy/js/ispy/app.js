@@ -1,4 +1,3 @@
-/* Fire up the router */
 iSpy.Events.on("ispy:connection-opened", function() {
 
     console.log("[iSpy] Connection opened; creating views and models");

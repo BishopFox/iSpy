@@ -92,7 +92,9 @@
 -(NSDictionary *) ASLR:(NSDictionary *)args {
 	return @{
 		@"status":@"OK",
-		@"JSON": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]] 
+		@"JSON": @{
+            @"ASLROffset": [NSString stringWithFormat:@"%d", [[iSpy sharedInstance] ASLR]]
+        },
 	};
 }
 
@@ -120,7 +122,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *classes = [args objectForKey:@"classes"];
     if(classes == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty class list"
     	};

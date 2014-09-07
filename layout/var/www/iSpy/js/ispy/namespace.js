@@ -31,7 +31,7 @@ window.iSpy = {
         } else if (message['status'] === "OK") {
             console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
             console.log(message["JSON"]);
-            iSpy.Events.trigger("ispy:" + message["messageType"], message["JSON"]);
+            iSpy.Events.trigger("sync:" + message["messageType"], message["JSON"]);
         } else if (message['status'] === "error") {
             console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
             iSpy.Events.trigger("ispy:error", message["JSON"]);

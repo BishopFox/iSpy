@@ -76,8 +76,10 @@
 	}
 
 	return @{
-		@"status":state,
-		@"JSON":@""
+		@"status":@"OK",
+		@"JSON": @{
+            @"state": state,
+        },
 	};
 }
 
@@ -85,7 +87,9 @@
 -(NSDictionary *) testJSONRPC:(NSDictionary *)args {
 	return @{
 		@"status":@"OK",
-		@"JSON":args
+		@"JSON": @{
+            @"args": args,
+        },
 	};
 }
 
@@ -170,7 +174,7 @@ If "methods" is nil, assume all methods in class.
     }
     return @{
     	@"status": @"OK",
-    	@"JSON":@""
+    	@"JSON": @{},
     };
 }
 
@@ -182,47 +186,53 @@ If "methods" is nil, assume all methods in class.
 
 -(NSDictionary *) classList:(NSDictionary *)args {
 	NSArray *classes = [[iSpy sharedInstance] classes];
-	return @{ 
+	return @{
 		@"status": @"OK",
-		@"JSON": classes 
+		@"JSON": @{
+            @"classes": classes,
+        },
 	};
 }
 
 -(NSDictionary *) classListWithProtocolInfo:(NSDictionary *)args {
 	NSArray *classes = [[iSpy sharedInstance] classesWithSuperClassAndProtocolInfo];
-	return @{ 
+	return @{
 		@"status": @"OK",
-		@"JSON": classes 
+		@"JSON": @{
+            @"classes": classes,
+        },
 	};
 }
 
 -(NSDictionary *) methodsForClass:(NSDictionary *)args {
 	NSString *className = [args objectForKey:@"class"];
     if(className == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
-    		@"errorMessage": @"Empty class name"
+    		@"errorMessage": @"Empty class name",
     	};
     }
 
     NSArray *methods = [[iSpy sharedInstance] methodListForClass:className];
     if(methods == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
-    		@"errorMessage": @"Empty methods list"
+    		@"errorMessage": @"Empty methods list",
     	};
     }
 
     return @{
     	@"status": @"OK",
-    	@"JSON": methods
+    	@"JSON": @{
+            @"methods": methods,
+        },
     };
 }
 
 -(NSDictionary *) propertiesForClass:(NSDictionary *)args {
 	NSString *className = [args objectForKey:@"class"];
     if(className == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty class name"
     	};
@@ -230,7 +240,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *properties = [[iSpy sharedInstance] propertiesForClass:className];
     if(properties == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty properties list"
     	};
@@ -238,14 +248,16 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"JSON": properties
+    	@"JSON": @{
+            @"properties": properties,
+        },
     };
 }
 
 -(NSDictionary *) protocolsForClass:(NSDictionary *)args {
 	NSString *className = [args objectForKey:@"class"];
     if(className == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty class name"
     	};
@@ -253,7 +265,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *protocols = [[iSpy sharedInstance] protocolsForClass:className];
     if(protocols == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty protocols list"
     	};
@@ -261,14 +273,16 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"JSON": protocols
+    	@"JSON": @{
+            @"protocols": protocols,
+        },
     };
 }
 
 -(NSDictionary *) iVarsForClass:(NSDictionary *)args {
 	NSString *className = [args objectForKey:@"class"];
     if(className == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty class name"
     	};
@@ -276,7 +290,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *iVars = [[iSpy sharedInstance] iVarsForClass:className];
     if(iVars == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty iVars list"
     	};
@@ -284,7 +298,9 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"JSON": iVars
+    	@"JSON": @{
+            @"iVars": iVars,
+        },
     };
 }
 
@@ -292,7 +308,7 @@ If "methods" is nil, assume all methods in class.
 	NSString *className = [args objectForKey:@"class"];
 	NSString *methodName = [args objectForKey:@"method"];
 	if(className == nil || methodName == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty class and/or name"
     	};
@@ -300,15 +316,15 @@ If "methods" is nil, assume all methods in class.
 
     Class cls = objc_getClass([className UTF8String]);
     if(cls == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"That class doesn't exist"
-    	};	
+    	};
     }
 
     SEL selector = sel_registerName([methodName UTF8String]);
     if(selector == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"That selector name was bad"
     	};
@@ -318,7 +334,7 @@ If "methods" is nil, assume all methods in class.
 
     NSDictionary *infoDict = [[iSpy sharedInstance] infoForMethod:selector inClass:cls];
     if(infoDict == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Error fetching information for that class/method"
     	};
@@ -326,7 +342,9 @@ If "methods" is nil, assume all methods in class.
 
     return @{
     	@"status": @"OK",
-    	@"JSON": infoDict
+    	@"JSON": @{
+            @"methodInfo": infoDict
+        },
     };
 }
 
@@ -338,7 +356,7 @@ If "methods" is nil, assume all methods in class.
 -(NSDictionary *) methodsForProtocol:(NSDictionary *)args {
 	NSString *protocolName = [args objectForKey:@"protocol"];
     if(protocolName == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty protocol name"
     	};
@@ -346,7 +364,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *methods = [[iSpy sharedInstance] methodsForProtocol:objc_getProtocol([protocolName UTF8String])];
     if(methods == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty methods list"
     	};
@@ -361,7 +379,7 @@ If "methods" is nil, assume all methods in class.
 -(NSDictionary *) propertiesForProtocol:(NSDictionary *)args {
 	NSString *protocolName = [args objectForKey:@"protocol"];
     if(protocolName == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty protocol name"
     	};
@@ -369,7 +387,7 @@ If "methods" is nil, assume all methods in class.
 
     NSArray *properties = [[iSpy sharedInstance] propertiesForProtocol:objc_getProtocol([protocolName UTF8String])];
     if(properties == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty properties list"
     	};
@@ -390,7 +408,7 @@ If "methods" is nil, assume all methods in class.
 -(NSDictionary *) instanceAtAddress:(NSDictionary *)args {
 	NSString *addr = [args objectForKey:@"address"];
     if(addr == nil) {
-    	return @{ 
+    	return @{
     		@"status": @"error",
     		@"errorMessage": @"Empty address value"
     	};
@@ -406,7 +424,9 @@ If "methods" is nil, assume all methods in class.
 -(NSDictionary *) instancesOfAppClasses:(NSDictionary *)args {
 	return @{
 		@"status":@"OK",
-		@"JSON":[[InstanceTracker sharedInstance] instancesOfAppClasses]
+		@"JSON": @{
+            @"classInstances": [[InstanceTracker sharedInstance] instancesOfAppClasses],
+        },
 	};
 }
 
@@ -419,7 +439,7 @@ If "methods" is nil, assume all methods in class.
 	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
 	NSData *PNG = UIImagePNGRepresentation(appIcon);
 	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
-	
+
 	return @{
 		@"status":@"OK",
 		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]

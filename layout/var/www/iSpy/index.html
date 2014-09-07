@@ -35,7 +35,7 @@
                     <div class="list-group">
                             <dl class="dl-horizontal list-group-item">
                                 <dt>Application Identifier</dt>
-                                <dd>com.foo.appname</dd>
+                                <dd><%= CFBundleIdentifier %></dd>
                                 <dt>Path</dt>
                                 <dd>/var/mobile/Applications/xxxxxxxx</dd>
                             </dl>
@@ -215,12 +215,20 @@ function launchShell(el) {
     </div>
 </body>
 
-<!-- iSpy Application Files -->
+<!-- iSpy Application Setup Files -->
 <script type="text/javascript" src="/js/ispy/namespace.js"></script>
+<script type="text/javascript" src="/js/ispy/backbone-sync.js"></script>
+<script type="text/javascript" src="/js/ispy/app.js"></script>
+
+<!-- iSpy Models -->
 <script type="text/javascript" src="/js/ispy/models/ios-app.js"></script>
+
+<!-- iSpy Views -->
 <script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
 <script type="text/javascript" src="/js/ispy/views/classdump-views.js"></script>
+
+<!-- iSpy Router -->
 <script type="text/javascript" src="/js/ispy/routers/router.js"></script>
-<script type="text/javascript" src="/js/ispy/app.js"></script>
+
 
 </html>

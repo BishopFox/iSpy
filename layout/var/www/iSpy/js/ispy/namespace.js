@@ -10,6 +10,7 @@ window.iSpy = {
 };
 
 (function($) {
+
     /* WebSocket Setup within the iSpy namespace */
     var sync_url = "ws://" + window.location.host + "/jsonrpc";
     console.log("[*] Connecting to sync url -> " + sync_url);
@@ -26,8 +27,11 @@ window.iSpy = {
         console.log(emit);
         var message = $.parseJSON(emit.data);
         if (message['status'] === "OK") {
+            console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
+            console.log(message["JSON"]);
             iSpy.Events.trigger("ispy:" + message["messageType"], message["JSON"]);
         } else if (message['status'] === "error") {
+            console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
             iSpy.Events.trigger("ispy:error", message["JSON"]);
         } else {
             console.log("[SyncSocket] Malformed JSON message from server; no status.");
@@ -40,6 +44,7 @@ window.iSpy = {
         $("#activity-monitor").addClass("fa-eye-slash");
         iSpy.Events.trigger("ispy:connection-lost");
     }
+
 })(jQuery);
 
 /* Little helper template function */

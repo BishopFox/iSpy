@@ -18,6 +18,8 @@
     /*
      * We don't block on RPC requests over the websocket, JSON responses are sent to all
      * open sockets to keep all the views in sync with each other.
+     *
+     * TODO: We should only broadcast to all sockets if the RPC request was a non-fetch()
      */
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         NSDictionary *response = [[[iSpy sharedInstance] webServer] dispatchRPCRequest: msg];

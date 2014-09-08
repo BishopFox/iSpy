@@ -2496,8 +2496,8 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     $(mainElement).attr("id", "main-" + (new Date()).getTime());
     console.log($(mainElement).attr("id"));
     $(mainElement).css("z-index", "9999");
-    $(mainElement).css("height", "95%");
     $(mainElement).css("height", "100%");
+    $(mainElement).css("width`", "100%");
     $(this).append(mainElement);
 
     this.term = new Terminal($("#" + $(mainElement).attr("id"))[0], hotKey);
@@ -2590,6 +2590,23 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     $(this).data("term", this.term);
     $(this).data("ws", this.term.ws);
     $(this).data("currentlyActive", 1);
+    this.term.write("\x1b[31m"+
+"777777777777777777.    77777777777777  \r\n"+
+" 777777777777777777    7777777777777   \r\n"+
+"  77777777777777777    777777777777    \r\n"+
+"              77777                    \r\n"+
+"              77777                    \r\n"+
+"              77777    77777777        \r\n"+
+"       7777777777/     7777777         \r\n"+
+"         77777777      777777          \r\n"+
+"          77777777.    7777            \r\n"+
+"              77777                    \r\n"+
+"              77777                    \r\n"+
+"              77777    \x1b[34miSpy\x1b[31m\r\n"+
+"               7777                    \r\n"+
+"                777                    \r\n"+
+"                 77                    \r\n"+
+"                  7                    \r\n\x1b[37m\n");
 
     butterflyExtJS(this.term);
 

@@ -29,14 +29,17 @@
     position: fixed !important; 
     left: 0px !important; 
     top: 0px !important;
-    height: 700px !important;
-    width: 1300px !important;
-    padding: 10px !important;
+    height: -moz-calc(100% - 100px) !important;
+    height: -webkit-calc(100% - 100px) !important;
+    width: -moz-calc(100% - 100px) !important;
+    width: -webkit-calc(100% - 100px) !important;
+    padding-top: 0px !important;
     margin-left: 50px;
     margin-top: 50px;
-    margin-right: -100px !important;
-    background: #282828 !important;
+    background: #303030 !important;
     z-index: 9998 !important;
+    border-radius:4px;
+    box-shadow:rgba(0,0,0,0.5) 0px 0px 24px;
 } 
 
 .termLeft {

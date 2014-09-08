@@ -99,6 +99,14 @@ $(document).ready(function() {
         $("#shellWrapperDiv").hideTerminal();
     }, 2000);
     
+    // setup the toolbar buttons to show/hide our shells
+    $("#btnShell").on("click", function () {
+        $("#shellWrapperDiv").toggleTerminal();
+    });
+    $("#btnCycript").on("click", function () {
+        $("#cycriptWrapperDiv").toggleTerminal();
+    });
+
 
     /* Menu Setup */
     $.slidebars();
@@ -193,13 +201,13 @@ $(document).ready(function() {
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" onclick="$('cycriptWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
+                        <a href="#" id="btnCycript"><i class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
                     </li>
                 </ul>
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" onclick="$('shellWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-terminal fa-lg"></i></a>
+                        <a href="#" id="btnShell"><i class="fa fa-fw fa-terminal fa-lg"></i></a>
                     </li>
                 </ul>
 

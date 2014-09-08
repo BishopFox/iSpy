@@ -80,14 +80,13 @@
 <script>
 $(document).ready(function() {
 
-    /* Menu Setup */
+    /* Sidebar Nav Setup */
     $.slidebars();
     jQuery('ul.nav li.dropdown').hover(function() {
         jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).show();
     }, function() {
         jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).hide();
     });
-
 
 });
 
@@ -230,7 +229,6 @@ function launchShell(el) {
 
 <!-- iSpy Application Files -->
 <script type="text/javascript" src="/js/ispy/namespace.js"></script>
-<script type="text/javascript" src="/js/ispy/backbone-sync.js"></script>
 <script type="text/javascript" src="/js/ispy/app.js"></script>
 
 <!-- iSpy Models -->

@@ -131,7 +131,7 @@ html, body {
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 .terminal {
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  /*text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);*/
   transition: 200ms; }
   .terminal.bell {
     -webkit-filter: blur(2px);

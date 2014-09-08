@@ -3,6 +3,7 @@
 #import "iSpyServer/shellWebsocket.h"
 #import "iSpy.rpc.h"
 #include "iSpy.msgSend.whitelist.h"
+#include "iSpy.instance.h"
 
 /*
     Adds a nice "containsString" method to NSString
@@ -51,6 +52,7 @@
 @property (assign) NSMutableDictionary *msgSendWhitelist;
 @property (assign) ClassMap_t *classWhitelist;
 @property (assign) ShellWebSocket *shellWebSocket;
+@property (assign) InstanceTracker *instanceTracker;
 
 +(iSpy *)sharedInstance;
 -(void)initializeAllTheThings;

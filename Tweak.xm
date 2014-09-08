@@ -259,7 +259,7 @@ void showGUIPopOver() {
 	// call the original method first
 	//%orig;
 
-	NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
+	// NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
 
 	// Only ever run this function once. We should probably use GCD for this.
 	static bool hasRunOnce = false;

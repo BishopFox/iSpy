@@ -24,6 +24,30 @@
 /* GNU General Public License for more details. */
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+.terminalOverlay {
+    position: fixed !important; 
+    left: 0px !important; 
+    top: 0px !important;
+    height: 700px !important;
+    width: 1300px !important;
+    padding: 10px !important;
+    margin-left: 50px;
+    margin-top: 50px;
+    margin-right: -100px !important;
+    background: #282828 !important;
+    z-index: 9998 !important;
+} 
+
+.termLeft {
+    left: 9000px !important;
+}
+
+.termNorm {
+    left: 0px !important;
+}
+
+
 @font-face {
   font-family: "SourceCodePro";
   src: url("/fonts/SourceCodePro-ExtraLight.otf") format("woff");
@@ -3073,3 +3097,4 @@ html, body {
 
 .blur .cursor.reverse-video {
   background: none; }
+

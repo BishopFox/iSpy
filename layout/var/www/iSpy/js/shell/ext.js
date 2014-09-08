@@ -1,4 +1,4 @@
-(function() {
+var butterflyExtJS = function(butterflyTermObj) {
   var Selection, alt, cancel, ctrl, first, next_leaf, previous_leaf, selection, set_alarm, virtual_input,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -90,9 +90,11 @@
     return next;
   };
 
-  Selection = (function() {
+  Selection = (function(butterflyTermObj) {
+    this.butterfly = butterflyTermObj;
+
     function Selection() {
-      butterfly.element.classList.add('selection');
+      this.butterfly.element.classList.add('selection');
       this.selection = getSelection();
     }
 
@@ -130,7 +132,7 @@
     };
 
     Selection.prototype.destroy = function() {
-      butterfly.element.classList.remove('selection');
+      this.butterfly.element.classList.remove('selection');
       return this.clear();
     };
 
@@ -148,13 +150,13 @@
 
     Selection.prototype.go = function(n) {
       var index;
-      index = butterfly.children.indexOf(this.start_line) + n;
-      if (!((0 <= index && index < butterfly.children.length))) {
+      index = this.butterfly.children.indexOf(this.start_line) + n;
+      if (!((0 <= index && index < this.butterfly.children.length))) {
         return;
       }
-      while (!butterfly.children[index].textContent.match(/\S/)) {
+      while (!this.butterfly.children[index].textContent.match(/\S/)) {
         index += n;
-        if (!((0 <= index && index < butterfly.children.length))) {
+        if (!((0 <= index && index < this.butterfly.children.length))) {
           return;
         }
       }
@@ -172,7 +174,7 @@
 
     Selection.prototype.select_line = function(index) {
       var line, line_end, line_start;
-      line = butterfly.children[index];
+      line = this.butterfly.children[index];
       line_start = {
         node: line.firstChild,
         offset: 0
@@ -309,7 +311,7 @@
       return cancel(e);
     }
     if (!selection && e.ctrlKey && e.shiftKey && e.keyCode === 38) {
-      selection = new Selection();
+      selection = new Selection(butterflyTermObj);
       selection.select_line(butterfly.y - 1);
       selection.apply();
       return cancel(e);
@@ -357,7 +359,7 @@
       new_range.setEnd(sel.anchorNode, sel.anchorOffset);
       sel.addRange(new_range);
     }
-    range.detach();
+    //range.detach();
     while (!(sel.toString().match(/\s/) || !sel.toString())) {
       sel.modify('extend', 'forward', 'character');
     }
@@ -440,6 +442,6 @@
     });
   }
 
-}).call(this);
+};
+//).call(this);
 
-//# sourceMappingURL=ext.js.map

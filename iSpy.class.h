@@ -1,5 +1,6 @@
 #ifndef ___ISPY_DEFINED___
 #import "iSpyServer/iSpyHTTPServer.h"
+#import "iSpyServer/shellWebsocket.h"
 #import "iSpy.rpc.h"
 #include "iSpy.msgSend.whitelist.h"
 
@@ -49,6 +50,7 @@
 @property (assign) NSMutableDictionary *trackedInstances;
 @property (assign) NSMutableDictionary *msgSendWhitelist;
 @property (assign) ClassMap_t *classWhitelist;
+@property (assign) ShellWebSocket *shellWebSocket;
 
 +(iSpy *)sharedInstance;
 -(void)initializeAllTheThings;

@@ -17,7 +17,11 @@
 // callback for CocoaHTTPServer WebSocket class
 - (void)didOpen {
     [super didOpen];
-    ispy_log_debug(LOG_HTTP, "Opened new Shell WebSocket connection");
+    
+    ispy_log_debug(LOG_HTTP, "Opened new Shell WebSocket connection. Launching %s", [[self cmdLine] UTF8String]);
+    
+    // launch the command. This handles PTY allocation, forking, execve(), etc.
+    [self runShell];
 }
 
 // callback for CocoaHTTPServer WebSocket class
@@ -38,20 +42,6 @@
         ispy_log_debug(LOG_HTTP, "Received resize request. rows: %hd, cols: %hd", ws.ws_row, ws.ws_col);
 
         ioctl([self masterPTY], TIOCSWINSZ, &ws);
-    }
-    // if we get an "E" message, it's a launch command
-    else if(data[0] == 'E') {
-        // handle templated variables:
-        //  @@PID@@ = current PID
-        NSString *encodedCmd = [NSString stringWithUTF8String:&data[1]];
-        NSString *decodedCmd = [encodedCmd  stringByReplacingOccurrencesOfString:@"@@PID@@"
-                                            withString:[NSString stringWithFormat:@"%d", getpid()]];
-        ispy_log_debug(LOG_HTTP, "WS: received E command: %s", [decodedCmd UTF8String]);
-        
-        [self setCmdLine:decodedCmd];
-        
-        // launch the command. This handles PTY allocation, forking, execve(), etc.
-        [self runShell];
     }
 }
 

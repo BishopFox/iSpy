@@ -75,18 +75,30 @@
 {
     /* TODO: Validate origin */
 //    NSString *origin = [request headerField:@"Origin"];
-    id iws;
+    id webSocketHandler;
 
     if ([path isEqualToString:@"/jsonrpc"]) {
         ispy_log_debug(LOG_HTTP, "WebSocket setup for /jsonrpc");
-        iws = [[iSpyWebSocket alloc] initWithRequest:request socket:asyncSocket];
-        return iws;
+        webSocketHandler = [[iSpyWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        [[iSpy sharedInstance] setShellWebSocket:webSocketHandler];
+        return webSocketHandler;
     }
 
     if ([path isEqualToString:@"/shell"]) {
         ispy_log_debug(LOG_HTTP, "WebSocket setup for /shell");
-        iws = [[ShellWebSocket alloc] initWithRequest:request socket:asyncSocket];
-        return iws;
+        webSocketHandler = [[ShellWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        [webSocketHandler setCmdLine:@"/bin/bash -l"];
+        [[iSpy sharedInstance] setShellWebSocket:webSocketHandler];
+        return webSocketHandler;
+    }
+
+    if ([path isEqualToString:@"/cycript"]) {
+        ispy_log_debug(LOG_HTTP, "WebSocket setup for /cycript");
+        webSocketHandler = [[ShellWebSocket alloc] initWithRequest:request socket:asyncSocket];
+        NSString *cmd = [NSString stringWithFormat:@"/usr/bin/cycript -p %d", getpid()];
+        [webSocketHandler setCmdLine:[cmd copy]];
+        [[iSpy sharedInstance] setShellWebSocket:webSocketHandler];
+        return webSocketHandler;
     }
 
     return nil;

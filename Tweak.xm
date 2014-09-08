@@ -237,6 +237,12 @@ void launch_cycript();
 %end
 */
 
+%hook UIDevice
+-(NSString *) systemVersion {
+	return @"7.1";
+}
+%end
+
 /********************************************
  *** End of area for putting your tweaks. ***
  ********************************************/

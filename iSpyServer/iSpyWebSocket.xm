@@ -28,7 +28,8 @@
             ispy_log_info(LOG_HTTP, "RPC response is not nil for: %s", [msg UTF8String]);
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
             NSString *json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            [[[[iSpy sharedInstance] webServer] httpServer] webSocketBroadcast: json];
+            //[[[[iSpy sharedInstance] webServer] httpServer] webSocketBroadcast: json];
+            [self sendMessage: json];
         }
     });
 }

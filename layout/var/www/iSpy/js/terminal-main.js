@@ -24,7 +24,7 @@ $.prototype.showTerminal = function() {
 
 
 $.prototype.butterflyTerminal = (function(cmd, hotKey) {
-  var $t, State, Terminal, cancel, cols, open_ts, quit, rows, s,
+  var State, Terminal, cancel, cols, open_ts, quit, rows, s,
     __slice = [].slice,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
   cols = rows = null;
@@ -33,7 +33,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
 
   open_ts = (new Date()).getTime();
 
-  $t = document.querySelectorAll.bind(document);
   console.log("Inside butterflyTerminal");
   
   s = 0;
@@ -1055,7 +1054,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     };
 
     Terminal.prototype.keyDown = function(ev) {
-      //console.log($(this.element).attr("currentlyActive"));
       if( $(this.DOMElement).data("currentlyActive") == 0)
         return true;
       
@@ -2494,17 +2492,13 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
 
     var mainElement = document.createElement("main");
     $(mainElement).attr("id", "main-" + (new Date()).getTime());
-    console.log($(mainElement).attr("id"));
     $(mainElement).css("z-index", "9999");
     $(mainElement).css("height", "100%");
     $(mainElement).css("width`", "100%");
     $(this).append(mainElement);
 
     this.term = new Terminal($("#" + $(mainElement).attr("id"))[0], hotKey);
-    //window.term = this.term;
-    
-    console.log("Starting!");
-    
+   
     var bench, cbench, ctl, send, term, ws, ws_url;
     
     if (location.protocol === 'https:') {
@@ -2517,28 +2511,27 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     this.term.ws = this.ws;
     this.term.ws.term = this.term;
     
-    console.log("New ws:");
-    console.log(this.ws);
-    this.ws.addEventListener('open', function() {
+    this.ws.onopen = function() {
       console.log("Terminal WebSocket open!", arguments);
       theWebSocket = this;
       setTimeout(function() {
-        console.log("sending shit");
-        console.log(theWebSocket);
         theWebSocket.send('R' + theWebSocket.term.cols + ',' + theWebSocket.term.rows);
       }, 1, theWebSocket);
       return open_ts = (new Date()).getTime();
-    });
-    this.ws.addEventListener('error', function() {
+    };
+
+    this.ws.onerror = function() {
       return console.log("WebSocket error", arguments);
-    });
-    this.ws.addEventListener('message', function(e) {
+    };
+
+    this.ws.onmessage = function(e) {
       myTerm = this.term;
       return setTimeout(function() {
         return myTerm.write(e.data);
       }, 1, myTerm);
-    });
-    this.ws.addEventListener('close', function() {
+    };
+
+    this.ws.onclose = function() {
       console.log("WebSocket closed", arguments);
       myTerm = this.term;
       setTimeout(function() {
@@ -2550,7 +2543,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       if ((new Date()).getTime() - open_ts > 60 * 1000) {
         return open('', '_self').close();
       }
-    });
+    };
 
     
     addEventListener('beforeunload', function() {
@@ -2588,7 +2581,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
 
     this.term.DOMElement = $(this);
     $(this).data("term", this.term);
-    $(this).data("ws", this.term.ws);
     $(this).data("currentlyActive", 1);
     this.term.write("\x1b[31m"+
 "777777777777777777.    77777777777777  \r\n"+

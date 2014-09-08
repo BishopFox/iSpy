@@ -8,6 +8,7 @@ iSpy.Models.iOSApp = Backbone.Model.extend({
         'CFBundleVersion': '1337',
         'ASLROffset': 0,
         'classes': [],
+        'imageURI': '/img/bf-24x24.png',
     },
 
 
@@ -16,6 +17,7 @@ iSpy.Models.iOSApp = Backbone.Model.extend({
         iSpy.Events.on('sync:appInfo', this.set, this);
         iSpy.Events.on('sync:ASLR', this.set, this);
         iSpy.Events.on('sync:classList', this.set, this);
+        iSpy.Events.on('sync:applicationIcon', this.set, this);
     },
 
     rpcRead: [
@@ -31,6 +33,10 @@ iSpy.Models.iOSApp = Backbone.Model.extend({
             "messageType": "classList",
             "messageData": {}
         },
+        {
+            "messageType": "applicationIcon",
+            "messageData": {}
+        }
     ],
 
 });

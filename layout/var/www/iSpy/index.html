@@ -37,7 +37,7 @@
 <script id="iosapp-index" type="text/template">
     <div class="container">
         <h2>
-            <%= CFBundleDisplayName %>
+            <img src="<%= imageURI%>"> <%= CFBundleDisplayName %>
         </h2>
         <div class="row">
             <div class="col-lg-8">
@@ -89,17 +89,14 @@
 
 $(document).ready(function() {
 
-    setTimeout(function () {
-        /* Initialize the cycript terminal bound to hotkey ctrl-` */
-        $("#cycriptWrapperDiv").butterflyTerminal("cycript", "`");
-        $("#cycriptWrapperDiv").hideTerminal();    
-    }, 1);
-    
+    /* Initialize the cycript terminal bound to hotkey ctrl-` */
+    $("#cycriptWrapperDiv").butterflyTerminal("cycript", "`");
+    $("#cycriptWrapperDiv").hideTerminal();
 
     setTimeout(function() {
         /* Initialize the shell terminal bound to hotkey ctrl-1 */
-        $("#shellWrapperDiv").butterflyTerminal("shell", "1");
-        $("#shellWrapperDiv").hideTerminal();    
+        $("#shellWrapperDiv").butterflyTerminal("shell", "1");    
+        $("#shellWrapperDiv").hideTerminal();
     }, 2000);
     
 
@@ -196,13 +193,13 @@ $(document).ready(function() {
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" onclick="$('#cycriptWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
+                        <a href="#" onclick="$('cycriptWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
                     </li>
                 </ul>
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" onclick="$('#shellWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-terminal fa-lg"></i></a>
+                        <a href="#" onclick="$('shellWrapperDiv').toggleTerminal()"><i class="fa fa-fw fa-terminal fa-lg"></i></a>
                     </li>
                 </ul>
 

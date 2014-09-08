@@ -442,7 +442,9 @@ If "methods" is nil, assume all methods in class.
 
 	return @{
 		@"status":@"OK",
-		@"JSON":[NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
+		@"JSON": @{
+			@"imageURI": [NSString stringWithFormat:@"data:image/png;base64,%@", base64PNG]
+		}
 	};
 }
 

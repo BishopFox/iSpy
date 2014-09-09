@@ -436,8 +436,30 @@ If "methods" is nil, assume all methods in class.
  */
 
 -(NSDictionary *) applicationIcon:(NSDictionary *)args {
-	UIImage *appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
+	UIImage *appIcon = [UIImage imageNamed:[[NSBundle mainBundle].infoDictionary[@"CFBundleIcons"][@"CFBundlePrimaryIcon"][@"CFBundleI‌​conFiles"] firstObject]];
+	if(!appIcon) {
+		appIcon = [UIImage imageNamed: [[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"] objectAtIndex:0]];
+		if(!appIcon) {
+			appIcon = [UIImage imageNamed:@"Icon@2x.png"];
+			if(!appIcon) {
+				appIcon = [UIImage imageNamed:@"Icon-72.png"];
+				if(!appIcon) {
+					appIcon = [UIImage imageNamed:@"/var/www/iSpy/img/bf.png"];
+					if(!appIcon) {
+						return @{
+							@"status":@"error",
+							@"error": @"WTF, no app icon"
+						};
+					}
+				}
+			}
+		}
+	}
+	
+	//NSLog(@"Icon files: %@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"]);
+	NSLog(@"appIcon: %@", appIcon);
 	NSData *PNG = UIImagePNGRepresentation(appIcon);
+	NSLog(@"PNG: %@", appIcon);
 	NSString *base64PNG = [PNG base64EncodedStringWithOptions:0];
 
 	return @{

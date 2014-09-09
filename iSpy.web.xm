@@ -187,6 +187,11 @@ extern "C" {
     void bf_websocket_write(const char *msg) {
         static iSpyWebSocket *webSocket = [[[iSpy sharedInstance] webServer] iSpyWebSocket]; // static for speed/cache
         NSString *json = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithUTF8String:), msg);
+
+        // this async and almost immediately returns
+        ispy_log_info(LOG_MSGSEND, msg);
+
+        // be async
         dispatch_async(wsQueue, ^{
             orig_objc_msgSend(webSocket, @selector(sendMessage:), json);
         });

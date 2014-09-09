@@ -37,7 +37,7 @@
 <script id="iosapp-index" type="text/template">
     <div class="container">
         <h2>
-            <img src="<%= imageURI%>"> <%= CFBundleDisplayName %>
+            <img style="width:64px;height:64px" src="<%= imageURI%>"> <%= CFBundleDisplayName %>
         </h2>
         <div class="row">
             <div class="col-lg-8">
@@ -116,9 +116,6 @@ $(document).ready(function() {
         jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).hide();
     });
 
-    /* Init router and start backbone history */
-    var router = new iSpy.Router;
-    Backbone.history.start();
 });
 </script>
 

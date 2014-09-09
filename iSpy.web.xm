@@ -185,10 +185,10 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 // Requires C linkage for the msgSend stuff.
 extern "C" {
     void bf_websocket_write(const char *msg) {
-        static iSpyWebSocket *webSocket = [[[iSpy sharedInstance] webServer] iSpyWebSocket]; // static for speed/cache
+        static iSpyWebSocket *syncSocket = [[[iSpy sharedInstance] webServer] iSpyWebSocket]; // static for speed/cache
         NSString *json = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithUTF8String:), msg);
         dispatch_async(wsQueue, ^{
-            orig_objc_msgSend(webSocket, @selector(sendMessage:), json);
+            orig_objc_msgSend(syncSocket, @selector(sendMessage:), json);
         });
     }
 }

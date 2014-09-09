@@ -35,7 +35,7 @@ window.iSpy = {
         } else if (message['status'] === "error") {
             console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
             iSpy.Events.trigger("ispy:error", message["JSON"]);
-            alert("ERROR: "+ message["JSON"]);
+            alert("ERROR: " + message["error"]);
         } else {
             console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
         }

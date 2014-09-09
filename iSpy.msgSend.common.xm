@@ -106,13 +106,16 @@ extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
     if(!callState)
         return threadBuffer;
     
+    // if this method returns a non-void, we report it
     if(callState->returnType && callState->returnType[0] != 'v') {
         char *returnValueJSON = parameter_to_JSON(callState->returnType, returnValue);
         size_t len = (size_t)strlen(callState->json) + strlen(returnValueJSON) + 54;
         newJSON = (char *)malloc(len);
         snprintf(newJSON, len, "%s,\"returnValue\":{%s,\"objectAddr\":\"%p\"}}\n", callState->json, returnValueJSON, returnValue);    
         free(returnValueJSON);
-    } else {
+    } 
+    // otherwise we don't bother.
+    else {
         size_t len = (size_t)strlen(callState->json) + 3;
         newJSON = (char *)malloc(len);
         snprintf(newJSON, len, "%s}\n", callState->json);
@@ -124,6 +127,7 @@ extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
     
     // Now check to see if anything else interesting should be done with this call.
     // E.g. Should we be checking to see if it's on the "interesting" list?
+    // TODO: make an "interesting" list
 
     free(newJSON);
     free(callState->returnType);

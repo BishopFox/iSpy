@@ -9,9 +9,10 @@
 
 @interface iSpyHTTPServer : HTTPServer
 {
-
+    NSMutableArray *ispySockets;
+    NSLock *ispySocketLock;
 }
 
--(void) webSocketBroadcast: (NSString *) msg;
+-(void) ispySocketBroadcast: (NSString *) msg;
 
 @end

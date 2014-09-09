@@ -1,7 +1,10 @@
 #ifndef ___ISPY_DEFINED___
 #import "iSpyServer/iSpyHTTPServer.h"
+#import "iSpyServer/shellWebsocket.h"
+#import "iSpyServer/iSpyWebsocket.h"
 #import "iSpy.rpc.h"
 #include "iSpy.msgSend.whitelist.h"
+#include "iSpy.instance.h"
 
 /*
     Adds a nice "containsString" method to NSString
@@ -26,6 +29,7 @@
 }
 
 @property (assign) iSpyHTTPServer *httpServer;
+@property (assign) iSpyWebSocket *iSpyWebSocket;
 @property (assign) NSMutableDictionary *plist;
 @property (assign) RPCHandler *rpcHandler;
 -(void) configureWebServer;
@@ -49,6 +53,7 @@
 @property (assign) NSMutableDictionary *trackedInstances;
 @property (assign) NSMutableDictionary *msgSendWhitelist;
 @property (assign) ClassMap_t *classWhitelist;
+@property (assign) InstanceTracker *instanceTracker;
 
 +(iSpy *)sharedInstance;
 -(void)initializeAllTheThings;

@@ -104,8 +104,14 @@ static void ispy_log_write(unsigned int facility, unsigned int level, char *msg)
         *p = ']';
 
     /* Make sure to use the un-hooked write() */
-    orig_write(logFiles[facility], line, lineLength - 1);
-    orig_write(logFiles[LOG_GLOBAL], line, lineLength - 1);
+    if(facility == LOG_MSGSEND) {
+        flock(logFiles[LOG_MSGSEND], LOCK_EX);
+        orig_write(logFiles[facility], line, lineLength - 1);
+        flock(logFiles[LOG_MSGSEND], LOCK_UN);
+    } else {
+        orig_write(logFiles[facility], line, lineLength - 1);
+        orig_write(logFiles[LOG_GLOBAL], line, lineLength - 1);
+    }
 
     free(line);
 

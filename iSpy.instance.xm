@@ -19,6 +19,7 @@ extern void bf_MSHookFunction(void *func, void *repl, void **orig);
 		[sharedInstance setEnabled:false];
 		[sharedInstance installHooks];
 		[sharedInstance setInstanceMap:&instanceMap];
+		[[iSpy sharedInstance] setInstanceTracker:sharedInstance];
 	});
 
 	return sharedInstance;

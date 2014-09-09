@@ -138,6 +138,7 @@ id *appClassWhiteList = NULL;
 // Given the name of a class, this returns true if the class is declared in the target app, false if not.
 // It's waaaaaay faster than checking bundleForClass shit from the Apple runtime.
 +(BOOL)isClassFromApp:(NSString *)className {
+	char *appName = (char *) [[[NSProcessInfo processInfo] arguments][0] UTF8String];
 	char *imageName = (char *)class_getImageName(objc_getClass([className UTF8String]));
 	char *p = NULL;
 
@@ -149,7 +150,7 @@ id *appClassWhiteList = NULL;
 		return false;
 	}
 
-	if(strncmp(imageName, [[[NSProcessInfo processInfo] arguments][0] UTF8String], p-imageName-1) == 0) {
+	if(strncmp(imageName, appName, p-imageName-1) == 0) {
 		return true;
 	}
 

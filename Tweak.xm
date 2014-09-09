@@ -237,6 +237,12 @@ void launch_cycript();
 %end
 */
 
+%hook UIDevice
+-(NSString *) systemVersion {
+	return @"7.1";
+}
+%end
+
 /********************************************
  *** End of area for putting your tweaks. ***
  ********************************************/
@@ -259,7 +265,7 @@ void showGUIPopOver() {
 	// call the original method first
 	//%orig;
 
-	NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
+	// NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
 
 	// Only ever run this function once. We should probably use GCD for this.
 	static bool hasRunOnce = false;

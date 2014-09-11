@@ -19,7 +19,7 @@ namespace bf_msgSend {
         if(Cls && selector) {
             std::string className(object_getClassName(Cls));
             std::string methodName(sel_getName(selector));
-            return ( (*ClassMap)[className][methodName] != WHITELIST_NOT_PRESENT );
+            return (*ClassMap)[className][methodName];
         }
         else
             return NO;
@@ -112,8 +112,15 @@ namespace bf_msgSend {
 
                 // Save r0, r1, r2, r3 and lr.
                 "push {r0-r3,lr}\n" // first copy the registers onto the stack
-                "mov r0, #28\n"     // allocate 5 * 4 bytes + 4 bytes, enough to hold 5 registers plus 2x 4-byte address 
+                "push {r12}\n"
+                "mov r0, r12\n"
+                "bl _interesting_call_preflight_check\n"
+                "mov r0, #32\n"     // allocate 5 * 4 bytes + 8 bytes, enough to hold 5 registers plus 3x 4-byte addresses
                 "bl _malloc\n"      // malloc'd pointer returned in r0
+                "pop {r1}\n"        // pop the whitelist entry type
+                "mov r12, r0\n"
+                "add r12, #24\n"    // move to the end of the buffer
+                "stmia r12, {r1}\n" // store it at the end of the thread-specific buffer
                 "bl _saveBuffer\n"  // save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
                 "mov r12, r0\n"     // keep a copy of the malloc'd buffer
                 "pop {r0-r3,lr}\n"  // restore regs to original state from the stack
@@ -146,7 +153,7 @@ namespace bf_msgSend {
                 "pop {r1}\n"                // get the return value from objc_msgSend
                 "mov r12, r0\n"
                 "add r12, #20\n"
-                "ldmia r12, {r0}\n"
+                "ldmia r12, {r0, r2}\n"
                 "bl _show_retval\n"         // add the return value to the JSON buffer:
                                             // _show_retval(threadSpecificBuffer, returnValue)
                                             // returns the address of the thread-specific buffer

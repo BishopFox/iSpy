@@ -123,17 +123,22 @@ id *appClassWhiteList = NULL;
 		NSLog(@"[iSpy] Alloc the iSpyServer ...");
 		[self setWebServer:[[iSpyServer alloc] init]];
 		[self setGlobalStatusStr:@""];
+
 		NSLog(@"[iSpy] Setting the bundleIdentifier");
 		[self setBundleId:[[[NSBundle mainBundle] bundleIdentifier] copy]];
 		[self setIsInstanceTrackingEnabled: NO];
+		
 		NSLog(@"[iSpy] Setting up RPCHandler ...");
 		[[self webServer] setRpcHandler:[[RPCHandler alloc] init]];
 		self->_trackedInstances = [[NSMutableDictionary alloc] init];
+		
 		NSLog(@"[iSpy] Configuring web server ...");
 		[[self webServer] configureWebServer];
+		
 		NSLog(@"[iSpy] Initialization complete.");
 	});
 }
+
 
 // Given the name of a class, this returns true if the class is declared in the target app, false if not.
 // It's waaaaaay faster than checking bundleForClass shit from the Apple runtime.
@@ -176,6 +181,100 @@ id *appClassWhiteList = NULL;
 	bf_disable_msgSend_logging();
 }
 
+-(NSString *) msgSend_setBreakpointOnMethod:(NSString *)methodName inClass:(NSString *)className {
+	struct interestingCall *call = (struct interestingCall *)malloc(sizeof(struct interestingCall));
+	call->classification = strdup("Breakpoint");
+	call->type = INTERESTING_BREAKPOINT;
+	call->risk = strdup("");
+	call->description = strdup("");
+	call->className = strdup([className UTF8String]);
+	call->methodName = strdup([methodName UTF8String]);
+	whitelist_add_method(&std::string([className UTF8String]), &std::string([methodName UTF8String]), (unsigned int)call);
+	return @"ok";
+}
+
+-(NSString *) msgSend_releaseBreakpointForMethod:(NSString *)methodName inClass:(NSString *)className {
+	breakpoint_release_breakpoint([className UTF8String], [methodName UTF8String]);
+	return @"ok";
+}
+
+-(NSString *) msgSend_addInterestingMethodToWhitelist:(NSString *)methodName 
+				forClass:(NSString *)className 
+				ofClassicication:(NSString *)classification
+				withDescription:(NSString *)description
+				havingRisk:(NSString *)risk {
+
+	[self _msgSend_addInterestingMethodToWhitelist:methodName 
+			forClass:className 
+			ofClassicication:classification 
+			withDescription:description 
+			havingRisk:risk
+			ofType:WHITELIST_PRESENT];
+
+	return @"ok";
+}
+
+-(NSString *) _msgSend_addInterestingMethodToWhitelist:(NSString *)methodName 
+				forClass:(NSString *)className 
+				ofClassicication:(NSString *)classification
+				withDescription:(NSString *)description
+				havingRisk:(NSString *)risk
+				ofType:(unsigned int)type {
+
+	struct interestingCall *call = (struct interestingCall *)malloc(sizeof(struct interestingCall));
+	call->risk = strdup([risk UTF8String]);
+	call->className = strdup([className UTF8String]);
+	call->methodName = strdup([methodName UTF8String]);
+	call->description = strdup([description UTF8String]);
+	call->classification = strdup([classification UTF8String]);
+	call->type = (int)type;
+	whitelist_add_method(&std::string(call->className), &std::string(call->methodName), (unsigned int)call);
+	return @"ok";
+}
+
+-(NSString *) msgSend_addMethodToWhitelist:(NSString *)methodName forClass:(NSString *)className {
+	return [self _msgSend_addMethodToWhitelist:methodName forClass:className ofType:(struct interestingCall *)WHITELIST_PRESENT];
+}
+
+-(NSString *) _msgSend_addMethodToWhitelist:(NSString *)methodName forClass:(NSString *)className ofType:(struct interestingCall *)call {
+	if(!methodName || !className) {
+		return @"Nil value for class or method name";
+	}
+	std::string *classNameString = new std::string([className UTF8String]);
+	std::string *methodNameString = new std::string([methodName UTF8String]);
+	if(!classNameString || !methodNameString) {
+		if(methodNameString)
+			delete methodNameString;
+		if(classNameString)
+			delete classNameString;
+		return @"Error converting NSStrings to std::strings";
+	}
+	whitelist_add_method(classNameString, methodNameString, (unsigned int)call);
+	delete methodNameString;
+	delete classNameString;
+
+	return @"ok";
+}
+
+-(NSString *)msgSend_addClassToWhitelist:(NSString *) className {
+	NSArray *classes = [self methodsForClass:className];
+
+	for(int i = 0; i < [classes count]; i++) {
+		[self msgSend_addMethodToWhitelist:[[classes objectAtIndex:i] objectForKey:@"name"] forClass:className];
+	}
+
+	return @"ok";
+}
+
+-(NSString *) msgSend_clearWhitelist {
+	whitelist_clear_whitelist();
+	return @"ok";
+}
+
+-(NSString *) msgSend_addAppClassesToWhitelist {
+	whitelist_add_app_classes();
+	return @"ok";
+}
 
 /*
  *
@@ -767,7 +866,6 @@ Returns a NSDictionary like this:
 	[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
 	[cls setObject:[NSArray arrayWithArray:[self iVarsForClass:className]]       forKey:@"ivars"];
 	[cls setObject:[NSArray arrayWithArray:[self propertiesForClass:className]]  forKey:@"properties"];
-	[cls setObject:[NSArray arrayWithArray:[self methodsForClass:className]]     forKey:@"methods"];
 
 	return (NSDictionary *)[cls copy];
 }

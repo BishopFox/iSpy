@@ -167,7 +167,7 @@ If "methods" is nil, assume all methods in class.
     			continue;
     		}
     		ispy_log_debug(LOG_GENERAL, "[Whitelist] Adding [%s %s]", classNameString->c_str(), methodNameString->c_str());
-            whitelist_add_method(classNameString, methodNameString);
+            whitelist_add_method(classNameString, methodNameString, (unsigned int)WHITELIST_PRESENT);
     		delete methodNameString;
     		delete classNameString;
     	}
@@ -444,7 +444,7 @@ If "methods" is nil, assume all methods in class.
 			if(!appIcon) {
 				appIcon = [UIImage imageNamed:@"Icon-72.png"];
 				if(!appIcon) {
-					appIcon = [UIImage imageNamed:@"/var/www/iSpy/img/bf.png"];
+					appIcon = [UIImage imageNamed:@"/var/www/iSpy/img/bf-orange-alpha.png"];
 					if(!appIcon) {
 						return @{
 							@"status":@"error",
@@ -494,6 +494,16 @@ If "methods" is nil, assume all methods in class.
 		@"status":@"OK",
 		@"JSON": [[iSpy sharedInstance] keyChainItems]
 	};
+}
+
+-(NSDictionary *) releaseBreakpoint:(NSDictionary *)args {
+    const char *className = [[args objectForKey:@"className"] UTF8String];
+    const char *methodName = [[args objectForKey:@"methodName"] UTF8String];
+    breakpoint_release_breakpoint(className, methodName);
+    return @{
+        @"status":@"OK",
+        @"JSON": @"Released."
+    };   
 }
 
 @end

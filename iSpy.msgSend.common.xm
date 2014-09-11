@@ -40,9 +40,89 @@ FILE *superLogFP = NULL;
 pthread_once_t key_once = PTHREAD_ONCE_INIT;
 pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
 
+
+// These functions are called before and after the objc_msgSend call, respectively.
+extern "C" USED void interesting_call_preflight_check(struct interestingCall *call) {
+    //ispy_log_debug(LOG_GENERAL, "preflight %p / %p / %p", call, call->className, call->methodName);
+
+    // If this call is merely on the whitelist, we ignore it.
+    if((unsigned int)call == WHITELIST_PRESENT || !call) 
+        return;
+
+    // Ok, the call is considered interesting. Do interesting pre-flight things.
+    ispy_log_debug(LOG_GENERAL, "Hit interesting method: [%s %s]. ", call->className, call->methodName);
+    if(call->type == INTERESTING_BREAKPOINT) {
+        breakpoint_wait_until_release(call);
+    }
+}
+
+extern "C" inline void interesting_call_postflight_check(struct objc_callState *callState, struct interestingCall *call) {
+    
+    // If this call is merely on the whitelist, we ignore it.
+    if((unsigned int)call == WHITELIST_PRESENT) 
+        return;
+
+    // Ok, the call is considered interesting. Do interesting post-flight things.
+    // In this example, we add a description of this interesting event to our JSON-formatted log data, which will 
+    // eventually end up in the iSpy UI via a websocket push.
+    ispy_log_debug(LOG_GENERAL, "Hit interesting method: [%s %s]", call->className, call->methodName);
+
+    char *interestingJSON = (char *)malloc(8000);
+    snprintf(interestingJSON, 8000, "%s,\"interesting\":{\"description\":\"%s\", \"classification\":\"%s\", \"risk\":\"%s\"}", 
+        callState->json,
+        call->description,
+        call->classification,
+        call->risk);
+    interestingJSON = (char *)realloc(interestingJSON, strlen(interestingJSON) + 1);
+    
+    char *oldJSON = callState->json;
+    callState->json = interestingJSON;
+    free(oldJSON);
+}
+
+extern "C" void breakpoint_wait_until_release(struct interestingCall *call) {
+    iSpy *myspy;
+    BreakpointMap_t *breakpoints;
+    
+    myspy = (iSpy *)orig_objc_msgSend(objc_getClass("iSpy"), @selector(sharedInstance));
+    ispy_log_debug(LOG_GENERAL, "myspy @ %p %p", myspy->breakpoints);
+    breakpoints = myspy->breakpoints;
+    (*breakpoints)[(unsigned int)call] = (unsigned int)call;
+
+    // now we wait
+    ispy_log_debug(LOG_GENERAL, "Breakpoint hit during call to [%s %s]. Waiting for release...", call->className, call->methodName);
+    while((*breakpoints)[(unsigned int)call] == (unsigned int)call)
+        sleep(1); // hehe
+
+    ispy_log_debug(LOG_GENERAL, "Breakpoint released for call to [%s %s]. Continuing!", call->className, call->methodName);
+
+    // be safe
+    if((*breakpoints)[(unsigned int)call] == (unsigned int)call)
+        (*breakpoints).erase((unsigned int)call);
+}
+
+void breakpoint_release_breakpoint(const char *className, const char *methodName) {
+    struct interestingCall *call;
+    iSpy *myspy = (iSpy *)orig_objc_msgSend(objc_getClass("iSpy"), @selector(sharedInstance));
+
+    for(BreakpointMap_t::iterator bp = myspy->breakpoints->begin(); bp != myspy->breakpoints->end(); ++bp) {
+        if(!bp->first)
+            continue;
+
+        call = (struct interestingCall *)bp->first;
+        
+        if(call && call->className && strcmp(call->className, className) == 0) {
+            if(call->methodName && strcmp(call->methodName, methodName) == 0) {
+                BreakpointMap_t *map = myspy->breakpoints;
+                map->erase((unsigned int)call);
+            }
+        }
+    }
+}
+
 // Sometimes we NEED to know if a pointer is mapped into addressible space, otherwise we
 // may dereference something that's a pointer to unmapped space, which will go boom.
-// This uses mincore(2) to ask the XNU kernel if a pointer is within a mapped page.
+// This uses mincore(2) to ask the XNU kernel if a pointer is within an app-mapped page.
 // Assumes a page size of 4096 (true on 32-bit iOS).
 extern "C" USED int is_valid_pointer(void *ptr) {
     char vec;
@@ -97,15 +177,19 @@ extern "C" USED void cleanUp() {
     decrement_depth();
 }
 
-extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
+extern "C" USED void *show_retval(struct objc_callState *callState, void *returnValue, struct interestingCall *call) {
     __log__("======= _show_retval entry ======\n");
 
-    struct objc_callState *callState = (struct objc_callState *)threadBuffer;
     char *newJSON = NULL;
 
-    if(!callState)
-        return threadBuffer;
+    if(!callState || !call)
+        return (void *)callState;
     
+    // Now check to see if anything else interesting should be done with this call, post-flight.
+    // We've already triggered a pre-flight check for interesting calls, but now is out chance 
+    // to do a post-flight check/response, too.
+    interesting_call_postflight_check(callState, call);
+
     // if this method returns a non-void, we report it
     if(callState->returnType && callState->returnType[0] != 'v') {
         char *returnValueJSON = parameter_to_JSON(callState->returnType, returnValue);
@@ -125,17 +209,13 @@ extern "C" USED void *show_retval(void *threadBuffer, void *returnValue) {
     bf_websocket_write(newJSON);
     __log__(newJSON);
     
-    // Now check to see if anything else interesting should be done with this call.
-    // E.g. Should we be checking to see if it's on the "interesting" list?
-    // TODO: make an "interesting" list
-
     free(newJSON);
     free(callState->returnType);
     free(callState->json);
     free(callState);
     __log__("======= _show_retval exit ======\n");
     
-    return threadBuffer;
+    return (void *)callState;
 }
 
 /*

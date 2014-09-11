@@ -549,7 +549,8 @@ EXPORT int return_true() {
 
 //		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
 //		dispatch_sync(initQ, ^{
-			bf_objc_msgSend_whitelist_startup();
+			whitelist_startup();
+			whitelist_add_hardcoded_interesting_calls();
 			bf_init_msgSend_logging();
 //		});
 

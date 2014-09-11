@@ -6,6 +6,8 @@
 #include "iSpy.msgSend.whitelist.h"
 #include "iSpy.instance.h"
 
+#define MAX_BREAKPOINTS 256
+
 /*
     Adds a nice "containsString" method to NSString
 */
@@ -43,7 +45,8 @@
 	Functionality that's exposed to Cycript.
 */
 @interface iSpy : NSObject {
-//	Class *classList;
+	@public
+		BreakpointMap_t *breakpoints;
 }
 @property (assign) iSpyServer *webServer;
 @property (assign) NSString *globalStatusStr;
@@ -87,6 +90,12 @@
 -(NSDictionary *)classDumpClass:(NSString *)className;
 -(void) msgSend_enableLogging;
 -(void) msgSend_disableLogging;
+-(NSString *)msgSend_addClassToWhitelist:(NSString *) className;
+-(NSString *) msgSend_addMethodToWhitelist:(NSString *)methodName forClass:(NSString *)className;
+-(NSString *) _msgSend_addMethodToWhitelist:(NSString *)methodName forClass:(NSString *)className ofType:(struct interestingCall *)call;
+-(NSString *) msgSend_addAppClassesToWhitelist;
+-(NSString *) msgSend_releaseBreakpointForMethod:(NSString *)methodName inClass:(NSString *)className;
+-(NSString *) msgSend_clearWhitelist;
 +(BOOL)isClassFromApp:(NSString *)className;
 @end
 

@@ -36,13 +36,23 @@
 #include <objc/runtime.h>
 #include "iSpy.msgSend.common.h"
 
+//
+// In this file, all the __log__() functions are #ifdef'd out unless you add:
+//      #define DO_SUPER_DEBUG_MODE 1
+// to iSpy.msgSend.common.h. Don't do this unless you're debugging iSpy - it's super slow.
+//
+
+// hard-coded for now while we're 32-bit only.
+#define MALLOC_BUFFER_SIZE PAGE_SIZE * 4     // 4 pages of memory
+#define MINIBUF_SIZE 256
+
 FILE *superLogFP = NULL;
 pthread_once_t key_once = PTHREAD_ONCE_INIT;
 pthread_key_t stack_keys[ISPY_MAX_RECURSION], curr_stack_key;
 
 
 // These functions are called before and after the objc_msgSend call, respectively.
-extern "C" USED void interesting_call_preflight_check(struct interestingCall *call) {
+extern "C" USED inline void interesting_call_preflight_check(struct interestingCall *call) {
     //ispy_log_debug(LOG_GENERAL, "preflight %p / %p / %p", call, call->className, call->methodName);
 
     // If this call is merely on the whitelist, we ignore it.
@@ -59,7 +69,7 @@ extern "C" USED void interesting_call_preflight_check(struct interestingCall *ca
 extern "C" inline void interesting_call_postflight_check(struct objc_callState *callState, struct interestingCall *call) {
     
     // If this call is merely on the whitelist, we ignore it.
-    if((unsigned int)call == WHITELIST_PRESENT) 
+    if((unsigned int)call == WHITELIST_PRESENT || !call) 
         return;
 
     // Ok, the call is considered interesting. Do interesting post-flight things.
@@ -67,13 +77,12 @@ extern "C" inline void interesting_call_postflight_check(struct objc_callState *
     // eventually end up in the iSpy UI via a websocket push.
     ispy_log_debug(LOG_GENERAL, "Hit interesting method: [%s %s]", call->className, call->methodName);
 
-    char *interestingJSON = (char *)malloc(8000);
-    snprintf(interestingJSON, 8000, "%s,\"interesting\":{\"description\":\"%s\", \"classification\":\"%s\", \"risk\":\"%s\"}", 
+    char *interestingJSON = (char *)malloc(MALLOC_BUFFER_SIZE);
+    snprintf(interestingJSON, MALLOC_BUFFER_SIZE, "%s,\"interesting\":{\"description\":\"%s\", \"classification\":\"%s\", \"risk\":\"%s\"}", 
         callState->json,
         call->description,
         call->classification,
         call->risk);
-    interestingJSON = (char *)realloc(interestingJSON, strlen(interestingJSON) + 1);
     
     char *oldJSON = callState->json;
     callState->json = interestingJSON;
@@ -123,11 +132,10 @@ void breakpoint_release_breakpoint(const char *className, const char *methodName
 // Sometimes we NEED to know if a pointer is mapped into addressible space, otherwise we
 // may dereference something that's a pointer to unmapped space, which will go boom.
 // This uses mincore(2) to ask the XNU kernel if a pointer is within an app-mapped page.
-// Assumes a page size of 4096 (true on 32-bit iOS).
-extern "C" USED int is_valid_pointer(void *ptr) {
+extern "C" USED inline int is_valid_pointer(void *ptr) {
     char vec;
     int ret;
-    ret = mincore(ptr, 4096, &vec);
+    ret = mincore(ptr, PAGE_SIZE, &vec);
     if(ret == 0)
         if((vec & 1) == 1)
             return YES;
@@ -159,63 +167,81 @@ extern "C" USED inline int get_depth() {
     return (int)pthread_getspecific(curr_stack_key);
 }
 
-extern "C" USED void *saveBuffer(void *buffer) {
+extern "C" USED inline void *saveBuffer(void *buffer) {
+    __log__("saveBuffer\n");
     increment_depth();
     pthread_setspecific(stack_keys[get_depth()], buffer);
     return buffer;
 }
 
-extern "C" USED void *loadBuffer() {
+extern "C" USED inline void *loadBuffer() {
     __log__("loadBuffer\n");
     void *buffer;
     buffer = pthread_getspecific(stack_keys[get_depth()]);
     return buffer;
 }
 
-extern "C" USED void cleanUp() {
+extern "C" USED inline void cleanUp() {
     __log__("cleanUp\n");
     decrement_depth();
 }
 
-extern "C" USED void *show_retval(struct objc_callState *callState, void *returnValue, struct interestingCall *call) {
+extern "C" USED inline void *show_retval(struct objc_callState *callState, void *returnValue, struct interestingCall *call) {
     __log__("======= _show_retval entry ======\n");
 
     char *newJSON = NULL;
 
-    if(!callState || !call)
+    if(!callState || !call) {
+        __log__("Abandoning show_retval\n");
         return (void *)callState;
+    }
     
     // Now check to see if anything else interesting should be done with this call, post-flight.
     // We've already triggered a pre-flight check for interesting calls, but now is out chance 
     // to do a post-flight check/response, too.
+    __log__("Calling postflight");
     interesting_call_postflight_check(callState, call);
 
     // if this method returns a non-void, we report it
     if(callState->returnType && callState->returnType[0] != 'v') {
+        __log__("Building JSON containing return value\n");
         char *returnValueJSON = parameter_to_JSON(callState->returnType, returnValue);
-        size_t len = (size_t)strlen(callState->json) + strlen(returnValueJSON) + 54;
-        newJSON = (char *)malloc(len);
-        snprintf(newJSON, len, "%s,\"returnValue\":{%s,\"objectAddr\":\"%p\"}}\n", callState->json, returnValueJSON, returnValue);    
+        __log__("And we're back. Malloc...\n");
+        newJSON = (char *)malloc(MALLOC_BUFFER_SIZE);
+        __log__("Sprintf\n");
+        snprintf(newJSON, MALLOC_BUFFER_SIZE, "%s],\"returnValue\":{%s,\"objectAddr\":\"%p\"}}\n", 
+            callState->json,
+            returnValueJSON, 
+            returnValue
+        );
+        __log__("newJSON\n");
+        __log__(newJSON);
+        //newJSON = (char *)realloc(newJSON, strlen(newJSON) + 1);
+        __log__("free()\n");
         free(returnValueJSON);
     } 
     // otherwise we don't bother.
     else {
-        size_t len = (size_t)strlen(callState->json) + 3;
-        newJSON = (char *)malloc(len);
-        snprintf(newJSON, len, "%s}\n", callState->json);
+        __log__("No return value, not adding JSON.\n");
+        newJSON = (char *)malloc(MALLOC_BUFFER_SIZE);                  
+        snprintf(newJSON, MALLOC_BUFFER_SIZE, "%s]}\n", callState->json);   // used here.
     }
     
+    __log__("This is the JSON:\n");
+    __log__(newJSON);
+    __log__("\n");
+    __log__("Websocket\n");
     // Squirt this call data over to the listening web socket
     bf_websocket_write(newJSON);
-    __log__(newJSON);
     
+    __log__("free() x3\n");
     free(newJSON);
     free(callState->returnType);
     free(callState->json);
-    free(callState);
+    
     __log__("======= _show_retval exit ======\n");
     
-    return (void *)callState;
+    return (void *)callState; // will be free'd by the asm code
 }
 
 /*
@@ -223,125 +249,135 @@ extern "C" USED void *show_retval(struct objc_callState *callState, void *return
 
         "type":"int", "value":"31337"
 */
-extern "C" USED char *parameter_to_JSON(char *typeCode, void *paramVal) {
-    char json[4096]; // 4096 chosen at random
+extern "C" USED inline char *parameter_to_JSON(char *typeCode, void *paramVal) {
+    char *json;
     Class fooClass;
-    
-    if(!typeCode || !is_valid_pointer((void *)typeCode))
+
+    __log__("Entering parameter_to_JSON\n");    
+    if(!typeCode || !is_valid_pointer((void *)typeCode)) {
+        __log__("Abandoning parameter_to_JSON\n");
         return (char *)"";
+    }
 
     // lololol
     unsigned long v = (unsigned long)paramVal;
     double d = (double)v;
 
-    memset(json, 0, 4096);
-    __log__("Typecode: ");
+    json = (char *)malloc(MALLOC_BUFFER_SIZE);
+
+    __log__("Typecode: '");
     __log__(typeCode);
-    __log__("\n");
+    __log__("'\n");
+
     switch(*typeCode) {
         case 'c': // char
-            snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%d) ('%c')\"", json, (unsigned int)paramVal, (int)paramVal, (paramVal)?(int)paramVal:' '); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"char\",\"value\":\"0x%x (%d) ('%c')\"", (unsigned int)paramVal, (int)paramVal, (paramVal)?(int)paramVal:' '); 
             break;
         case 'i': // int
-            snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":\"0x%x (%d)\"", json, (int)paramVal, (int)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"int\",\"value\":\"0x%x (%d)\"", (int)paramVal, (int)paramVal); 
             break;
         case 's': // short
-            snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":\"0x%x (%d)\"", json, (int)paramVal, (int)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"short\",\"value\":\"0x%x (%d)\"", (int)paramVal, (int)paramVal); 
             break;
         case 'l': // long
-            snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":\"0x%lx (%ld)\"", json, (long)paramVal, (long)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"long\",\"value\":\"0x%lx (%ld)\"", (long)paramVal, (long)paramVal); 
             break;
         case 'q': // long long
-            snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":\"%llx (%lld)\"", json, (long long)paramVal, (long long)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"long long\",\"value\":\"%llx (%lld)\"", (long long)paramVal, (long long)paramVal); 
             break;
         case 'C': // char
-            snprintf(json, sizeof(json), "%s\"type\":\"char\",\"value\":\"0x%x (%u) ('%c')\"", json, (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"char\",\"value\":\"0x%x (%u) ('%c')\"", (unsigned int)paramVal, (unsigned int)paramVal, (unsigned int)paramVal); 
             break;
         case 'I': // int
-            snprintf(json, sizeof(json), "%s\"type\":\"int\",\"value\":\"0x%x (%u)\"", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"int\",\"value\":\"0x%x (%u)\"", (unsigned int)paramVal, (unsigned int)paramVal); 
             break;
         case 'S': // short
-            snprintf(json, sizeof(json), "%s\"type\":\"short\",\"value\":\"0x%x (%u)\"", json, (unsigned int)paramVal, (unsigned int)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"short\",\"value\":\"0x%x (%u)\"", (unsigned int)paramVal, (unsigned int)paramVal); 
             break;
         case 'L': // long
-            snprintf(json, sizeof(json), "%s\"type\":\"long\",\"value\":\"0x%lx (%lu)\"", json, (unsigned long)paramVal, (unsigned long)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"long\",\"value\":\"0x%lx (%lu)\"", (unsigned long)paramVal, (unsigned long)paramVal); 
             break;
         case 'Q': // long long
-            snprintf(json, sizeof(json), "%s\"type\":\"long long\",\"value\":\"%llx (%llu)\"", json, (unsigned long long)paramVal, (unsigned long long)paramVal); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"long long\",\"value\":\"%llx (%llu)\"", (unsigned long long)paramVal, (unsigned long long)paramVal); 
             break;
         case 'f': // float
-            snprintf(json, sizeof(json), "%s\"type\":\"float\",\"value\":\"%f\"", json, (float)d); 
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"float\",\"value\":\"%f\"", (float)d); 
             break;
-        case 'd': // double                        
-            snprintf(json, sizeof(json), "%s\"type\":\"double\",\"value\":\"%f\"", json, (double)d); 
+        case 'd': // double                      
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"double\",\"value\":\"%f\"", (double)d); 
             break;
         case 'B': // BOOL
-            snprintf(json, sizeof(json),  "%s\"type\":\"BOOL\",\"value\":\"%s\"", json, ((int)paramVal)?"true":"false");
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"BOOL\",\"value\":\"%s\"", ((int)paramVal)?"true":"false");
             break;
         case 'v': // void
-            snprintf(json, sizeof(json),  "%s\"type\":\"void\",\"ptr\":\"%p\"", json, paramVal);
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"void\",\"ptr\":\"%p\"", paramVal);
             break;
         case '*': // char *
-            snprintf(json, sizeof(json),  "%s\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", json, (char *)paramVal, paramVal);
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"char *\",\"value\":\"%s\",\"ptr\":\"%p\" ", (char *)paramVal, paramVal);
             break;
         case '{': // struct
-            snprintf(json, sizeof(json),  "%s\"type\":\"struct\",\"ptr\":\"%p\"", json, paramVal);
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"struct\",\"ptr\":\"%p\"", paramVal);
             break;
         case ':': // selector
-            snprintf(json, sizeof(json),  "%s\"type\":\"SEL\",\"value\":\"@selector(%s)\"", json, (paramVal)?"Selector FIXME":"nil");
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"SEL\",\"value\":\"@selector(%s)\"", (paramVal)?"Selector FIXME":"nil");
             break;
         case '@': // object
             __log__("obj @\n");
             if(is_valid_pointer(paramVal)) {
+                __log__("Valid pointer\n");
                 fooClass = object_getClass((id)paramVal);
-                snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName(fooClass));
                 if(class_respondsToSelector(fooClass, @selector(description))) {
+                    __log__("Has description...");
                     NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
-                    NSString *realDesc = orig_objc_msgSend((id)desc, @selector(stringByReplacingOccurrencesOfString:withString:), @"\"", @"&#34;");
-                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(realDesc, @selector(UTF8String)));
+                    NSString *realDesc = orig_objc_msgSend((id)desc, @selector(stringByReplacingOccurrencesOfString:withString:), @"\"", @"\\\"");
+                    snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"%s\",\"value\":\"%s\"", object_getClassName(fooClass), (char *)orig_objc_msgSend(realDesc, @selector(UTF8String)));
                 } else {
-                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "@BARF. No description. This is probably a bug.");
+                    __log__("No description available");
+                    snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"%s\",\"value\":\"%s\"", object_getClassName(fooClass), "@BARF. No [object description] method. This is probably a bug.");
                 }
             } else {
-                snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+                __log__("Duff pointer");
+                strcpy(json, "\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"");
             }
             break;
         case '#': // class
             __log__("class #\n");
             if(is_valid_pointer(paramVal)) {
-                snprintf(json, sizeof(json), "%s\"type\":\"%s\",", json, class_getName((Class)paramVal));
                 if(class_respondsToSelector((Class)paramVal, @selector(description))) {
                     NSString *desc = orig_objc_msgSend((id)paramVal, @selector(description));
                     NSString *realDesc = orig_objc_msgSend((id)desc, @selector(stringByReplacingOccurrencesOfString:withString:), @"\"", @"&#34;");
-                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, (char *)orig_objc_msgSend(realDesc, @selector(UTF8String)));
+                    snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"%s\",\"value\":\"%s\"", class_getName((Class)paramVal), (char *)orig_objc_msgSend(realDesc, @selector(UTF8String)));
                 } else {
-                    snprintf(json, sizeof(json), "%s\"value\":\"%s\"", json, "#BARF. No description. This is probably a bug.");
+                    snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"%s\",\"value\":\"%s\"", class_getName((Class)paramVal), "#BARF. No description. This is probably a bug.");
                 }
             } else {
-                snprintf(json, sizeof(json), "%s\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"", json);
+                strcpy(json, "\"type\":\"<Invalid memory address>\",\"value\":\"N/A\"");
             }
             break;
         default:
-            snprintf(json, sizeof(json), "%s\"type\":\"UNKNOWN TYPE. Code: %s\",\"value\":\"%p\"", json, typeCode, paramVal);
+            snprintf(json, MALLOC_BUFFER_SIZE, "\"type\":\"UNKNOWN TYPE. Code: %s\",\"value\":\"%p\"", typeCode, paramVal);
             break;     
     }
-    return strdup(json); // caller must free()
+    __log__("returning from parameter_to_JSON\n");
+    return json; // caller must free()
 }
 
-extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va) {
-    char json[4096];  // lololol, roflcopters
+extern "C" USED inline void *print_args_v(id self, SEL _cmd, std::va_list va) {
+    char *json;
     struct objc_callState *callState = NULL;
-    __log__("\n\n<======== Print Args Entry ========>\n");
+
+    __log__("\n\n<======== print_args_v entry ========>\n");
+    
     if(self && _cmd) {
         char *className, *methodName, *methodPtr, *argPtr;
         Method method = nil;
         int numArgs, k, realNumArgs;
         BOOL isInstanceMethod = true;
-        char argName[256]; // srlsy
+        char argName[MINIBUF_SIZE];
         Class c;
 
         // needed for all the things
-        c = (Class)object_getClass(self); 
+        c = self->isa; 
         className = (char *)object_getClassName(self);
         methodName = (char *)sel_getName(_cmd);
         
@@ -382,69 +418,59 @@ extern "C" USED void *print_args_v(id self, SEL _cmd, std::va_list va) {
         callState->returnType = method_copyReturnType(method);
 
         // start the JSON block
-        __log__("sprintf\n");
-        snprintf(json, sizeof(json), "{\"messageType\":\"obj_msgSend\",\"depth\":%d,\"thread\":%u,\"objectAddr\":\"%p\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"returnTypeCode\":\"%s\",\"numArgs\":%d,\"args\":[", get_depth(), (unsigned int)pthread_self(), self, className, methodName, isInstanceMethod, callState->returnType, realNumArgs);
+        __log__("malloc/sprintf\n");
+        json = (char *)malloc(MALLOC_BUFFER_SIZE);
+        snprintf(json, MALLOC_BUFFER_SIZE, "{\"messageType\":\"obj_msgSend\",\"depth\":%d,\"thread\":%u,\"objectAddr\":\"%p\",\"class\":\"%s\",\"method\":\"%s\",\"isInstanceMethod\":%d,\"returnTypeCode\":\"%s\",\"numArgs\":%d,\"args\":[", get_depth(), (unsigned int)pthread_self(), self, className, methodName, isInstanceMethod, callState->returnType, realNumArgs);
 
         // use this to iterate over argument names
         methodPtr = methodName;
         __log__("Hitting loop...\n");
             
-        // if(0)
-        {
-            // cycle through the paramter list for this method.
-            // start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
-            for(k=2; k < numArgs; k++) {
-                char argTypeBuffer[256]; // safe and reasonable limit on var name length
-                int argNum = k - 2;
+        // cycle through the paramter list for this method.
+        // start at k=2 so that we omit Cls and SEL, the first 2 args of every function/method
+        for(k=2; k < numArgs; k++) {
+            char argTypeBuffer[MINIBUF_SIZE]; // safe and reasonable limit on var name length
+            int argNum = k - 2;
 
-                // non-destructive strtok() replacement
-                argPtr = argName;
-                while(*methodPtr != ':' && *methodPtr != '\0')
-                    *(argPtr++) = *(methodPtr++);
-                *argPtr = (char)0;
-                
-                // get the type code for the argument
-                __log__("argType\n");
-                method_getArgumentType(method, k, argTypeBuffer, 255);
+            // non-destructive strtok() replacement
+            argPtr = argName;
+            while(*methodPtr != ':' && *methodPtr != '\0')
+                *(argPtr++) = *(methodPtr++);
+            *argPtr = (char)0;
+            
+            // get the type code for the argument
+            __log__("argType\n");
+            method_getArgumentType(method, k, argTypeBuffer, MINIBUF_SIZE);
 
-                // if it's a pointer then we actually want the next byte.
-                char *typeCode = (argTypeBuffer[0] == '^') ? &argTypeBuffer[1] : argTypeBuffer;
+            // if it's a pointer then we actually want the next byte.
+            char *typeCode = (argTypeBuffer[0] == '^') ? &argTypeBuffer[1] : argTypeBuffer;
 
-                // arg data
-                void *paramVal = va_arg(va, void *);
-                
-                // start the JSON for this argument
-                snprintf(json, sizeof(json), "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"addr\":\"%p\",", json, argName, argTypeBuffer, paramVal);
+            // arg data
+            void *paramVal = va_arg(va, void *);
+            
+            __log__("Parsing param -> JSON\n");
+            char *paramValueJSON = parameter_to_JSON(typeCode, paramVal);
 
-                __log__("Parsing param -> JSON\n");
-                char *paramValueJSON = parameter_to_JSON(typeCode, paramVal);
-                __log__("strlcat\n");
-                strlcat(json, paramValueJSON, sizeof(json));
-                __log__("free\n");
-                free(paramValueJSON);
-                
-                __log__("more strlcat\n");
-                if(argNum == realNumArgs-1)
-                    strlcat(json, "}", sizeof(json));
-                else
-                    strlcat(json, "},", sizeof(json));
-                __log__("Looping...\n");                               
-            }
-            __log__("Loop finished.\n");
-        } // log args
-
-        // finish the JSON block, but don't add a trailing "}" - that will be added last by the return value logger in the hooked objc_msgSend.
-        strlcat(json, "]", sizeof(json));
+            // start the JSON for this argument
+            snprintf(json, MALLOC_BUFFER_SIZE, "%s{\"name\":\"%s\",\"typeCode\":\"%s\",\"addr\":\"%p\",%s%s", json, argName, argTypeBuffer, paramVal, paramValueJSON, (argNum == realNumArgs-1) ? "}" : "},");
+            free(paramValueJSON);
+            
+            __log__("Looping...\n");                               
+        }
+        __log__("Loop finished.\n");
     } else {
         __log__("======= print_args_v exit NULLLLL =====\n");
         return NULL;
     }
 
-    char foo[1024];
-    callState->json = strdup(json);
-    sprintf(foo, "print_args outro %p // %p // %p\n", callState, callState->json, callState->returnType);
+    callState->json = json;
+
+#ifdef DO_SUPER_DEBUG_MODE
+    char foo[MALLOC_BUFFER_SIZE];
+    snprintf(foo, MALLOC_BUFFER_SIZE, "print_args_ outro %p // %p // %p\n", callState, callState->json, callState->returnType);
     __log__(foo);
     __log__("======= print_args_v exit =====\n");
+#endif
 
     return (void *)callState; // caller must free this and its internal pointers, but only after we're completely done (ie. after we've logged the return value)
 }

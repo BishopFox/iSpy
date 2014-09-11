@@ -4,16 +4,22 @@
 #include "iSpy.msgSend.common.h"
 #include "iSpy.class.h"
 
+//
+// In this file, all the __log__() functions are #ifdef'd out unless you add:
+//      #define DO_SUPER_DEBUG_MODE 1
+// to iSpy.msgSend.common.h. Don't do this unless you're debugging iSpy - it's super slow.
+//
+
 namespace bf_objc_msgSend_stret {
     USED static long enabled_stret __asm__("_enabled_stret") = 0;
     USED static void *original_objc_msgSend_stret __asm__("_original_objc_msgSend_stret");
     USED __attribute((weakref("replaced_objc_msgSend_stret"))) static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
 
-    extern "C" int is_this_method_on_whitelist_stret(void *dummy, id Cls, SEL selector) {
+    extern "C" USED inline int is_this_method_on_whitelist_stret(void *dummy, id Cls, SEL selector) {
         return is_this_method_on_whitelist(Cls, selector);
     }
 
-    extern "C" USED void *print_args_stret(void *retval, id self, SEL _cmd, ...) {
+    extern "C" USED inline void *print_args_stret(void *retval, id self, SEL _cmd, ...) {
         void *retVal;
         std::va_list va;
         va_start(va, _cmd);

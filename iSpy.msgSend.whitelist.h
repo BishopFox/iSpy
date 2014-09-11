@@ -16,7 +16,7 @@ struct interestingCall {
 typedef std::tr1::unordered_map<std::string, unsigned int> MethodMap_t;
 typedef std::tr1::unordered_map<unsigned int, unsigned int> BreakpointMap_t;
 //typedef std::tr1::unordered_map<std::string, MethodMap_t> ClassMap_t;
-typedef std::tr1::unordered_map<std::string, std::tr1::unordered_map<std::string, unsigned int> > ClassMap_t;
+typedef std::tr1::unordered_map<std::string, MethodMap_t > ClassMap_t;
 typedef std::pair<std::string, MethodMap_t> ClassPair_t;
 
 // Helper functions

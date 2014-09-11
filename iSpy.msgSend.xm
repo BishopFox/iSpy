@@ -4,6 +4,12 @@
 #include "iSpy.msgSend.common.h"
 #include "iSpy.class.h"
 
+//
+// In this file, all the __log__() functions are #ifdef'd out unless you add:
+//      #define DO_SUPER_DEBUG_MODE 1
+// to iSpy.msgSend.common.h. Don't do this unless you're debugging iSpy - it's super slow.
+//
+
 id (*orig_objc_msgSend)(id theReceiver, SEL theSelector, ...);
 extern FILE *superLogFP;
 extern pthread_once_t key_once;
@@ -15,11 +21,27 @@ namespace bf_msgSend {
     USED __attribute((weakref("replaced_objc_msgSend"))) static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
     static ClassMap_t *ClassMap = NULL;
 
-    extern "C" int is_this_method_on_whitelist(id Cls, SEL selector) {
+    extern "C" USED unsigned int is_this_method_on_whitelist(id Cls, SEL selector) {
         if(Cls && selector) {
+            // Lookup the class. If it's not there, return FALSE.
             std::string className(object_getClassName(Cls));
+            ClassMap_t::iterator c_it = (*ClassMap).find(className);
+            if(c_it == (*ClassMap).end())
+                return NO;
+
+            // If it's there but there are no methods being tracked, that's weird. We return FALSE.
+            MethodMap_t methods = c_it->second;
+            if(methods.empty())
+                return NO;
+
+            // Now we look up the method. If it doesn't exist, return FALSE.
             std::string methodName(sel_getName(selector));
-            return (*ClassMap)[className][methodName];
+            MethodMap_t::iterator m_it = methods.find(methodName);
+            if(m_it == methods.end()) 
+                return NO;
+
+            // Sweet. This [class method] is on the whitelist. Return the whitelistPtr.
+            return m_it->second;
         }
         else
             return NO;
@@ -35,7 +57,7 @@ namespace bf_msgSend {
         }
     }
 
-    extern "C" USED void *print_args(id self, SEL _cmd, ...) {
+    extern "C" USED inline void *print_args(id self, SEL _cmd, ...) {
         void *retVal;
         std::va_list va;
         va_start(va, _cmd);
@@ -83,7 +105,9 @@ namespace bf_msgSend {
     }
 
 // This is basically a rewrite of Subjective-C.
-// It's thread-safe. Hooray!
+// It's mostly thread-safe, although the preflight/postflight checks could get hairy because they're exposed
+// to the iSpy API, making it possible to hook shitty into there. Caveat Emptor.
+
 #pragma mark _replaced_objc_msgSend (ARM)
     __asm__ (
                 ".arm\n"        // force 4-byte ARM mode (not Thumb or variants)
@@ -102,41 +126,42 @@ namespace bf_msgSend {
 
                 // Is this method on the whitelist?
                 // If not, just transfer control to original objc_msgSend function.
-                "push {r0-r3,lr}\n"
-                "bl _is_this_method_on_whitelist\n"
-                "mov r12, r0\n"
-                "pop {r0-r3,lr}\n"
-                "teq r12, #0\n"
-                "ldreq r12, (LO2)\n"
-"LoadO2:"       "ldreq pc, [pc, r12]\n"
+                // If so, we log it. We also check to see if it's been flagged for further action.
+                "push {r0-r3,lr}\n"                 // save the important register values
+                "bl _is_this_method_on_whitelist\n" // return: 0=no. 1=yes. Any other value is a pointer to an InterestingCall_t.
+                "mov r12, r0\n"                     // save value into r12
+                "pop {r0-r3,lr}\n"                  // restore the registers
+                "teq r12, #0\n"                     // if whitelist pointer == 0, don't log. Just jump to orig_objc_msgSend().
+                "ldreq r12, (LO2)\n"                // prepare for light speed, chewy
+"LoadO2:"       "ldreq pc, [pc, r12]\n"             // jump to orig_objc_msgSend().
 
                 // Save r0, r1, r2, r3 and lr.
-                "push {r0-r3,lr}\n" // first copy the registers onto the stack
-                "push {r12}\n"
-                "mov r0, r12\n"
-                "bl _interesting_call_preflight_check\n"
-                "mov r0, #32\n"     // allocate 5 * 4 bytes + 8 bytes, enough to hold 5 registers plus 3x 4-byte addresses
-                "bl _malloc\n"      // malloc'd pointer returned in r0
-                "pop {r1}\n"        // pop the whitelist entry type
-                "mov r12, r0\n"
-                "add r12, #24\n"    // move to the end of the buffer
-                "stmia r12, {r1}\n" // store it at the end of the thread-specific buffer
-                "bl _saveBuffer\n"  // save the malloc'd pointer thread-specific buffer. Return the buffer addr in r0.
-                "mov r12, r0\n"     // keep a copy of the malloc'd buffer
-                "pop {r0-r3,lr}\n"  // restore regs to original state from the stack
+                "push {r0-r3,lr}\n"                 // first copy the registers onto the stack
+                "push {r12}\n"                      // push a copy of the whitelist pointer address
+                "mov r0, r12\n"                     // put a copy in r0
+                "bl _interesting_call_preflight_check\n"    // interesting_call_preflight_check(whitelistPtrAddress);
+                "mov r0, #32\n"                     // allocate 5 * 4 bytes + 8 bytes, enough to hold 5 registers plus 3x 4-byte addresses
+                "bl _malloc\n"                      // malloc(32) to store: r0,r1,r2,r3,lr,JSONDataPointer,whitelistPtrAddress
+                "pop {r1}\n"                        // pop the whitelist pointer
+                "mov r12, r0\n"                     // copy the malloc'd buffer address into to r12
+                "add r12, #24\n"                    // move 24 bytes into the buffer
+                "stmia r12, {r1}\n"                 // store the whitelist pointer address there
+                "bl _saveBuffer\n"                  // save the malloc'd pointer addr into a thread-specific buffer. Return the malloc'd pointer addr in r0.
+                "mov r12, r0\n"                     // keep a copy of the malloc'd buffer in r12
+                "pop {r0-r3,lr}\n"                  // restore regs to original state from the stack
 
                 // Save the registers into the malloc'd buffer
                 "stmia r12, {r0-r3,lr}\n"
 
                 // log this call to objc_msgSend
                 "bl _print_args\n"
-                "push {r0}\n"       // save the returned pointer to the JSON data
-
-                "bl _loadBuffer\n"  // restore the thread-specific malloc'd buffer
-                "mov r12, r0\n"     // make a copy
-                "add r12, #20\n"    // move to the end of the buffer
-                "pop {r2}\n"        // grab the address of the JSON data pointer
-                "stmia r12, {r2}\n" // store it at the end of the thread-specific buffer
+                "push {r0}\n"                       // save the returned pointer to the JSON data
+                
+                "bl _loadBuffer\n"                  // restore the thread-specific malloc'd buffer
+                "mov r12, r0\n"                     // make a copy
+                "add r12, #20\n"                    // move to the end of the buffer
+                "pop {r2}\n"                        // grab the address of the JSON data pointer
+                "stmia r12, {r2}\n"                 // store it at the end of the thread-specific buffer
 
                 // restore the original register values from the thread-specific buffer
                 "mov r12, r0\n"
@@ -147,29 +172,28 @@ namespace bf_msgSend {
 "LoadOrig1:"    "ldr r12, [pc, r12]\n"
                 "blx r12\n"
 
-                "push {r0-r11}\n"           // save a copy of the return value and other regs onto the stack
-                "push {r0}\n"               // save another copy of return value
-                "bl _loadBuffer\n"          // get the address of the thread-specific buffer
-                "pop {r1}\n"                // get the return value from objc_msgSend
-                "mov r12, r0\n"
-                "add r12, #20\n"
-                "ldmia r12, {r0, r2}\n"
-                "bl _show_retval\n"         // add the return value to the JSON buffer:
-                                            // _show_retval(threadSpecificBuffer, returnValue)
-                                            // returns the address of the thread-specific buffer
+                "push {r0-r11}\n"                   // save a copy of the return value and other regs onto the stack
+                "push {r0}\n"                       // save another copy of return value
+                "bl _loadBuffer\n"                  // get the address of the thread-specific buffer
+                "pop {r1}\n"                        // pop the return value from objc_msgSend into r1
+                "mov r12, r0\n"                     // copy thread-specific buffer address into r12
+                "add r12, #20\n"                    // increment r12 to point at 20 bytes into the buffer
+                "ldmia r12, {r0, r2}\n"             // restore r0 ()
+                "bl _show_retval\n"                 // add the return value to the JSON buffer:
+                                                    // _show_retval(threadSpecificBuffer, returnValue)
+                                                    // returns the address of the thread-specific buffer
 
                 // fetch the malloc'd buffer, restore the regs from it, then free() it
-                //"bl _finalLoadBuffer\n"     // get malloc buffer
                 "bl _loadBuffer\n"
-                "push {r0}\n"               // save buffer address on stack
-                "mov r12, r0\n"             // move buffer address into general purpose reg...
-                "ldmia r12, {r0-r3,lr}\n"   // ...then restore the original registers from it (clobbers r12)
-                "pop {r12}\n"               // once again put buffer address in r12
-                "push {r0-r3,lr}\n"         // save the restored registers on the stack so we can call free()
-                "mov r0, r12\n"             // put the malloc'd buffer address into r0
-                "bl _free\n"                // free() the malloc'd buffer
-                "bl _cleanUp\n"
-                "pop {r0-r3,lr}\n"          // restore the saved registers from the stack (we only care about lr)
+                "push {r0}\n"                       // save buffer address on stack
+                "mov r12, r0\n"                     // move buffer address into general purpose reg...
+                "ldmia r12, {r0-r3,lr}\n"           // ...then restore the original registers from it (clobbers r12)
+                "pop {r12}\n"                       // once again put buffer address in r12
+                "push {r0-r3,lr}\n"                 // save the restored registers on the stack so we can call free()
+                "mov r0, r12\n"                     // put the malloc'd buffer address into r0
+                "bl _free\n"                        // free() the malloc'd buffer
+                "bl _cleanUp\n"     
+                "pop {r0-r3,lr}\n"                  // restore the saved registers from the stack (we only care about lr)
 
                 // restore the return value and other regs
                 "pop {r0-r11}\n"

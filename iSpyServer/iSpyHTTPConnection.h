@@ -13,4 +13,6 @@
     iSpyWebSocket *ws;
 }
 
+- (NSString *) getIPAddress;
+
 @end

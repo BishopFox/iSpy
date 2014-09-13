@@ -97,7 +97,7 @@
             }
         } else {
             ispy_log_debug(LOG_HTTP, "Request did not contain an origin header");
-            validOrigin = YES;  // If there is no Origin header the ruquest did not come from a browser
+            validOrigin = YES;  // If there is no Origin header the request did not come from a browser
         }
 
     }

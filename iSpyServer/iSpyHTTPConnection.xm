@@ -87,10 +87,11 @@
             NSURL *url = [NSURL URLWithString:origin];
             NSString *localIp = [self getIPAddress];
             ispy_log_debug(LOG_HTTP, "Got a request from origin %s", [[url host] UTF8String]);
-            if ([[url host] caseInsensitiveCompare:@"localhost"] || [[url host] caseInsensitiveCompare:@"127.0.0.1"]) {
+            ispy_log_debug(LOG_HTTP, "My local ip address is: %s", [localIp UTF8String]);
+            if ([[url host] caseInsensitiveCompare:@"localhost"] == NSOrderedSame || [[url host] isEqualToString:@"127.0.0.1"]) {
                 ispy_log_debug(LOG_HTTP, "Request origin matches localhost");
                 validOrigin = YES;
-            } else if ([[url host] caseInsensitiveCompare:localIp]) {
+            } else if ([[url host] isEqualToString:localIp]) {
                 ispy_log_debug(LOG_HTTP, "Request origin matches local ip: %s", [localIp UTF8String]);
                 validOrigin = YES;
             }

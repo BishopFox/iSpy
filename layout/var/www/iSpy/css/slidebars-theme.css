@@ -43,6 +43,7 @@
  
 /* Main Menu */
 .sb-menu { /* Apply to <ul> or <ol>. */
+	font-family: "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 	padding: 0;
 	margin: 0;
 	list-style-type: none;
@@ -52,8 +53,8 @@
 	width: 100%;
 	padding: 0;
 	margin: 0;
-	border-top: 1px solid rgba(255, 255, 255, 0.1);
-	border-bottom: 1px solid rgba(0, 0, 0, 0.1); 
+	/*border-top: 1px solid rgba(255, 255, 255, 0.1);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.1); */
 }
 
 .sb-menu > li:first-child {
@@ -67,13 +68,34 @@
 .sb-menu li a {
 	width: 100%; /* Makes links full width. */
 	display: inline-block;
-	padding: 1em;
+	padding: 3px;
+	padding-left: 6px;
+	font-weight: 100;
+	letter-spacing: 1px;
 	color: #f2f2f2;
+}
+
+.sb-menu li h4 {
+	padding-top: 8px;
+	padding-bottom: -2px;
+	padding-left: 4px;
+	font-weight: 300;
+	text-transform: uppercase;
+	font-size: 13px;
+	letter-spacing: 1px;
+	color: #ef4a2b;
 }
 
 .sb-menu li a:hover {
 	text-decoration: none;
 	background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sb-left .sb-menu .sb-active {
+	text-decoration: none;
+	background-color: rgba(255, 255, 255, 0.05);
+	border-left: 3px solid;
+	color: #ef4a2b;
 }
 
 /* Borders */

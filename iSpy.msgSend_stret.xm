@@ -119,7 +119,6 @@ namespace bf_objc_msgSend_stret {
                                             // returns the address of the thread-specific buffer
 
                 // fetch the malloc'd buffer, restore the regs from it, then free() it
-                //"bl _finalLoadBuffer\n"     // get malloc buffer
                 "bl _loadBuffer\n"
                 "push {r0}\n"               // save buffer address on stack
                 "mov r12, r0\n"             // move buffer address into general purpose reg...

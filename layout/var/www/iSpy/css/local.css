@@ -271,6 +271,17 @@ body {
   color: #BDBDBD;
   background-color: #060606;
 }
+
+.logo-hover {
+  -webkit-filter: grayscale(100%);
+}
+
+.logo-hover:hover {
+  -webkit-filter: grayscale(0%);
+}
+
+
+
 input,
 button,
 select,

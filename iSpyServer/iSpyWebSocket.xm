@@ -28,7 +28,16 @@
             ispy_log_info(LOG_HTTP, "RPC response is not nil for: %s", [msg UTF8String]);
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
             NSString *json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            [[[[iSpy sharedInstance] webServer] httpServer] ispySocketBroadcast: json];
+
+            /* If the RPC request only resulted in a read, then don't broadcast the data */
+            if ([response objectForKey:@"operation"] != nil && [[response objectForKey:@"operation"] isEqualToString:@"read"])
+            {
+                [self sendMessage: json];
+            }
+            else
+            {
+                [[[[iSpy sharedInstance] webServer] httpServer] ispySocketBroadcast: json];
+            }
         }
     });
 }

@@ -88,9 +88,12 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
         [httpServer setDocumentRoot: @"/var/www/iSpy/"];
 
         NSError *error;
-        if ([httpServer start:&error]) {
+        if ([httpServer start:&error])
+        {
             successful = YES;
-        } else {
+        }
+        else
+        {
             NSString *errorMessage = [NSString stringWithFormat:@"%@", error];
             NSLog(@"[iSpy] Error starting HTTP Server: %@", errorMessage);
             ++lport;
@@ -100,9 +103,12 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
     } while ( ! successful && attempts < MAX_ATTEMPTS);
 
-    if (successful) {
+    if (successful)
+    {
         NSLog(@"[iSpy] HTTP server started successfully on port %d", lport);
-    } else {
+    }
+    else
+    {
         NSLog(@"[iSpy] Failed to start web server, max attempts");
     }
 
@@ -121,11 +127,13 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
        fallbackTo:(int) fallback
 {
     int lport = [[self.plist objectForKey:key] intValue];
-    if (lport <= 0 || 65535 <= lport) {
+    if (lport <= 0 || 65535 <= lport)
+    {
         NSLog(@"[iSpy] Invalid listen port (%d); fallback to %d", lport, fallback);
         lport = fallback;
     }
-    if (lport <= 1024) {
+    if (lport <= 1024)
+    {
         NSLog(@"[iSpy] %d is a priviledged port, this is most likely not going to work!", lport);
     }
     return lport;

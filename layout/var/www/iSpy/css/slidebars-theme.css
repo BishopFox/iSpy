@@ -15,7 +15,8 @@
 
 #sb-site {
 	padding: 65px 15px 15px 15px;
-	box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.3);
+	/*box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.3);*/
+
 }
 
 /* ---------------
@@ -25,6 +26,8 @@
 .sb-slidebar {
 	background-color: #222222;
 	color: #e8e8e8;
+	padding-top: 50px; 
+	width:250px;
 }
 
 .sb-slidebar a {
@@ -43,7 +46,7 @@
  
 /* Main Menu */
 .sb-menu { /* Apply to <ul> or <ol>. */
-	font-family: "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 	padding: 0;
 	margin: 0;
 	list-style-type: none;
@@ -72,16 +75,16 @@
 	padding-left: 6px;
 	font-weight: 100;
 	letter-spacing: 1px;
-	color: #f2f2f2;
+	color: #e2e2e2;
 }
 
 .sb-menu li h4 {
 	padding-top: 8px;
 	padding-bottom: -2px;
-	padding-left: 4px;
+	padding-left: 6px;
 	font-weight: 300;
 	text-transform: uppercase;
-	font-size: 13px;
+	font-size: 12px;
 	letter-spacing: 1px;
 	color: #ef4a2b;
 }

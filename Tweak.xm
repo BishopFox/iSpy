@@ -243,6 +243,17 @@ void launch_cycript();
 }
 %end
 
+
+%hook NSMutableURLRequest
+-(void) setHTTPBody:(NSData *) data {
+	NSString *logEntry = [NSString stringWithUTF8String:(char *)[data bytes]];
+	NSLog(@"%s", [logEntry UTF8String]);
+	ispy_log_debug(LOG_HTTP, "%s", [logEntry UTF8String]);
+	%orig;
+}
+%end
+
+
 /********************************************
  *** End of area for putting your tweaks. ***
  ********************************************/
@@ -262,71 +273,64 @@ void launch_cycript();
  We hook showGUIPopOver in the UIWindow class (but only once) to do all this. There are loads of other ways.
  */
 void showGUIPopOver() {
-	// call the original method first
-	//%orig;
+	// Only ever run this function once.
+	static BOOL once = NO;
+	
+	if(!once) {
+		once = YES;
 
-	// NSLog(@"[iSpy] showGUIPopOver App: %@", [UIApplication sharedApplication]);
+		// create a UIView object to hold the overlay
+		UIView* view = [[UIView alloc] initWithFrame: CGRectMake(10,30,250,34)];
 
-	// Only ever run this function once. We should probably use GCD for this.
-	static bool hasRunOnce = false;
-	if (hasRunOnce) {
-		return;
+		// get the current window
+		UIWindow* window = [UIApplication sharedApplication].keyWindow;
+		if (!window) {
+			window = [[UIApplication sharedApplication].windows objectAtIndex:0];
+		}
+
+		UIView *mainView = [[window subviews] objectAtIndex:0];
+		float width = mainView.bounds.size.width;
+		NSLog(@"Width: %f", width);
+
+		// give the overlay a black background and rounded corners
+		[view setBackgroundColor: [UIColor blackColor]];
+		view.layer.cornerRadius = 10;
+		view.layer.masksToBounds = YES;
+		[view setContentMode:UIViewContentModeCenter];
+
+		// Load th Bishop Fox logo into a UIImageView
+		UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/img/bf-orange-alpha.png"]];
+		[img setContentMode:UIViewContentModeLeft];
+
+		// give everything a nice BF orange border
+		[[view layer] setBorderColor:[UIColor orangeColor].CGColor];
+		[[view layer] setBorderWidth:2];
+
+		// Add a "loading x%" label.
+		CGRect labelFrame = CGRectMake(52,1,250,28);
+		UILabel *label = [[UILabel alloc] initWithFrame: labelFrame];
+		[label setText: @"iSpy loaded!"];
+		[label setTextColor: [UIColor whiteColor]];
+		[label setBackgroundColor: [UIColor blackColor]];
+
+		// add the logo and label to the overlay view
+		[view performSelectorOnMainThread:@selector(addSubview:) withObject:img waitUntilDone:YES];
+		[view performSelectorOnMainThread:@selector(addSubview:) withObject:label waitUntilDone:YES];
+
+		// add the view to the window. This makes it visible.
+		// Note: we have to run the UI update code on the main thread for the UI to actually update/change.
+		[[[window subviews] objectAtIndex:0] performSelectorOnMainThread:@selector(addSubview:) withObject:view waitUntilDone:YES];
+
+		// We dispatch this with GCD and send it to a background thread.
+		dispatch_queue_t bf_loading = dispatch_get_global_queue(0, 0);
+
+		dispatch_async(bf_loading, ^{		
+			// show the Showtime message...
+			sleep(3);
+			// clean up
+			[view performSelectorOnMainThread:@selector(setHidden:) withObject:[NSNumber numberWithBool:true] waitUntilDone:YES];
+		});
 	}
-	hasRunOnce = true;
-
-	// create a UIView object to hold the overlay
-	UIView* view = [[UIView alloc] initWithFrame: CGRectMake(10,30,250,34)];
-
-	// get the current window
-	UIWindow* window = [UIApplication sharedApplication].keyWindow;
-	if (!window) {
-		window = [[UIApplication sharedApplication].windows objectAtIndex:0];
-	}
-
-	// give the overlay a black background and rounded corners
-	[view setBackgroundColor: [UIColor blackColor]];
-	view.layer.cornerRadius = 10;
-	view.layer.masksToBounds = YES;
-	[view setContentMode:UIViewContentModeCenter];
-
-	// Load th Bishop Fox logo into a UIImageView
-	UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/var/www/iSpy/img/bf-orange-alpha.png"]];
-	[img setContentMode:UIViewContentModeLeft];
-
-	// give everything a nice BF orange border
-	[[view layer] setBorderColor:[UIColor orangeColor].CGColor];
-	[[view layer] setBorderWidth:2];
-
-	// add the BF logo UIImageView to the left side of the overlay
-	[view addSubview: img];
-
-	// Add a "loading x%" label.
-	CGRect labelFrame = CGRectMake(52,1,250,28);
-	UILabel *label = [[UILabel alloc] initWithFrame: labelFrame];
-	[label setText: @"iSpy loading..."];
-	[label setTextColor: [UIColor whiteColor]];
-	[label setBackgroundColor: [UIColor blackColor]];
-
-	// add the label to the view
-	[view addSubview: label];
-
-	// add the view to the window. This makes it visible
-	[[[window subviews] objectAtIndex:0] addSubview:view];
-
-	// Now we loop, writing the label @globalStatusStr (which is an exported global NSString), before sleeping and repeating.
-	// @globalStatusStr can be set from anywhere, which makes it nice and easy to have each of the startup routines update
-	// the GUI with a status update.
-	// We dispatch this with GCD and send it to a background thread.
-	// Note: we have to run the UI update code on the main thread for the UI to actually update/change.
-	dispatch_queue_t bf_loading = dispatch_get_global_queue(0, 0); // default priority thread
-	dispatch_async(bf_loading, ^{
-		[label performSelectorOnMainThread:@selector(setText:) withObject:@"Showtime!" waitUntilDone:YES];
-		sleep(3); // show the Showtime message...
-
-		// clean up
-		[view performSelectorOnMainThread:@selector(setHidden:) withObject:[NSNumber numberWithBool:true] waitUntilDone:YES];
-		[view release];
-	});
 }
 
 
@@ -337,13 +341,19 @@ void showGUIPopOver() {
 
 %hook UIApplication
 
--(void) init {
-	// Register for the "UIApplicationDidBecomeActiveNotification" notification.
-	// Use it to trigger our GUI overlay.
-	[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
-       	showGUIPopOver();
-	}];
-	return %orig;
+-(id) init {
+	NSLog(@"-[UIApplication init] entry");
+	self = %orig;
+
+	if(self) {
+		// Register for the "UIApplicationDidBecomeActiveNotification" notification.
+		// Use it to trigger our GUI overlay.
+		[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+	       	showGUIPopOver();
+		}];	
+	}
+	NSLog(@"-[UIApplication init] exit");
+	return self;
 }
 
 // This is neat - it hooks all user input events and can be used to log them :)
@@ -549,6 +559,7 @@ EXPORT int return_true() {
 
 //		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
 //		dispatch_sync(initQ, ^{
+		NSLog(@"Whitelist stuff");
 			whitelist_startup();
 			whitelist_add_hardcoded_interesting_calls();
 			bf_init_msgSend_logging();
@@ -561,12 +572,14 @@ EXPORT int return_true() {
 		// startup crash. This could probably do with extra investigation.
 		//sleep(1); // testing
 
+		NSLog(@"substrate replacement...");
 		// Replace MSMessageHookEx with the iSpy variant if configured to do so
 		if ([[plist objectForKey:@"settings_ReplaceMSubstrate"] boolValue]) {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Anti-anti-swizzling: Replacing bf_MSHookFunctionEx() with cache-poisoning variant.");
 			bf_init_substrate_replacement();
 		}
 
+		NSLog(@"msgSend logging...");
 		// If configured in the prefs panel on iOS, enable objc_msgSend logging at app startup.
 		// Call bf_disable_msgSend_logging() or [[iSpy sharedInstance] msgSend_disableLogging] or /api/whateveritis to turn it off.
 		// Or turn it off in the prefs panel. Or the web GUI.
@@ -577,6 +590,7 @@ EXPORT int return_true() {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] msgsend: Message logging disabled.");
 		}
 
+		NSLog(@"pinning...");
 		// SSL pinning bypass?
 		if ([[plist objectForKey:@"settings_TrustMeBypass"] boolValue]) {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - ENABLED");
@@ -585,6 +599,7 @@ EXPORT int return_true() {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] trustme: SSL Certificate Pinning Bypass - DISABLED");
 		}
 
+		NSLog(@"Instance tracking");
 		// Enable instance tracking if configured to do so
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Initializing the instance tracker");
 		InstanceTracker *tracker = [InstanceTracker sharedInstance];
@@ -596,6 +611,7 @@ EXPORT int return_true() {
 			ispy_log_debug(LOG_GENERAL, "[iSpy] Instance tracking is disabled in preferences. Starting without.");
 		}
 
+		NSLog(@"Further init");
 		// Load our own custom Theos hooks.
 		%init(bf_group);
 
@@ -603,10 +619,13 @@ EXPORT int return_true() {
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 	}
 
+	NSLog(@"Release everything");
 	/* Clean up */
 	[bundleId release];
 	[plist release];
 	[appPlist release];
+
+	return;
 }
 
 /*

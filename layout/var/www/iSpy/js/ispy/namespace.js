@@ -19,7 +19,7 @@ window.iSpy = {
     iSpy.SyncSocket.onopen = function() {
         console.log("[*] Successfully connected to remote rpc server!");
         $("#activity-monitor").removeClass("fa-eye-slash");
-        $("#activity-monitor").addClass("fa-refresh fa-spin");
+        $("#activity-monitor").addClass("fa-eye");
         iSpy.Events.trigger("ispy:connection-opened");
     }
 
@@ -43,7 +43,7 @@ window.iSpy = {
 
     iSpy.SyncSocket.onclose = function() {
         console.log("[!] Connection to server lost");
-        $("#activity-monitor").removeClass("fa-refresh fa-spin");
+        $("#activity-monitor").removeClass("fa-eye");
         $("#activity-monitor").addClass("fa-eye-slash");
         iSpy.Events.trigger("ispy:connection-lost");
     }

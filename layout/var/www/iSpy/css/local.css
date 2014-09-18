@@ -28,6 +28,8 @@ video {
   display: inline-block;
   vertical-align: baseline;
 }
+
+
 audio:not([controls]) {
   display: none;
   height: 0;
@@ -265,21 +267,13 @@ html {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 body {
-  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Open Sans";
   font-size: 14px;
   line-height: 1.42857143;
   color: #BDBDBD;
   background-color: #060606;
+  font-weight: 100;
 }
-
-.logo-hover {
-  -webkit-filter: grayscale(100%);
-}
-
-.logo-hover:hover {
-  -webkit-filter: grayscale(0%);
-}
-
 
 
 input,
@@ -597,17 +591,22 @@ ol ol {
 }
 dl {
   margin-top: 0;
-  margin-bottom: 20px;
+  padding-bottom: 5px !important;
+  padding-top: 5px !important;
+  width: 100% !important;
 }
 dt,
 dd {
   line-height: 1.42857143;
 }
 dt {
-  font-weight: bold;
+  font-weight: 500;
+  width: 300px !important;
+  padding-right: 20px !important;
 }
 dd {
   margin-left: 0;
+
 }
 @media (min-width: 768px) {
   .dl-horizontal dt {

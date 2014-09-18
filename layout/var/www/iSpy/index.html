@@ -33,37 +33,123 @@
 
 </head>
 
+
 <!-- iSpy Templates -->
 <script id="iosapp-index" type="text/template">
-    <div class="container">
-        <h2>
-            <img style="width:64px;height:64px" src="<%= imageURI%>"> <%= CFBundleDisplayName %>
-        </h2>
+
+    <%
+    (function (self) {
+        $(logoImg).attr("src", imageURI);
+    })();
+    %>
+
+    <div class="template-container">
         <div class="row">
+            <p></p>
             <div class="col-lg-8">
                 <div class="bs-example">
                     <div class="list-group">
-                            <dl class="dl-horizontal list-group-item">
-                                <dt>Application Identifier</dt>
-                                <dd><%= CFBundleIdentifier %></dd>
-                                <dt>Version</dt>
-                                <dd><%= CFBundleVersion %></dd>
-                            </dl>
-                            <dl class="dl-horizontal list-group-item">
-                                <dt>ASLR Offset</dt>
-                                <dd>0x<%= parseInt(ASLROffset, 10).toString(16) %></dd>
-                            </dl>
+                        <dl class="dl-horizontal list-group-item dl-heading">
+                            <span class="infoTitle">
+                                [[NSBundle mainBundle] infoDictionary]
+                            </span>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>CFBundleDisplayName</dt>
+                            <dd><%= CFBundleDisplayName%></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>CFBundleIdentifier</dt>
+                            <dd><%= CFBundleIdentifier %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>Version</dt>
+                            <dd><%= CFBundleVersion %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>BuildMachineOSBuild</dt>
+                            <dd><%= BuildMachineOSBuild %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>NSMainNibFile</dt>
+                            <dd><%= NSMainNibFile %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTPlatformBuild</dt>
+                            <dd><%= DTPlatformBuild %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTCompiler</dt>
+                            <dd><%= DTCompiler %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>CFBundleDisplayName</dt>
+                            <dd><%= CFBundleDisplayName %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>FBundleShortVersionString</dt>
+                            <dd><%= CFBundleShortVersionString %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTSDKName</dt>
+                            <dd><%= DTSDKName %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>CFBundleExecutable</dt>
+                            <dd><%= CFBundleExecutable %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTXcode</dt>
+                            <dd><%= DTXcode %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>CFBundleInfoDictionaryVersion</dt>
+                            <dd><%= CFBundleInfoDictionaryVersion %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTXcodeBuild</dt>
+                            <dd><%= DTXcodeBuild %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTSDKBuild</dt>
+                            <dd><%= DTSDKBuild %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>MinimumOSVersion</dt>
+                            <dd><%= MinimumOSVersion %></dd>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <dt>DTPlatformVersion</dt>
+                            <dd><%= DTPlatformVersion %></dd>
+                        </dl>
+
                     </div>
                 </div>
             </div>
+
             <div class="col-lg-4">
                 <div class="bs-example">
-                    <ul class="list-group">
-                        <li class="list-group-item">
+                    <div class="list-group">
+                        <dl class="dl-horizontal list-group-item dl-heading">
+                            <span class="infoTitle">
+                                Stats
+                            </span>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
                             <span class="badge"><%= classes.length %></span>
                             Number of classes
-                        </li>
-                    </ul>
+                        </dl>
+                        <dl class="dl-horizontal list-group-item">
+                            <span class="badge" id="ASLRBadge"><%= "0x" + parseInt(ASLROffset, 10).toString(16) %></span>
+                            ASLR slide
+                            <%
+                                if(parseInt(ASLROffset, 10) != 0) {
+                                    $("#ASLRBadge").removeClass("badge")
+                                    $("#ASLRBadge").addClass("label label-danger");
+                                }
+                            %>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div><!-- /.row -->
@@ -71,7 +157,7 @@
 </script>
 
 <script id="classdump-index" type="text/template">
-    <div class="container">
+    <div class="template-container">
         <h2> Class Dump </h2>
         <div class="row">
         foobar
@@ -80,7 +166,7 @@
 </script>
 
 <script id="cycript-index" type="text/template">
-    <div class="container">
+    <div class="template-container">
         <h1>Cycript Stuff Goes Here</h1>
     </div>
 </script>
@@ -137,10 +223,13 @@ $(document).ready(function() {
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand sb-toggle-left logo-hover" href="#">
-                    <!--<i class="fa fa-fw fa-bars"></i>-->
-                    <img src="/img/bf-shield.svg" class="" width="28"/>
-                </a>
+                <ul class="nav navbar-nav navbar-user">
+                    <li>
+                        <a class="nav navbar-nav navbar-user sb-toggle-left" href="#">
+                        <img id="logoImg" src="/img/bf-shield.svg" class="logo-hover" width="28"/>
+                        </a>
+                    </li>
+                </ul>
             </div>
             <div class="collapse navbar-collapse navbar-ex1-collapse ">
                 <!--
@@ -171,19 +260,19 @@ $(document).ready(function() {
                         </ul>
                     </li>
                 </ul>
-
+-->
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" id="btnCycript"><i class="fa fa-fw fa-keyboard-o fa-lg"></i></a>
+                        <a href="#" id="btnCycript"><i class="fa fa-fw fa-keyboard-o fa-2x"></i> Cycript</a>
                     </li>
                 </ul>
 
                 <ul class="nav navbar-nav navbar-user">
                     <li>
-                        <a href="#" id="btnShell"><i class="fa fa-fw fa-terminal fa-lg"></i></a>
+                        <a href="#" id="btnShell"><i class="fa fa-fw fa-terminal fa-2x"></i> Shell</a>
                     </li>
                 </ul>
-
+<!--
                 
                 <form class="navbar-form navbar-right" role="search">
                     <a class="btn btn-inverse menuButton" id="btnMsgSendState">
@@ -206,7 +295,7 @@ $(document).ready(function() {
                 -->
                 <ul class="nav navbar-nav navbar-user navbar-right">
                     <li>
-                        <a href="#" ><i id="activity-monitor" class="fa fa-fw fa-eye-slash"></i></a>
+                        <a href="#" ><i id="activity-monitor" class="fa fa-fw fa-plug fa-eye-slash"></i></a>
                     </li>
                 </ul>
             </div>
@@ -220,7 +309,7 @@ $(document).ready(function() {
     </div><!-- /#sb-site -->
 
     <!-- Hidden Sidebar -->
-    <div class="sb-slidebar sb-left" style="padding-top: 50px;">
+    <div class="sb-slidebar sb-left" style="">
         <nav>
             <ul class="sb-menu" >
                 <!--<li class="sb-close">
@@ -337,3 +426,25 @@ $(document).ready(function() {
 
 
 </html>
+
+
+<!--
+                                
+<%= (function (self) {
+    var fieldName = "";
+    var dataValue = "";
+    var lineItem = "";
+    var finalHTML = ""
+
+    fieldName = "Field";
+    dataValue = "Data";
+
+    $.each(self.model.attributes, function(key, value) {
+        lineItem = "<dt>" + key + "</dt><dd>" + value + "</dd>";
+        finalHTML = finalHTML + lineItem + "\n";    
+    });
+    
+    return finalHTML;
+})(this) %>
+
+                                -->

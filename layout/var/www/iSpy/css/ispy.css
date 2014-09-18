@@ -33,3 +33,49 @@ html, body {
     min-height: 100%;
     height: 100%;
 }
+
+.infoTitle {
+  display:inline-block; 
+  vertical-align:bottom;
+  font-weight: 600;
+  font-family: "Open Sans";
+  font-size: 24px;
+}
+
+.dl-heading {
+  background-color: #404040 !important;
+}
+
+.logo-hover {
+  -webkit-filter: grayscale(100%) !important;
+}
+
+.logo-hover:hover {
+  -webkit-filter: grayscale(0%) !important;
+}
+
+a i {
+  color: #bdbdbd;
+}
+
+a:hover i {
+  color: #E83165;
+}
+
+.template-container {
+  font-family: "Open Sans";
+  font-size: 14px;
+  font-weight: 100;
+  letter-spacing: 1px;
+}
+
+ul li a {
+    font-color: #bdbdbd;
+    font-weight: 400;
+}
+
+ul li a:hover {
+    background-color: #181818 !important;
+    font-color: #E83165;
+    font-weight: 400;
+}

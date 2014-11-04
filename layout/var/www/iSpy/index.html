@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>iSpy</title>
-    
+
     <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/animate.min.css" />
@@ -21,11 +21,11 @@
     <link id="gridcss" rel="stylesheet" type="text/css" href="/css/dark-bootstrap-all.min.css" />
     <link rel="stylesheet" href="/css/slidebars.min.css">
     <link rel="stylesheet" href="/css/slidebars-theme.css">
-    
+
     <!-- The main theme -->
     <script type="text/javascript" src="/js/shieldui-all.min.js"></script>
     <script type="text/javascript" src="/js/slidebars.min.js"></script>
-    
+
     <!-- Cycript terminal stuff -->
     <link rel="stylesheet" type="text/css" href="/css/terminal.css">
     <script type="text/javascript" src="/js/terminal-ext.js"></script>
@@ -132,7 +132,7 @@
                     <div class="list-group">
                         <dl class="dl-horizontal list-group-item dl-heading">
                             <span class="infoTitle">
-                                Stats
+                                Statistics
                             </span>
                         </dl>
                         <dl class="dl-horizontal list-group-item">
@@ -156,12 +156,14 @@
     </div>
 </script>
 
-<script id="classdump-index" type="text/template">
+<script id="classbrowser-index" type="text/template">
     <div class="template-container">
-        <h2> Class Dump </h2>
-        <div class="row">
-        foobar
-        </div><!-- /.row -->
+        <div class="container">
+            <h2> Class Browser </h2>
+            <div class="row">
+
+            </div><!-- /.row -->
+        </div>
     </div>
 </script>
 
@@ -333,9 +335,9 @@ $(document).ready(function() {
                     </a>
                 </li>
 
-                <li id="" class="sb-close">    
-                    <h4>Classes</h4>                    
-                    <a href="#">
+                <li id="" class="sb-close">
+                    <h4>Classes</h4>
+                    <a href="#classbrowser">
                         <i class="fa fa-fw fa-cubes"></i>
                         Class Browser
                     </a>
@@ -415,10 +417,14 @@ $(document).ready(function() {
 
 <!-- iSpy Models -->
 <script type="text/javascript" src="/js/ispy/models/ios-app.js"></script>
+<script type="text/javascript" src="/js/ispy/models/objc.js"></script>
+
+<!-- iSpy Collections -->
+<script type="text/javascript" src="/js/ispy/models/objc-runtime.js"></script>
 
 <!-- iSpy Views -->
 <script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
-<script type="text/javascript" src="/js/ispy/views/classdump-views.js"></script>
+<script type="text/javascript" src="/js/ispy/views/classbrowser-views.js"></script>
 <script type="text/javascript" src="/js/ispy/views/cycript-views.js"></script>
 
 <!-- iSpy Router -->

@@ -3,7 +3,7 @@
 iSpy.Models.ObjcClass = Backbone.Model.extend({
 
     defaults: {
-        "name": '',
+        "name": "",
         "classMethods": [],
         "instanceMethods": [],
         "properties": [],
@@ -25,7 +25,7 @@ iSpy.Models.ObjcClass = Backbone.Model.extend({
 iSpy.Models.ObjcMethod = Backbone.Model.extend({
 
     defaults: {
-        "name": '',
+        "name": "",
         "arguments": [],
         "returnType": null,
         "instanceMethod": true,

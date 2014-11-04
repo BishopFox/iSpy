@@ -1,6 +1,6 @@
 
 
-iSpy.Collections.ObjcRuntime = Backbone.Collection.extend({
+iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
     initialize: function() {
         iSpy.Events.on('sync:classList', this.set, this);

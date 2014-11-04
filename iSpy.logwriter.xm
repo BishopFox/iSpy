@@ -47,12 +47,12 @@ static const unsigned int WTF   = 4;
 static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[WTF]"};
 
 /*
->>> These come from iSpy.common.h
-static const unsigned int LOG_STRACE   = 0;
-static const unsigned int LOG_MSGSEND  = 1;
-static const unsigned int LOG_GENERAL  = 2;
-static const unsigned int LOG_HTTP     = 3;
-static const unsigned int LOG_TCPIP    = 4;
+    >>> These come from iSpy.common.h
+    static const unsigned int LOG_STRACE   = 0;
+    static const unsigned int LOG_MSGSEND  = 1;
+    static const unsigned int LOG_GENERAL  = 2;
+    static const unsigned int LOG_HTTP     = 3;
+    static const unsigned int LOG_TCPIP    = 4;
 */
 static const unsigned int LOG_GLOBAL   = 5;
 static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.

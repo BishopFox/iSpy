@@ -60,9 +60,10 @@ Backbone.sync = function(method, model, options) {
 
     if (method === "read") {
         for (var index = 0; index < model.rpcRead.length; ++index) {
-            var readMessage = JSON.stringify(model.rpcRead[index]);
+            var readMessage = model.rpcRead[index];
+            readMessage['operation'] = method;
             console.log("[Backone.Sync:Read] -> " + readMessage);
-            iSpy.SyncSocket.send(readMessage);
+            iSpy.SyncSocket.send(JSON.stringify(readMessage));
         }
     }
 

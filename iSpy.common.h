@@ -1,7 +1,8 @@
 #ifndef __ISPY_H__
 #define __ISPY_H__
 #include "objc_type.h"	// taken from the class-dump-z source
-#include "/usr/include/objc/objc-runtime.h"
+#include <objc/runtime.h>
+#include <objc/message.h>
 
 // Helper macros
 #define SL_SETUP_HOOK(func, returnType, args...)	static returnType (*orig_##func)(args);returnType sl_##func(args)

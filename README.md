@@ -1,7 +1,7 @@
 iSpy Assessment Framework
 =========================
 
-iSpy aims to be your one-stop-shop for reverse engineering iOS applications.
+iSpy aims to be your one-stop-shop for reverse engineering and dynamic analysis of iOS applications.
 
 Current Release
 ----------------
@@ -19,8 +19,8 @@ Features
 * Instance tracking
 * Automatic jailbreak-detection bypasses
 * Automatic SSL certificate pinning bypasses
-* Re-implemented Objc_msgSend for logging function calls in realtime
-* Cycript integration; access Cycript from your browser!
+* Re-implemented `objc_msgSend` for logging and tracing function calls in realtime
+* [Cycript](http://www.cycript.org/) integration; access Cycript from your browser!
 * Anti-anti-method swizzling
 * Automatic detection of vulnerable function calls
 * Easy to use soft-breakpoints

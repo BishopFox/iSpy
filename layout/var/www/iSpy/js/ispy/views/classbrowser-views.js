@@ -1,13 +1,14 @@
 // The Class Index View
 // -----------------------
-iSpy.Views.ClassDumpIndex = Backbone.View.extend({
+iSpy.Views.ClassBrowserIndex = Backbone.View.extend({
 
     el: '#page-wrapper',
 
-    template: mktemplate("classdump-index"),
+    template: mktemplate("classbrowser-index"),
 
     initialize: function() {
-        iSpy.Events.on('classdump:index', this.render, this);
+        iSpy.Events.on('classbrowser:index', this.render, this);
+        iSpy.Events.on('sync:classList', this.set, this);
     },
 
     render: function() {

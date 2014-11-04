@@ -359,11 +359,12 @@ void showGUIPopOver() {
 // This is neat - it hooks all user input events and can be used to log them :)
 -(void) sendEvent:(UIEvent*)event
 {
+/*
     NSSet *touches = [event allTouches];
     UITouch *touch = [touches anyObject];
     CALayer *touchedLayer = [touch view].layer;
     NSLog(@"[iSpy] Event: %@ // %@ // %@",NSStringFromClass([[touch view] class]), touchedLayer, [touch view]);
-
+*/
     %orig;
 }
 

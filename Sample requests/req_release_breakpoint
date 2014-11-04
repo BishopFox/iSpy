@@ -1,8 +1,0 @@
-{
-	"messageType": "releaseBreakpoint", 
-	"messageData": {
-			"className":"RealTimeDataViewController",
-			"methodName":"showLoadingView"
-	}
-}
-

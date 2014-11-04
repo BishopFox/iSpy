@@ -13,16 +13,19 @@
     return self;
 }
 
--(void) ispySocketBroadcast: (NSString *) msg {
+-(void) ispySocketBroadcast: (NSString *) msg
+{
 
     /*
      * webSockets is a NSMutableArray so we need to lock but
      * the sockets are async so locking shouldn't be terrible
      */
 
-    if (0 < [self numberOfSyncSocketConnections]) {
+    if (0 < [self numberOfSyncSocketConnections])
+    {
         [ispySocketLock lock];
-        for (iSpyWebSocket *ws in ispySockets) {
+        for (iSpyWebSocket *ws in ispySockets)
+        {
             [ws sendMessage: msg];
         }
         [ispySocketLock unlock];
@@ -43,7 +46,8 @@
     [webSocketsLock lock];
     [webSockets addObject:ws];
     [webSocketsLock unlock];
-    if ([ws isKindOfClass:[iSpyWebSocket class]]) {
+    if ([ws isKindOfClass:[iSpyWebSocket class]])
+    {
         [ispySocketLock lock];
         [ispySockets addObject:ws];
         [ispySocketLock unlock];
@@ -58,7 +62,8 @@
     [webSockets removeObject:[notification object]];
     [webSocketsLock unlock];
 
-    if ([[notification object] isKindOfClass:[iSpyWebSocket class]]) {
+    if ([[notification object] isKindOfClass:[iSpyWebSocket class]])
+    {
         [ispySocketLock lock];
         [ispySockets removeObject:[notification object]];
         [ispySocketLock unlock];

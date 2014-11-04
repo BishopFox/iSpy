@@ -1,7 +1,0 @@
-{
-	"messageType": "protocolsForClass", 
-	"messageData": {
-			"class":"NSString"
-	}
-}
-

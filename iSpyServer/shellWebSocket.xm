@@ -197,20 +197,12 @@
 
 -(void) doexec {
     // Setup the command and environment
-    const char *prog[] = { 
-        "/usr/bin/ssh", 
-        "-t", "-t", 
-        "-p", "1337", 
-        "-i", "/var/mobile/.ssh/id_rsa", 
-        "-o", "StrictHostKeyChecking no", 
-        "mobile@127.0.0.1", 
-        [[self cmdLine] UTF8String], 
-        NULL
-    };
-    const char *envp[] =  { "TERM=xterm-256color", NULL };
+    const char *prog[] = { "/usr/bin/cycript", "-r", "127.0.0.1:12345", NULL };
+    const char *envp[] = { "TERM=xterm-256color", NULL };
 
-    // attach shell to our process
+    // replace current process with cycript
     execve((const char *)prog[0], (char **)prog, (char **)envp);
+    
     // never returns
 }
 

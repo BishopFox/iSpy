@@ -45,6 +45,7 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #include "iSpy.msgSend.whitelist.h"
+#import "Cycript.framework/headers/cycript.h"
 
 // This will become a linked list of pointers to instantiated classes
 //id (*orig_class_createInstance)(Class cls, size_t extraBytes);
@@ -622,6 +623,8 @@ EXPORT int return_true() {
 	[bundleId release];
 	[plist release];
 	[appPlist release];
+
+	CYListenServer(12345);
 }
 
 /*

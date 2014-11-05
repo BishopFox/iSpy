@@ -43,6 +43,7 @@
 //
 
 // hard-coded for now while we're 32-bit only.
+#define PAGE_SIZE 4096
 #define MALLOC_BUFFER_SIZE PAGE_SIZE * 4     // 4 pages of memory
 #define MINIBUF_SIZE 256
 

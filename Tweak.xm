@@ -427,6 +427,21 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 }
 
 %end // UIControl
+
+
+/*
+	Bypass AFNetworking's SSL Pinning
+*/
+%hook AFSecurityPolicy
+- (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust {
+	return YES;
+}
+
+- (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain {
+	return YES;
+}
+%end
+
 %end // %group bf_group
 
 

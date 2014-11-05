@@ -615,6 +615,9 @@ EXPORT int return_true() {
 		// Load our own custom Theos hooks.
 		%init(bf_group);
 
+		// Initialize Cycript
+		CYListenServer(12345);
+
 		// Start the iSpy web server
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 	}
@@ -623,8 +626,6 @@ EXPORT int return_true() {
 	[bundleId release];
 	[plist release];
 	[appPlist release];
-
-	CYListenServer(12345);
 }
 
 /*

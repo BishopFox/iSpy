@@ -45,6 +45,7 @@
 #include "hooks_C_system_calls.h"
 #include "hooks_CoreFoundation.h"
 #include "iSpy.msgSend.whitelist.h"
+#import "Cycript.framework/headers/cycript.h"
 
 // This will become a linked list of pointers to instantiated classes
 //id (*orig_class_createInstance)(Class cls, size_t extraBytes);
@@ -438,6 +439,21 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 }
 
 %end // UIControl
+
+
+/*
+	Bypass AFNetworking's SSL Pinning
+*/
+%hook AFSecurityPolicy
+- (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust {
+	return YES;
+}
+
+- (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain {
+	return YES;
+}
+%end
+
 %end // %group bf_group
 
 
@@ -615,6 +631,9 @@ EXPORT int return_true() {
 		NSLog(@"Further init");
 		// Load our own custom Theos hooks.
 		%init(bf_group);
+
+		// Initialize Cycript
+		CYListenServer(12345);
 
 		// Start the iSpy web server
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");

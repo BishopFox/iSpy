@@ -180,17 +180,8 @@ $(document).ready(function() {
     /* Initialize the cycript terminal bound to hotkey ctrl-` */
     $("#cycriptWrapperDiv").butterflyTerminal("cycript", "`");
     $("#cycriptWrapperDiv").hideTerminal();
-
-    setTimeout(function() {
-        /* Initialize the shell terminal bound to hotkey ctrl-1 */
-        $("#shellWrapperDiv").butterflyTerminal("shell", "1");
-        $("#shellWrapperDiv").hideTerminal();
-    }, 2000);
     
     // setup the toolbar buttons to show/hide our shells
-    $("#btnShell").on("click", function () {
-        $("#shellWrapperDiv").toggleTerminal();
-    });
     $("#btnCycript").on("click", function () {
         $("#cycriptWrapperDiv").toggleTerminal();
     });
@@ -213,8 +204,6 @@ $(document).ready(function() {
 
     <!-- This is where the Cycript terminal will go. It must have the class "terminalOverlay" attached. -->
     <div id="cycriptWrapperDiv" class="terminalOverlay"></div>
-    <div id="shellWrapperDiv" class="terminalOverlay"></div>
-
 
     <div class="bf-panel" id="wrapper" style="margin-top: -40px; margin-left: -40px; padding-bottom: 20px;">
         <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">

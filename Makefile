@@ -4,7 +4,7 @@ __THEOS_TARGET_ARG_1 = clang
 include theos/makefiles/common.mk
 
 CFLAGS+=  -mno-thumb -O0 -fno-exceptions -fno-rtti -fno-common -ffast-math -fno-threadsafe-statics -Wno-deprecated-objc-isa-usage -Wno-deprecated-declarations -Wno-address-of-temporary
-LDFLAGS+= -framework CFNetwork -framework Security -framework CoreGraphics -lsqlite3 -lxml2 libs/CocoaHTTPServer.a
+LDFLAGS+= -framework CFNetwork -framework Security -framework CoreGraphics -lsqlite3 -lxml2 libs/CocoaHTTPServer.a -F. -framework Cycript -framework JavaScriptCore
 
 
 TWEAK_NAME = iSpy

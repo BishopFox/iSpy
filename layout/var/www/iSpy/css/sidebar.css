@@ -83,7 +83,7 @@
 
 .nav-sidebar > .active > a:focus {
   color: #fff;
-  background-color: #428bca;
+  background-color: #000;
 }
 
 .sidebar-nav > .sidebar-brand {

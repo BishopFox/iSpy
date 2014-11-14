@@ -4,7 +4,7 @@ iSpy.Views.ClassBrowserIndex = Backbone.View.extend({
 
     el: '#page-wrapper',
 
-    template: mktemplate("classbrowser-index"),
+    template: Handlebars.templates.classbrowser,
 
     initialize: function() {
         iSpy.Events.on('classbrowser:index', this.render, this);

@@ -1,10 +1,17 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['iosapp'] = template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-  var stack1, helper, functionType="function", helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression, lambda=this.lambda;
-  return "<h1 class=\"page-header\">"
+templates['iosapp'] = template({"1":function(depth0,helpers,partials,data) {
+  var helper, functionType="function", helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+  return "        <img src=\""
+    + escapeExpression(((helper = (helper = helpers.imageURI || (depth0 != null ? depth0.imageURI : depth0)) != null ? helper : helperMissing),(typeof helper === functionType ? helper.call(depth0, {"name":"imageURI","hash":{},"data":data}) : helper)))
+    + "\"></img>\n";
+},"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
+  var stack1, helper, functionType="function", helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression, lambda=this.lambda, buffer = "<h1 class=\"page-header\">\n";
+  stack1 = helpers['if'].call(depth0, (depth0 != null ? depth0.imageURI : depth0), {"name":"if","hash":{},"fn":this.program(1, data),"inverse":this.noop,"data":data});
+  if (stack1 != null) { buffer += stack1; }
+  return buffer + "    "
     + escapeExpression(((helper = (helper = helpers.CFBundleDisplayName || (depth0 != null ? depth0.CFBundleDisplayName : depth0)) != null ? helper : helperMissing),(typeof helper === functionType ? helper.call(depth0, {"name":"CFBundleDisplayName","hash":{},"data":data}) : helper)))
-    + "</h1>\n<div class=\"row\">\n    <div class=\"list-group col-md-6\">\n        <dl class=\"dl-horizontal list-group-item dl-heading\">\n            <span>\n                <h4>\n                    <i class=\"fa fa-fw fa-info-circle\"></i>\n                    Application Information\n                </h4>\n            </span>\n        </dl>\n        <dl class=\"dl-horizontal list-group-item\">\n            <dt>CFBundleDisplayName</dt>\n            <dd>"
+    + "\n</h1>\n<div class=\"row\">\n    <div class=\"list-group col-md-6\">\n        <dl class=\"dl-horizontal list-group-item dl-heading\">\n            <span>\n                <h4>\n                    <i class=\"fa fa-fw fa-info-circle\"></i>\n                    Application Information\n                </h4>\n            </span>\n        </dl>\n        <dl class=\"dl-horizontal list-group-item\">\n            <dt>CFBundleDisplayName</dt>\n            <dd>"
     + escapeExpression(((helper = (helper = helpers.CFBundleDisplayName || (depth0 != null ? depth0.CFBundleDisplayName : depth0)) != null ? helper : helperMissing),(typeof helper === functionType ? helper.call(depth0, {"name":"CFBundleDisplayName","hash":{},"data":data}) : helper)))
     + "</dd>\n        </dl>\n        <dl class=\"dl-horizontal list-group-item\">\n            <dt>CFBundleIdentifier</dt>\n            <dd>"
     + escapeExpression(((helper = (helper = helpers.CFBundleIdentifier || (depth0 != null ? depth0.CFBundleIdentifier : depth0)) != null ? helper : helperMissing),(typeof helper === functionType ? helper.call(depth0, {"name":"CFBundleIdentifier","hash":{},"data":data}) : helper)))

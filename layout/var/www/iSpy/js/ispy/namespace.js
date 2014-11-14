@@ -26,6 +26,7 @@ Handlebars.registerHelper('toHex', function(number) {
 
     iSpy.SyncSocket.onopen = function() {
         console.log("[*] Successfully connected to remote rpc server!");
+        $("#activity-monitor-log").prepend(new Date() + " - Connection established\n");
         $("#activity-monitor").removeClass("fa-eye-slash");
         $("#activity-monitor").addClass("fa-eye");
         iSpy.Events.trigger("ispy:connection-opened");
@@ -41,9 +42,9 @@ Handlebars.registerHelper('toHex', function(number) {
             console.log(message["JSON"]);
             iSpy.Events.trigger("sync:" + message["messageType"], message["JSON"]);
         } else if (message['status'] === "error") {
-            console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
-            iSpy.Events.trigger("ispy:error", message["JSON"]);
-            console.log("ERROR: " + message["error"]);
+            console.log("[SyncSocket] Recieved an error: " + message["error"]);
+            $("#activity-monitor-log").prepend(new Date() + " - " + $('<div/>').text(message["error"]).html() + "\n");
+            iSpy.Events.trigger("ispy:error", message["error"]);
         } else {
             console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
         }
@@ -51,9 +52,13 @@ Handlebars.registerHelper('toHex', function(number) {
 
     iSpy.SyncSocket.onclose = function() {
         console.log("[!] Connection to server lost");
-        $("#activity-monitor").removeClass("fa-eye");
+        $("#activity-monitor").removeClass("fa-plug");
+        $("#activity-monitor-title").removeClass("fa-circle-o-notch fa-spin");
         $("#activity-monitor").addClass("fa-eye-slash");
+        $("#activity-monitor-title").addClass("fa-warning");
+        $("#activity-monitor-log").prepend(new Date() + " - Connection lost\n");
         iSpy.Events.trigger("ispy:connection-lost");
+        $("#activity-monitor-modal").modal('show');
     }
 
 })(jQuery);
@@ -76,3 +81,10 @@ Backbone.sync = function(method, model, options) {
     }
 
 };
+
+/* Activity Monitor */
+$(document).ready(function() {
+    $("#activity-monitor-button").click(function() {
+        $("#activity-monitor-modal").modal('toggle');
+    });
+});

@@ -1,4 +1,9 @@
-<h1 class="page-header">{{ CFBundleDisplayName }}</h1>
+<h1 class="page-header">
+    {{#if imageURI}}
+        <img src="{{ imageURI }}"></img>
+    {{/if}}
+    {{ CFBundleDisplayName }}
+</h1>
 <div class="row">
     <div class="list-group col-md-6">
         <dl class="dl-horizontal list-group-item dl-heading">

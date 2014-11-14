@@ -17,7 +17,7 @@
 </head>
 
 <!-- Modals -->
-<div id="cycript-modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+<div id="cycript-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -37,6 +37,25 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+<div id="activity-monitor-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Close</span>
+                </button>
+                <h4 class="modal-title">
+                    <i id="activity-monitor-title" class="fa fa-fw fa-circle-o-notch fa-spin"></i>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <pre id="activity-monitor-log"></pre>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Visable -->
 <body>
@@ -59,12 +78,11 @@
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li>
-                        <a href="#"><i id="activity-monitor" class="fa fa-fw fa-plug"></i></a>
+                        <a id="activity-monitor-button">
+                            <i id="activity-monitor" class="fa fa-fw fa-plug"></i>
+                        </a>
                     </li>
                 </ul>
-                <form class="navbar-form navbar-right">
-                    <input type="text" class="form-control" placeholder="Search...">
-                </form>
             </div>
         </div>
     </nav>
@@ -73,7 +91,7 @@
             <div class="col-sm-3 col-md-2 sidebar">
                 <ul class="nav nav-sidebar">
                     <li><a href="#">Overview</a></li>
-                    <li><a href="#classdump">Class Dump</a></li>
+                    <li><a href="#classbrowser">Class Browser</a></li>
                 </ul>
             </div>
             <div id="page-wrapper" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -92,13 +110,11 @@
 <script type="text/javascript" src="/js/ispy/models/objc.js"></script>
 
 <!-- iSpy Collections -->
+<script type="text/javascript" src="/js/ispy/collections/objc-classes.js"></script>
 
 <!-- iSpy Views -->
 <script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
-<!--
 <script type="text/javascript" src="/js/ispy/views/classbrowser-views.js"></script>
-<script type="text/javascript" src="/js/ispy/views/cycript-views.js"></script>
--->
 
 <!-- iSpy Router -->
 <script type="text/javascript" src="/js/ispy/routers/router.js"></script>

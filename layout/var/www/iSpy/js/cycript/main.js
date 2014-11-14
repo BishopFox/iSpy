@@ -92,7 +92,7 @@
     term.ws = ws;
     /* Awesome ASCII Logo */
     pad = (term.cols / 2) - 32;
-    console.log("Pad is: " + pad);
+//    console.log("Pad is: " + pad);
     term.write("\r\n\x1b[31m"+
 Array(pad).join(" ") + "777777777777777777.    77777777777777\r\n"+
 Array(pad).join(" ") + " 777777777777777777    7777777777777 \r\n"+

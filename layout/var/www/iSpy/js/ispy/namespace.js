@@ -81,10 +81,3 @@ Backbone.sync = function(method, model, options) {
     }
 
 };
-
-/* Activity Monitor */
-$(document).ready(function() {
-    $("#activity-monitor-button").click(function() {
-        $("#activity-monitor-modal").modal('toggle');
-    });
-});

@@ -17,9 +17,4 @@ $(document).ready(function() {
         }
     });
 
-    /* Clicked on Meu */
-    $("#cycript-button").click(function() {
-        $("#cycript-modal").modal('toggle')
-    });
-
 });

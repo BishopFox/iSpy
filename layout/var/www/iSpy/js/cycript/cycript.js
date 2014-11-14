@@ -3,8 +3,8 @@ $(document).ready(function() {
 
     /* Lazy load the console */
     $('#cycript-modal').on('show.bs.modal', function() {
-        console.log("Loading cycript terminal ...");
         if ($('#cycript-frame').attr("src") === undefined) {
+            console.log("Loading cycript terminal ...");
             $('#cycript-frame').attr("src", window.location.origin + "/cycript.html");
         }
     });

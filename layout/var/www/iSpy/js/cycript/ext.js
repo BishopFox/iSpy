@@ -11,7 +11,7 @@
       if (notification) {
         new Notification(note, {
           body: data.data,
-          icon: '/static/images/favicon.png'
+          icon: '/favicon.png'
         });
       } else {
         alert(note + '\n' + data.data);

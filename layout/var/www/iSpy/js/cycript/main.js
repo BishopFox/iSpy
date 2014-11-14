@@ -29,7 +29,6 @@
     } else {
       ws_url = 'ws://';
     }
-    console.log(window);
     ws_url += window.location.host + '/cycript';
     ws = new WebSocket(ws_url);
     ws.addEventListener('open', function() {
@@ -91,6 +90,27 @@
       return console.log("" + n + " chars + colors in " + ((new Date()).getTime() - t0) + " ms");
     };
     term.ws = ws;
+    /* Awesome ASCII Logo */
+    pad = (term.cols / 2) - 32;
+    console.log("Pad is: " + pad);
+    term.write("\r\n\x1b[31m"+
+Array(pad).join(" ") + "777777777777777777.    77777777777777\r\n"+
+Array(pad).join(" ") + " 777777777777777777    7777777777777 \r\n"+
+Array(pad).join(" ") + "  77777777777777777    777777777777  \r\n"+
+Array(pad).join(" ") + "              77777                  \r\n"+
+Array(pad).join(" ") + "              77777                  \r\n"+
+Array(pad).join(" ") + "              77777    77777777      \r\n"+
+Array(pad).join(" ") + "       7777777777/     7777777       \r\n"+
+Array(pad).join(" ") + "         77777777      777777        \r\n"+
+Array(pad).join(" ") + "          77777777.    7777          \r\n"+
+Array(pad).join(" ") + "              77777                  \r\n"+
+Array(pad).join(" ") + "              77777                  \r\n"+
+Array(pad).join(" ") + "              77777                  \r\n"+
+Array(pad).join(" ") + "               7777                  \r\n"+
+Array(pad).join(" ") + "                777                  \r\n"+
+Array(pad).join(" ") + "                 77                  \r\n"+
+Array(pad).join(" ") + "                  7                  \r\n\x1b[37m\n");
+
     return window.butterfly = term;
   });
 

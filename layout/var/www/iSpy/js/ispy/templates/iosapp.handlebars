@@ -1,0 +1,101 @@
+<h1 class="page-header">{{ CFBundleDisplayName }}</h1>
+<div class="row">
+    <div class="list-group col-md-6">
+        <dl class="dl-horizontal list-group-item dl-heading">
+            <span>
+                <h4>
+                    <i class="fa fa-fw fa-info-circle"></i>
+                    Application Information
+                </h4>
+            </span>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>CFBundleDisplayName</dt>
+            <dd>{{ CFBundleDisplayName }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>CFBundleIdentifier</dt>
+            <dd>{{ CFBundleIdentifier }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>Version</dt>
+            <dd>{{ CFBundleVersion }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>BuildMachineOSBuild</dt>
+            <dd>{{ BuildMachineOSBuild }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>NSMainNibFile</dt>
+            <dd>{{ NSMainNibFile }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTPlatformBuild</dt>
+            <dd>{{ DTPlatformBuild }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTCompiler</dt>
+            <dd>{{ DTCompiler }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>CFBundleDisplayName</dt>
+            <dd>{{ CFBundleDisplayName }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>FBundleShortVersionString</dt>
+            <dd>{{ CFBundleShortVersionString }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTSDKName</dt>
+            <dd>{{ DTSDKName }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>CFBundleExecutable</dt>
+            <dd>{{ CFBundleExecutable }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTXcode</dt>
+            <dd>{{ DTXcode }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>CFBundleInfoDictionaryVersion</dt>
+            <dd>{{ CFBundleInfoDictionaryVersion }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTXcodeBuild</dt>
+            <dd>{{ DTXcodeBuild }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTSDKBuild</dt>
+            <dd>{{ DTSDKBuild }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>MinimumOSVersion</dt>
+            <dd>{{ MinimumOSVersion }}</dd>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <dt>DTPlatformVersion</dt>
+            <dd>{{ DTPlatformVersion }}</dd>
+        </dl>
+    </div>
+    <div class="list-group col-md-6">
+        <dl class="dl-horizontal list-group-item dl-heading">
+            <span>
+                <h4>
+                    <i class="fa fa-fw fa-line-chart"></i>
+                    Statistics
+                </h4>
+            </span>
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <span class="badge">{{ classes.length }}</span>
+            Number of classes
+        </dl>
+        <dl class="dl-horizontal list-group-item">
+            <span class="badge" id="ASLRBadge">
+                {{toHex ASLROffset }}
+            </span>
+            ASLR slide
+        </dl>
+    </div>
+</div><!-- /.row -->

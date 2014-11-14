@@ -24,33 +24,6 @@
 /* GNU General Public License for more details. */
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-
-.terminalOverlay {
-    position: fixed !important; 
-    left: 0px !important; 
-    top: 0px !important;
-    height: -moz-calc(100% - 100px) !important;
-    height: -webkit-calc(100% - 100px) !important;
-    width: -moz-calc(100% - 100px) !important;
-    width: -webkit-calc(100% - 100px) !important;
-    padding-top: 0px !important;
-    margin-left: 50px;
-    margin-top: 50px;
-    background: #303030 !important;
-    z-index: 9998 !important;
-    border-radius:4px;
-    box-shadow:rgba(0,0,0,0.5) 0px 0px 24px;
-} 
-
-.termLeft {
-    left: 9000px !important;
-}
-
-.termNorm {
-    left: 0px !important;
-}
-
-
 @font-face {
   font-family: "SourceCodePro";
   src: url("/fonts/SourceCodePro-ExtraLight.otf") format("woff");
@@ -109,7 +82,7 @@ html, body {
   padding: 0;
   line-height: 1.2; }
 
-#butterflyWrapper {
+#wrapper {
   height: 100%;
   overflow: hidden;
   white-space: nowrap; }
@@ -131,7 +104,7 @@ html, body {
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 .terminal {
-  /*text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);*/
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
   transition: 200ms; }
   .terminal.bell {
     -webkit-filter: blur(2px);
@@ -176,7 +149,7 @@ html, body {
 /* GNU General Public License for more details. */
 /* You should have received a copy of the GNU General Public License */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-#butterflyWrapper {
+#wrapper {
   background-color: #110f13; }
 
 .terminal {
@@ -3100,4 +3073,3 @@ html, body {
 
 .blur .cursor.reverse-video {
   background: none; }
-

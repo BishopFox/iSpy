@@ -4,7 +4,7 @@ iSpy.Views.iOSAppIndex = Backbone.View.extend({
 
     el: '#page-wrapper',
 
-    template: mktemplate("iosapp-index"),
+    template: Handlebars.templates.iosapp,
 
     initialize: function() {
         console.log("[Views|iOSAppIndex] initialize");
@@ -21,7 +21,7 @@ iSpy.Views.iOSAppIndex = Backbone.View.extend({
     render: function() {
         console.log("[Views|iOSAppIndex] Rendering template to page");
         console.log(this.model.toJSON());
-        var template = this.template( this.model.toJSON() );
+        var template = this.template(this.model.toJSON());
         this.$el.html(template);
         return this;
     },

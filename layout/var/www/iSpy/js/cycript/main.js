@@ -1,40 +1,110 @@
-$.prototype.toggleTerminal = function () {  
-  if($(this).data("currentlyActive") == 0) {
-    $(this).showTerminal();
-  } else {
-    $(this).hideTerminal();
-  }
-};
-
-$.prototype.hideTerminal = function() {
-  $(".terminalOverlay").removeClass("termNorm");
-  $(".terminalOverlay").addClass("termLeft");
-  $(".terminalOverlay").data("currentlyActive", 0);
-};
-
-$.prototype.showTerminal = function() {
-  $(".terminalOverlay").removeClass("termNorm");
-  $(".terminalOverlay").addClass("termLeft");
-  $(".terminalOverlay").data("currentlyActive", 0);
-
-  $(this).data("currentlyActive", 1);
-  $(this).removeClass("termLeft");
-  $(this).addClass("termNorm");
-};
-
-
-$.prototype.butterflyTerminal = (function(cmd, hotKey) {
-  var State, Terminal, cancel, cols, open_ts, quit, rows, s,
+(function() {
+  var $, State, Terminal, cancel, cols, open_ts, quit, rows, s,
     __slice = [].slice,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
   cols = rows = null;
 
   quit = false;
 
   open_ts = (new Date()).getTime();
 
-  console.log("Inside butterflyTerminal");
-  
+  $ = document.querySelectorAll.bind(document);
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var bench, cbench, ctl, send, term, ws, ws_url;
+    send = function(data) {
+      return ws.send('S' + data);
+    };
+    ctl = function() {
+      var args, params, type;
+      type = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      params = args.join(',');
+      if (type === 'Resize') {
+        return ws.send('R' + params);
+      }
+    };
+    if (location.protocol === 'https:') {
+      ws_url = 'wss://';
+    } else {
+      ws_url = 'ws://';
+    }
+    console.log(window);
+    ws_url += window.location.host + '/cycript';
+    ws = new WebSocket(ws_url);
+    ws.addEventListener('open', function() {
+      console.log("WebSocket open", arguments);
+      ws.send('R' + term.cols + ',' + term.rows);
+      return open_ts = (new Date()).getTime();
+    });
+    ws.addEventListener('error', function() {
+      return console.log("WebSocket error", arguments);
+    });
+    ws.addEventListener('message', function(e) {
+      return setTimeout(function() {
+        return term.write(e.data);
+      }, 1);
+    });
+    ws.addEventListener('close', function() {
+      console.log("WebSocket closed", arguments);
+      setTimeout(function() {
+        term.write('Closed');
+        term.skipNextKey = true;
+        return term.element.classList.add('dead');
+      }, 1);
+      quit = true;
+      if ((new Date()).getTime() - open_ts > 60 * 1000) {
+        return open('', '_self').close();
+      }
+    });
+    term = new Terminal($('#wrapper')[0], send, ctl);
+    addEventListener('beforeunload', function() {
+      if (!quit) {
+        return 'This will exit the terminal session';
+      }
+    });
+    bench = function(n) {
+      var rnd, t0;
+      if (n == null) {
+        n = 100000000;
+      }
+      rnd = '';
+      while (rnd.length < n) {
+        rnd += Math.random().toString(36).substring(2);
+      }
+      t0 = (new Date()).getTime();
+      term.write(rnd);
+      return console.log("" + n + " chars in " + ((new Date()).getTime() - t0) + " ms");
+    };
+    cbench = function(n) {
+      var rnd, t0;
+      if (n == null) {
+        n = 100000000;
+      }
+      rnd = '';
+      while (rnd.length < n) {
+        rnd += "\x1b[" + (30 + parseInt(Math.random() * 20)) + "m";
+        rnd += Math.random().toString(36).substring(2);
+      }
+      t0 = (new Date()).getTime();
+      term.write(rnd);
+      return console.log("" + n + " chars + colors in " + ((new Date()).getTime() - t0) + " ms");
+    };
+    term.ws = ws;
+    return window.butterfly = term;
+  });
+
+  cancel = function(ev) {
+    if (ev.preventDefault) {
+      ev.preventDefault();
+    }
+    if (ev.stopPropagation) {
+      ev.stopPropagation();
+    }
+    ev.cancelBubble = true;
+    return false;
+  };
+
   s = 0;
 
   State = {
@@ -48,12 +118,11 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
   };
 
   Terminal = (function() {
-    function Terminal(parent, hotKey) {
+    function Terminal(parent, out, ctl) {
       var div, i, term_size;
       this.parent = parent;
-      this.hotKey = hotKey;
-      //this.out = out;
-      //this.ctl = ctl != null ? ctl : function() {};
+      this.out = out;
+      this.ctl = ctl != null ? ctl : function() {};
       this.context = this.parent.ownerDocument.defaultView;
       this.document = this.parent.ownerDocument;
       this.body = this.document.getElementsByTagName('body')[0];
@@ -181,14 +250,12 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     };
 
     Terminal.prototype.paste = function(ev) {
-      if( ! $(this.DOMElement).data("currentlyActive"))
-          return true;
       if (ev.clipboardData) {
         this.send(ev.clipboardData.getData('text/plain'));
       } else if (this.context.clipboardData) {
         this.send(this.context.clipboardData.getData('Text'));
       }
-      return this.cancel(ev);
+      return cancel(ev);
     };
 
     Terminal.prototype.initmouse = function() {
@@ -334,8 +401,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       })(this);
       addEventListener("mousedown", (function(_this) {
         return function(ev) {
-          if( $(this.DOMElement).data("currentlyActive") == 0)
-            return true;
           var sm, up;
           if (!_this.mouseEvents) {
             return;
@@ -346,7 +411,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
               __proto__: ev,
               type: "mouseup"
             });
-            return this.cancel(ev);
+            return cancel(ev);
           }
           sm = sendMove.bind(_this);
           if (_this.normalMouse) {
@@ -359,17 +424,14 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
                 removeEventListener("mousemove", sm);
               }
               removeEventListener("mouseup", up);
-              return this.cancel(ev);
+              return cancel(ev);
             });
           }
-          return this.cancel(ev);
+          return cancel(ev);
         };
       })(this));
-
       return addEventListener("wheel", (function(_this) {
         return function(ev) {
-          if( $(_this.DOMElement).data("currentlyActive") == 0)
-            return true;
           if (_this.mouseEvents) {
             if (_this.x10Mouse) {
               return;
@@ -381,7 +443,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
             }
             _this.scrollDisp(ev.deltaY > 0 ? 5 : -5);
           }
-          return _this.cancel(ev);
+          return cancel(ev);
         };
       })(this));
     };
@@ -1054,9 +1116,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     };
 
     Terminal.prototype.keyDown = function(ev) {
-      if( $(this.DOMElement).data("currentlyActive") == 0)
-        return true;
-      
       var id, key, t, _ref;
       if (ev.keyCode > 15 && ev.keyCode < 19) {
         return true;
@@ -1070,7 +1129,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       if (ev.altKey && ev.keyCode === 90 && !this.skipNextKey) {
         this.skipNextKey = true;
         this.element.classList.add('skip');
-        return this.cancel(ev);
+        return cancel(ev);
       }
       if (this.skipNextKey) {
         this.skipNextKey = false;
@@ -1120,7 +1179,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
           }
           if (ev.ctrlKey) {
             this.scrollDisp(-1);
-            return this.cancel(ev);
+            return cancel(ev);
           } else {
             key = "\x1b[A";
           }
@@ -1132,7 +1191,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
           }
           if (ev.ctrlKey) {
             this.scrollDisp(1);
-            return this.cancel(ev);
+            return cancel(ev);
           } else {
             key = "\x1b[B";
           }
@@ -1160,7 +1219,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
         case 33:
           if (ev.shiftKey) {
             this.scrollDisp(-(this.rows - 1));
-            return this.cancel(ev);
+            return cancel(ev);
           } else {
             key = "\x1b[5~";
           }
@@ -1168,7 +1227,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
         case 34:
           if (ev.shiftKey) {
             this.scrollDisp(this.rows - 1);
-            return this.cancel(ev);
+            return cancel(ev);
           } else {
             key = "\x1b[6~";
           }
@@ -1265,15 +1324,15 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       }
       if (this.prefixMode) {
         this.leavePrefix();
-        return this.cancel(ev);
+        return cancel(ev);
       }
       if (this.selectMode) {
         this.keySelect(ev, key);
-        return this.cancel(ev);
+        return cancel(ev);
       }
       this.showCursor();
       this.handler(key);
-      return this.cancel(ev);
+      return cancel(ev);
     };
 
     Terminal.prototype.setgLevel = function(g) {
@@ -1290,7 +1349,11 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
 
     Terminal.prototype.keyPress = function(ev) {
       var key;
-      
+      if (this.skipNextKey === false) {
+        this.skipNextKey = null;
+        return true;
+      }
+      cancel(ev);
       if (ev.charCode) {
         key = ev.charCode;
       } else if (ev.which == null) {
@@ -1300,32 +1363,9 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       } else {
         return false;
       }
-
-      if(key == this.hotKey.charCodeAt(0) && ev.ctrlKey) {
-        this.cancel(ev);
-        $(this.DOMElement).toggleTerminal();
-      }
-
-      if( $(this.DOMElement).data("currentlyActive") == 0)
-        return true;
-
-      /*
-      console.log(key);
-      console.log(ev.ctrlKey);
-      console.log(ev.altKey);
-      console.log(ev.metaKey);
-      */
-
-      if (this.skipNextKey === false) {
-        this.skipNextKey = null;
-        return true;
-      }
       if (!key || ev.ctrlKey || ev.altKey || ev.metaKey) {
         return false;
       }
-      
-      
-      this.cancel(ev);
       key = String.fromCharCode(key);
       this.showCursor();
       this.handler(key);
@@ -1546,7 +1586,7 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
     };
 
     Terminal.prototype.handler = function(data) {
-      return this.send(data);
+      return this.out(data);
     };
 
     Terminal.prototype.handleTitle = function(title) {
@@ -2404,32 +2444,6 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
       return Math.ceil(html_height / this.char_size.height);
     };
 
-    Terminal.prototype.cancel = function(ev) {
-    if (ev.preventDefault) {
-      ev.preventDefault();
-    }
-    if (ev.stopPropagation) {
-      ev.stopPropagation();
-    }
-    ev.cancelBubble = true;
-    return false;
-  };
-
-    Terminal.prototype.send = function(data) {
-      return this.ws.send('S' + data);
-    };
-    Terminal.prototype.ctl = function() {
-      var args, params, type;
-      type = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      params = args.join(',');
-      if (type === 'Resize') {
-        theWebSocket = this.ws;
-        setTimeout(function () {
-          theWebSocket.send('R' + params);
-        }, 1000, theWebSocket);
-      }
-    };
-
     Terminal.prototype.charsets = {
       SCLD: {
         "`": "◆",
@@ -2485,130 +2499,5 @@ $.prototype.butterflyTerminal = (function(cmd, hotKey) {
 
   window.Terminal = Terminal;
 
-  //this.startup();
-
-  //document.addEventListener('DOMContentLoaded', function() {
-  //startup = function () {
-
-    var mainElement = document.createElement("main");
-    $(mainElement).attr("id", "main-" + (new Date()).getTime());
-    $(mainElement).css("z-index", "9999");
-    $(mainElement).css("height", "100%");
-    $(mainElement).css("width`", "100%");
-    $(this).append(mainElement);
-
-    this.term = new Terminal($("#" + $(mainElement).attr("id"))[0], hotKey);
-   
-    var bench, cbench, ctl, send, term, ws, ws_url;
-    
-    if (location.protocol === 'https:') {
-      ws_url = 'wss://';
-    } else {
-      ws_url = 'ws://';
-    }
-    ws_url += document.location.host + "/" + cmd;
-    this.ws = new WebSocket(ws_url);
-    this.term.ws = this.ws;
-    this.term.ws.term = this.term;
-    
-    this.ws.onopen = function() {
-      console.log("Terminal WebSocket open!", arguments);
-      theWebSocket = this;
-      setTimeout(function() {
-        theWebSocket.send('R' + theWebSocket.term.cols + ',' + theWebSocket.term.rows);
-      }, 1, theWebSocket);
-      return open_ts = (new Date()).getTime();
-    };
-
-    this.ws.onerror = function() {
-      return console.log("WebSocket error", arguments);
-    };
-
-    this.ws.onmessage = function(e) {
-      myTerm = this.term;
-      return setTimeout(function() {
-        return myTerm.write(e.data);
-      }, 1, myTerm);
-    };
-
-    this.ws.onclose = function() {
-      console.log("WebSocket closed", arguments);
-      myTerm = this.term;
-      setTimeout(function() {
-        myTerm.write('Closed');
-        myTerm.skipNextKey = true;
-        return myTerm.element.classList.add('dead');
-      }, 1, myTerm);
-      quit = true;
-      if ((new Date()).getTime() - open_ts > 60 * 1000) {
-        return open('', '_self').close();
-      }
-    };
-
-    
-    addEventListener('beforeunload', function() {
-      if (!quit) {
-        return 'This will exit the terminal session';
-      }
-    });
-    bench = function(n) {
-      var rnd, t0;
-      if (n == null) {
-        n = 100000000;
-      }
-      rnd = '';
-      while (rnd.length < n) {
-        rnd += Math.random().toString(36).substring(2);
-      }
-      t0 = (new Date()).getTime();
-      this.term.write(rnd);
-      return console.log("" + n + " chars in " + ((new Date()).getTime() - t0) + " ms");
-    };
-    cbench = function(n) {
-      var rnd, t0;
-      if (n == null) {
-        n = 100000000;
-      }
-      rnd = '';
-      while (rnd.length < n) {
-        rnd += "\x1b[" + (30 + parseInt(Math.random() * 20)) + "m";
-        rnd += Math.random().toString(36).substring(2);
-      }
-      t0 = (new Date()).getTime();
-      this.term.write(rnd);
-      return console.log("" + n + " chars + colors in " + ((new Date()).getTime() - t0) + " ms");
-    };
-
-    this.term.DOMElement = $(this);
-    $(this).data("term", this.term);
-    $(this).data("currentlyActive", 1);
-    this.term.write("\x1b[31m"+
-"777777777777777777.    77777777777777  \r\n"+
-" 777777777777777777    7777777777777   \r\n"+
-"  77777777777777777    777777777777    \r\n"+
-"              77777                    \r\n"+
-"              77777                    \r\n"+
-"              77777    77777777        \r\n"+
-"       7777777777/     7777777         \r\n"+
-"         77777777      777777          \r\n"+
-"          77777777.    7777            \r\n"+
-"              77777                    \r\n"+
-"              77777                    \r\n"+
-"              77777    \x1b[34miSpy\x1b[31m\r\n"+
-"               7777                    \r\n"+
-"                777                    \r\n"+
-"                 77                    \r\n"+
-"                  7                    \r\n\x1b[37m\n");
-
-    butterflyExtJS(this.term);
-
-    return this;
-  //};
-
-
-
-
-});
-
-//).call(this);
+}).call(this);
 

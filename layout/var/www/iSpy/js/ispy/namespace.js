@@ -9,6 +9,14 @@ window.iSpy = {
     Events: _.extend({}, Backbone.Events),
 };
 
+/* Template Helper Functions */
+Handlebars.registerHelper('toHex', function(number) {
+  return "0x" + parseInt(number, 10).toString(16);
+});
+
+/*
+    WebSockets
+*/
 (function($) {
 
     /* WebSocket Setup within the iSpy namespace */
@@ -35,7 +43,7 @@ window.iSpy = {
         } else if (message['status'] === "error") {
             console.log("[SyncSocket] Recieved an error message: " + JSON.stringify(message["JSON"]));
             iSpy.Events.trigger("ispy:error", message["JSON"]);
-            alert("ERROR: " + message["error"]);
+            console.log("ERROR: " + message["error"]);
         } else {
             console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
         }
@@ -67,10 +75,4 @@ Backbone.sync = function(method, model, options) {
         }
     }
 
-};
-
-
-/* Little helper template function */
-window.mktemplate = function(id) {
-    return _.template( $('#' + id).html() );
 };

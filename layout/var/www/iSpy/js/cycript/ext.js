@@ -1,4 +1,4 @@
-var butterflyExtJS = function(butterflyTermObj) {
+(function() {
   var Selection, alt, cancel, ctrl, first, next_leaf, previous_leaf, selection, set_alarm, virtual_input,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -11,7 +11,7 @@ var butterflyExtJS = function(butterflyTermObj) {
       if (notification) {
         new Notification(note, {
           body: data.data,
-          icon: '/img/favicon.png'
+          icon: '/static/images/favicon.png'
         });
       } else {
         alert(note + '\n' + data.data);
@@ -90,11 +90,9 @@ var butterflyExtJS = function(butterflyTermObj) {
     return next;
   };
 
-  Selection = (function(butterflyTermObj) {
-    this.butterfly = butterflyTermObj;
-
+  Selection = (function() {
     function Selection() {
-      this.butterfly.element.classList.add('selection');
+      butterfly.element.classList.add('selection');
       this.selection = getSelection();
     }
 
@@ -132,7 +130,7 @@ var butterflyExtJS = function(butterflyTermObj) {
     };
 
     Selection.prototype.destroy = function() {
-      this.butterfly.element.classList.remove('selection');
+      butterfly.element.classList.remove('selection');
       return this.clear();
     };
 
@@ -150,13 +148,13 @@ var butterflyExtJS = function(butterflyTermObj) {
 
     Selection.prototype.go = function(n) {
       var index;
-      index = this.butterfly.children.indexOf(this.start_line) + n;
-      if (!((0 <= index && index < this.butterfly.children.length))) {
+      index = butterfly.children.indexOf(this.start_line) + n;
+      if (!((0 <= index && index < butterfly.children.length))) {
         return;
       }
-      while (!this.butterfly.children[index].textContent.match(/\S/)) {
+      while (!butterfly.children[index].textContent.match(/\S/)) {
         index += n;
-        if (!((0 <= index && index < this.butterfly.children.length))) {
+        if (!((0 <= index && index < butterfly.children.length))) {
           return;
         }
       }
@@ -174,7 +172,7 @@ var butterflyExtJS = function(butterflyTermObj) {
 
     Selection.prototype.select_line = function(index) {
       var line, line_end, line_start;
-      line = this.butterfly.children[index];
+      line = butterfly.children[index];
       line_start = {
         node: line.firstChild,
         offset: 0
@@ -311,7 +309,7 @@ var butterflyExtJS = function(butterflyTermObj) {
       return cancel(e);
     }
     if (!selection && e.ctrlKey && e.shiftKey && e.keyCode === 38) {
-      selection = new Selection(butterflyTermObj);
+      selection = new Selection();
       selection.select_line(butterfly.y - 1);
       selection.apply();
       return cancel(e);
@@ -359,7 +357,7 @@ var butterflyExtJS = function(butterflyTermObj) {
       new_range.setEnd(sel.anchorNode, sel.anchorOffset);
       sel.addRange(new_range);
     }
-    //range.detach();
+    range.detach();
     while (!(sel.toString().match(/\s/) || !sel.toString())) {
       sel.modify('extend', 'forward', 'character');
     }
@@ -442,6 +440,5 @@ var butterflyExtJS = function(butterflyTermObj) {
     });
   }
 
-};
-//).call(this);
+}).call(this);
 

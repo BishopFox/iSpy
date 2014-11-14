@@ -4,404 +4,87 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>iSpy</title>
-
     <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/animate.min.css" />
-    <link rel="stylesheet" type="text/css" href="/css/local.css" />
     <link rel="stylesheet" type="text/css" href="/css/ispy.css" />
-    <script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
     <script type="text/javascript" src="/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="/js/underscore.min.js"></script>
     <script type="text/javascript" src="/js/backbone.min.js"></script>
-
-    <!-- you need to include the shieldui css and js assets in order for the charts to work -->
-    <link rel="stylesheet" type="text/css" href="/css/shieldui-all.min.css" />
-    <link rel="stylesheet" type="text/css" href="/css/all.min.css" />
-    <link id="gridcss" rel="stylesheet" type="text/css" href="/css/dark-bootstrap-all.min.css" />
-    <link rel="stylesheet" href="/css/slidebars.min.css">
-    <link rel="stylesheet" href="/css/slidebars-theme.css">
-
-    <!-- The main theme -->
-    <script type="text/javascript" src="/js/shieldui-all.min.js"></script>
-    <script type="text/javascript" src="/js/slidebars.min.js"></script>
-
-    <!-- Cycript terminal stuff -->
-    <link rel="stylesheet" type="text/css" href="/css/terminal.css">
-    <script type="text/javascript" src="/js/terminal-ext.js"></script>
-    <script type="text/javascript" src="/js/terminal-main.js"></script>
-
+    <script type="text/javascript" src="/js/handlebars.runtime.min.js"></script>
+    <script type="text/javascript" src="/js/ispy/namespace.js"></script>
 </head>
 
-
-<!-- iSpy Templates -->
-<script id="iosapp-index" type="text/template">
-
-    <%
-    (function (self) {
-        $(logoImg).attr("src", imageURI);
-    })();
-    %>
-
-    <div class="template-container">
-        <div class="row">
-            <p></p>
-            <div class="col-lg-8">
-                <div class="bs-example">
-                    <div class="list-group">
-                        <dl class="dl-horizontal list-group-item dl-heading">
-                            <span class="infoTitle">
-                                [[NSBundle mainBundle] infoDictionary]
-                            </span>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>CFBundleDisplayName</dt>
-                            <dd><%= CFBundleDisplayName%></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>CFBundleIdentifier</dt>
-                            <dd><%= CFBundleIdentifier %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>Version</dt>
-                            <dd><%= CFBundleVersion %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>BuildMachineOSBuild</dt>
-                            <dd><%= BuildMachineOSBuild %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>NSMainNibFile</dt>
-                            <dd><%= NSMainNibFile %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTPlatformBuild</dt>
-                            <dd><%= DTPlatformBuild %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTCompiler</dt>
-                            <dd><%= DTCompiler %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>CFBundleDisplayName</dt>
-                            <dd><%= CFBundleDisplayName %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>FBundleShortVersionString</dt>
-                            <dd><%= CFBundleShortVersionString %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTSDKName</dt>
-                            <dd><%= DTSDKName %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>CFBundleExecutable</dt>
-                            <dd><%= CFBundleExecutable %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTXcode</dt>
-                            <dd><%= DTXcode %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>CFBundleInfoDictionaryVersion</dt>
-                            <dd><%= CFBundleInfoDictionaryVersion %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTXcodeBuild</dt>
-                            <dd><%= DTXcodeBuild %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTSDKBuild</dt>
-                            <dd><%= DTSDKBuild %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>MinimumOSVersion</dt>
-                            <dd><%= MinimumOSVersion %></dd>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <dt>DTPlatformVersion</dt>
-                            <dd><%= DTPlatformVersion %></dd>
-                        </dl>
-
-                    </div>
-                </div>
+<!-- Modals -->
+<div id="cycript-modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Close</span>
+                </button>
+                <h4 class="modal-title">
+                    <span class="fa-stack fa-lg">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-terminal fa-stack-1x fa-inverse"></i>
+                    </span>
+                    Cycript Console
+                </h4>
             </div>
+            <iframe id="cycript-frame" width="100%" height="650" frameborder="0"></iframe>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 
-            <div class="col-lg-4">
-                <div class="bs-example">
-                    <div class="list-group">
-                        <dl class="dl-horizontal list-group-item dl-heading">
-                            <span class="infoTitle">
-                                Statistics
-                            </span>
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <span class="badge"><%= classes.length %></span>
-                            Number of classes
-                        </dl>
-                        <dl class="dl-horizontal list-group-item">
-                            <span class="badge" id="ASLRBadge"><%= "0x" + parseInt(ASLROffset, 10).toString(16) %></span>
-                            ASLR slide
-                            <%
-                                if(parseInt(ASLROffset, 10) != 0) {
-                                    $("#ASLRBadge").removeClass("badge")
-                                    $("#ASLRBadge").addClass("label label-danger");
-                                }
-                            %>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </div><!-- /.row -->
-    </div>
-</script>
-
-<script id="classbrowser-index" type="text/template">
-    <div class="template-container">
-        <div class="container">
-            <h2> Class Browser </h2>
-            <div class="row">
-
-            </div><!-- /.row -->
-        </div>
-    </div>
-</script>
-
-<script id="cycript-index" type="text/template">
-    <div class="template-container">
-        <h1>Cycript Stuff Goes Here</h1>
-    </div>
-</script>
-
-<script>
-
-$(document).ready(function() {
-
-    /* Initialize the cycript terminal bound to hotkey ctrl-` */
-    $("#cycriptWrapperDiv").butterflyTerminal("cycript", "`");
-    $("#cycriptWrapperDiv").hideTerminal();
-    
-    // setup the toolbar buttons to show/hide our shells
-    $("#btnCycript").on("click", function () {
-        $("#cycriptWrapperDiv").toggleTerminal();
-    });
-
-
-    /* Menu Setup */
-    $.slidebars();
-    jQuery('ul.nav li.dropdown').hover(function() {
-        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).show();
-    }, function() {
-        jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).hide();
-    });
-
-});
-</script>
-
-
-
+<!-- Visable -->
 <body>
-
-    <!-- This is where the Cycript terminal will go. It must have the class "terminalOverlay" attached. -->
-    <div id="cycriptWrapperDiv" class="terminalOverlay"></div>
-
-    <div class="bf-panel" id="wrapper" style="margin-top: -40px; margin-left: -40px; padding-bottom: 20px;">
-        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
             <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
                     <span class="sr-only">Toggle navigation</span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <ul class="nav navbar-nav navbar-user">
-                    <li>
-                        <a class="nav navbar-nav navbar-user sb-toggle-left" href="#">
-                        <img id="logoImg" src="/img/bf-shield.svg" class="logo-hover" width="28"/>
-                        </a>
-                    </li>
-                </ul>
+                <a class="navbar-brand" href="#">iSpy</a>
             </div>
-            <div class="collapse navbar-collapse navbar-ex1-collapse ">
-                <!--
-                <ul class="nav navbar-nav navbar-user">
-                    <li class="dropdown messages-dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <i class="fa fa-fw fa-lg fa-code"></i>
-                            &nbsp; Class Browser
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-cubes fa-pad"></i>Classes</a></li>
-                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-exchange fa-pad"></i>Protocols</a></li>
-                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-cube fa-pad"></i>Instances</a></li>
-                            <li class="divider"></li>
-                            <li class="menu-pad"><a href="#"><i class="fa fa-fw fa-file-code-o fa-pad"></i>Generate Headers</a></li>
-                        </ul>
-                    </li>
-                </ul>
-                <ul class="nav navbar-nav navbar-user">
-                    <li class="dropdown messages-dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <i class="fa fa-lg fa-share-alt"></i>&nbsp;
-                            Call Tracing
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-bolt fa-pad"></i>View real-time logs</a></li>
-                            <li class="menu-pad"><a href="#" ><i class="fa fa-fw fa-cog fa-pad"></i>Settings</a></li>
-                        </ul>
-                    </li>
-                </ul>
--->
-                <ul class="nav navbar-nav navbar-user">
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
                     <li>
-                        <a href="#" id="btnCycript"><i class="fa fa-fw fa-keyboard-o fa-2x"></i> Cycript</a>
+                        <a id="cycript-button">Cycript</a>
                     </li>
                 </ul>
-
-                <ul class="nav navbar-nav navbar-user">
+                <ul class="nav navbar-nav navbar-right">
                     <li>
-                        <a href="#" id="btnShell"><i class="fa fa-fw fa-terminal fa-2x"></i> Shell</a>
+                        <a href="#"><i id="activity-monitor" class="fa fa-fw fa-plug"></i></a>
                     </li>
                 </ul>
-<!--
-                
-                <form class="navbar-form navbar-right" role="search">
-                    <a class="btn btn-inverse menuButton" id="btnMsgSendState">
-                        <i class="fa fa-fw fa-apple" id="iconMsgSendState"></i>
-                    </a>
-                    <a class="btn btn-inverse menuButton" id="btnstraceState">
-                        <i class="fa fa-fw fa-list" id="iconstraceState"></i>
-                    </a>
-                    <a class="btn btn-inverse menuButton" id="btninstanceState">
-                        <i class="fa fa-fw fa-sitemap" id="iconinstanceState"></i>
-                    </a>
+                <form class="navbar-form navbar-right">
+                    <input type="text" class="form-control" placeholder="Search...">
                 </form>
-                <ul class="nav navbar-nav navbar-user navbar-right">
-                    <li >
-                        <form class="navbar-search">
-                            <input type="text" placeholder="Search" class="form-control">
-                        </form>
-                    </li>
-                </ul>
-                -->
-                <ul class="nav navbar-nav navbar-user navbar-right">
-                    <li>
-                        <a href="#" ><i id="activity-monitor" class="fa fa-fw fa-plug fa-eye-slash"></i></a>
-                    </li>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-3 col-md-2 sidebar">
+                <ul class="nav nav-sidebar">
+                    <li><a href="#">Overview</a></li>
+                    <li><a href="#classdump">Class Dump</a></li>
                 </ul>
             </div>
-        </nav><!-- /#nav -->
-    </div>
-
-    <!-- Main -->
-    <div id="sb-site" class="container-fluid fill" style="min-height: 100%;">
-        <div id="page-wrapper" class="container animated fadeIn">
-        </div><!-- /#page-wrapper -->
-    </div><!-- /#sb-site -->
-
-    <!-- Hidden Sidebar -->
-    <div class="sb-slidebar sb-left" style="">
-        <nav>
-            <ul class="sb-menu" >
-                <!--<li class="sb-close">
-                    <span>
-                        <h4 style="padding-left: 10px">
-                            <img src="/img/bf-shield.svg" width="28" style="margin-top: -3px" />
-                            iSpy
-                        </h4>
-                    </span>
-                </li>
-                -->
-                <li id="" class="sb-close">
-                    <h4>App</h4>
-                    <a href="#" class="sb-active">
-                        <i class="fa fa-fw fa-dashboard"></i>
-                        App Information
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-file-code-o"></i>
-                        Symbol Table
-                    </a>
-                </li>
-
-                <li id="" class="sb-close">
-                    <h4>Classes</h4>
-                    <a href="#classbrowser">
-                        <i class="fa fa-fw fa-cubes"></i>
-                        Class Browser
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-exchange"></i>
-                        Protocol Explorer
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-cube"></i>
-                        Instance Explorer
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-code"></i>
-                        Headers
-                    </a>
-                </li>
-
-                <li id="" class="sb-close">
-                    <h4>Call Logging</h4>
-                    <a href="#">
-                        <i class="fa fa-fw fa-check-square-o"></i>
-                        Whitelist
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-list-alt"></i>
-                        Log Browser
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-cog"></i>
-                        Settings
-                    </a>
-                </li>
-
-                <li id="" class="sb-close">
-                    <h4>Keychain</h4>
-                    <a href="#">
-                        <i class="fa fa-fw fa-key"></i>
-                        Keychain Browser
-                    </a>
-                </li>
-                
-                <li id="" class="sb-close">
-                    <h4>Auditing</h4>
-                    <a href="#">
-                        <i class="fa fa-fw fa-list-alt"></i>
-                        View audit logs
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-file-text-o"></i>
-                        Reporting
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-cog"></i>
-                        Settings
-                    </a>
-                </li>
-
-                <li id="" class="sb-close">
-                    <h4>Consoles</h4>
-                    <a href="#">
-                        <i class="fa fa-fw fa-terminal"></i>
-                        Bash Shell
-                    </a>
-                    <a href="#">
-                        <i class="fa fa-fw fa-keyboard-o"></i>
-                        Cycript Shell
-                    </a>
-                </li>
-            </ul>
-        </nav>
+            <div id="page-wrapper" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            </div>
+        </div>
     </div>
 </body>
+<!-- iSpy Templates -->
+<script type="text/javascript" src="/js/ispy/templates/iosapp.js"></script>
 
 <!-- iSpy Application Files -->
-<script type="text/javascript" src="/js/ispy/namespace.js"></script>
 <script type="text/javascript" src="/js/ispy/app.js"></script>
 
 <!-- iSpy Models -->
@@ -409,37 +92,18 @@ $(document).ready(function() {
 <script type="text/javascript" src="/js/ispy/models/objc.js"></script>
 
 <!-- iSpy Collections -->
-<script type="text/javascript" src="/js/ispy/models/objc-runtime.js"></script>
 
 <!-- iSpy Views -->
 <script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
+<!--
 <script type="text/javascript" src="/js/ispy/views/classbrowser-views.js"></script>
 <script type="text/javascript" src="/js/ispy/views/cycript-views.js"></script>
+-->
 
 <!-- iSpy Router -->
 <script type="text/javascript" src="/js/ispy/routers/router.js"></script>
 
+<!-- Cycript Console -->
+<script type="text/javascript" src="/js/cycript/cycript.js"></script>
 
 </html>
-
-
-<!--
-                                
-<%= (function (self) {
-    var fieldName = "";
-    var dataValue = "";
-    var lineItem = "";
-    var finalHTML = ""
-
-    fieldName = "Field";
-    dataValue = "Data";
-
-    $.each(self.model.attributes, function(key, value) {
-        lineItem = "<dt>" + key + "</dt><dd>" + value + "</dd>";
-        finalHTML = finalHTML + lineItem + "\n";    
-    });
-    
-    return finalHTML;
-})(this) %>
-
-                                -->

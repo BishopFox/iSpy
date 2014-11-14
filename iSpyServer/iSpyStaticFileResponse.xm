@@ -34,7 +34,7 @@
     NSDictionary *headers = [[NSDictionary alloc] initWithObjectsAndKeys:
         contentType, @"Content-type",
         @"nosniff", @"X-Content-Type-Options",
-        @"DENY", @"X-Frame-Options",
+        @"SAMEORIGIN", @"X-Frame-Options",
         @"1; mode=block", @"X-XSS-Protection",
     nil];
 

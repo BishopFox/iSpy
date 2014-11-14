@@ -7,12 +7,14 @@
     <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css" />
     <link rel="stylesheet" type="text/css" href="/css/animate.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/sidebar.css" />
     <link rel="stylesheet" type="text/css" href="/css/ispy.css" />
     <script type="text/javascript" src="/js/jquery.min.js"></script>
     <script type="text/javascript" src="/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="/js/underscore.min.js"></script>
     <script type="text/javascript" src="/js/backbone.min.js"></script>
     <script type="text/javascript" src="/js/handlebars.runtime.min.js"></script>
+    <script type="text/javascript" src="/js/sidebar.js"></script>
     <script type="text/javascript" src="/js/ispy/namespace.js"></script>
 </head>
 
@@ -68,7 +70,9 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#">iSpy</a>
+                <a class="navbar-brand" id="menu-toggle">
+                    iSpy
+                </a>
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
@@ -87,18 +91,52 @@
         </div>
     </nav>
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-sm-3 col-md-2 sidebar">
-                <ul class="nav nav-sidebar">
-                    <li><a href="#">Overview</a></li>
-                    <li><a href="#classbrowser">Class Browser</a></li>
+        <div id="wrapper">
+
+            <!-- Sidebar -->
+            <div id="sidebar-wrapper">
+                <ul class="sidebar-nav">
+                    <li class="sidebar-brand">
+                        <a href="#">
+                            iSpy
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">Overview</a>
+                    </li>
+                    <li>
+                        <a href="#">Shortcuts</a>
+                    </li>
+                    <li>
+                        <a href="#">Overview</a>
+                    </li>
+                    <li>
+                        <a href="#">Events</a>
+                    </li>
+                    <li>
+                        <a href="#">About</a>
+                    </li>
+                    <li>
+                        <a href="#">Services</a>
+                    </li>
+                    <li>
+                        <a href="#">Contact</a>
+                    </li>
                 </ul>
-            </div>
-            <div id="page-wrapper" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            </div>
+            </div><!-- /#sidebar-wrapper -->
+
+            <!-- Page Content -->
+            <div id="page-content-wrapper">
+                <div id="page-wrapper" class="container-fluid">
+                </div>
+            </div><!-- /#page-content-wrapper -->
         </div>
     </div>
 </body>
+    <script>
+
+    </script>
+
 <!-- iSpy Templates -->
 <script type="text/javascript" src="/js/ispy/templates/iosapp.js"></script>
 

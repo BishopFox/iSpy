@@ -146,6 +146,7 @@ id *appClassWhiteList = NULL;
 	char *appName = (char *) [[[NSProcessInfo processInfo] arguments][0] UTF8String];
 	char *imageName = (char *)class_getImageName(objc_getClass([className UTF8String]));
 	char *p = NULL;
+	char *imageNamePtr = imageName;
 
 	if(!imageName) {
 		return false;
@@ -155,7 +156,11 @@ id *appClassWhiteList = NULL;
 		return false;
 	}
 
-	if(strncmp(imageName, appName, p-imageName-1) == 0) {
+	// Support iOS 8
+	if(strncmp(imageName, "/private", 8) == 0 && strncmp(appName, "/private", 8) != 0)
+		imageNamePtr += 8;
+
+	if(strncmp(imageNamePtr, appName, p-imageName-1) == 0) {
 		return true;
 	}
 
@@ -745,8 +750,12 @@ Returns a NSDictionary like this:
 	unsigned int numProtocols;
 
 	numClasses = objc_getClassList(NULL, 0);
-	if(numClasses <= 0)
+	if(numClasses <= 0) {
+		NSLog(@"No classes");
 		return nil; //[classArray copy];
+	} else {
+		NSLog(@"Got %d classes", numClasses);
+	}
 
 	if((classes = (Class *)malloc(sizeof(Class) * numClasses)) == NULL)
 		return [classArray copy];

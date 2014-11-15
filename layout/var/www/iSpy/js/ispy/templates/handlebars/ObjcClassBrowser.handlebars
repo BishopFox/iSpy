@@ -3,9 +3,20 @@
     Class Browser
 </h1>
 <div class="row">
-    <ul>
-    {{#each objc_classes}}
-        <li>{{ name }}</li>
-    {{/each}}
-    </ul>
+    <div class="list-group col-md-4">
+        {{#each objc_classes}}
+            <a href="#" class="list-group-item">
+                <h5 class="list-group-item-heading">
+                    {{ name }} <i class="fa fa-fw fa-angle-right"></i>
+                </h5>
+            </a>
+        {{else}}
+            <p class="text-center">
+                <i class="fa fa-fw fa-refresh fa-spin"></i>
+                Loading ...
+            </p>
+        {{/each}}
+    </div>
+    <div id="" class="col-md-8">
+    </div>
 </div>

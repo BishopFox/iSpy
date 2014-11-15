@@ -24,16 +24,3 @@ iSpy.Views.ObjcClassBrowserView = Backbone.View.extend({
     },
 
 });
-
-iSpy.Views.ObjcClassListView = Backbone.View.extend({
-
-    tagName: 'div',
-
-    template: Handlebars.templates.ObjcClassListItem,
-
-    render: function() {
-        var template = this.template(this.model.toJSON());
-        this.$el.html(template);
-        return this;
-    },
-});

@@ -4,9 +4,10 @@ iSpy.Router = Backbone.Router.extend({
 
     routes: {
         '': 'index',
-        'iosapp': 'iosapp',
-        'classbrowser': 'classbrowser',
-        'fourohfour': 'notfound',
+        'iosapp': 'iosApp',
+        'classbrowser': 'classBrowser',
+        'displayclass/:className': 'displayClass',
+        '*other': 'notfound',
     },
 
     index: function() {
@@ -14,19 +15,24 @@ iSpy.Router = Backbone.Router.extend({
         iSpy.Events.trigger('router:index');
     },
 
-    iosapp: function() {
-        console.log("[Router] -> iOSApp | Index");
+    iosApp: function() {
+        console.log("[Router] -> iOSApp");
         iSpy.Events.trigger('router:index');
     },
 
-    classbrowser: function() {
-        console.log("[Router] -> Class Dump | Index");
+    classBrowser: function() {
+        console.log("[Router] -> Class Browser");
         iSpy.Events.trigger('router:classbrowser');
     },
 
-    notfound: function() {
-        console.log("[Router] -> Not Found | Index");
-        iSpy.Events.trigger('router:notfound');
+    displayClass: function(className) {
+        console.log("[Router] -> Class Browser | displayClass: " + className);
+        iSpy.Events.trigger('router:displayClass', className);
+    },
+
+    notfound: function(other) {
+        console.log("[Router] -> Not Found");
+        iSpy.Events.trigger('router:notfound', other);
     },
 
 });

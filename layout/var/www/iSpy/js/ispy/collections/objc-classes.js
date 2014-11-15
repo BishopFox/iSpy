@@ -10,12 +10,16 @@ iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
     model: iSpy.Models.ObjcClass,
 
+    comparator: function(model) {
+        return model.get('name');
+    },
+
     addClassList: function(classList) {
         this.reset();
         for(index = 0; index < classList['classes'].length; ++index) {
             this.add({name: classList['classes'][index]});
         }
-        console.log(this);
+        this.sort();
         this.trigger('classListChange');
     },
 

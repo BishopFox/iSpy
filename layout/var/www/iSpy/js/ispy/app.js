@@ -12,7 +12,12 @@ iSpy.Events.on('router:index', function() {
     $("#context-menu").html("");
     var ios_app = new iSpy.Models.iOSApp();
     var view = new iSpy.Views.iOSAppView({model: ios_app});
+    $("#page-content-wrapper").addClass('fadeIn');
     $("#page-content-wrapper").html(view.render().el);
+    setTimeout(function() {
+        $("#page-content-wrapper").removeClass('fadeIn');
+    }, 500);
+
 });
 
 iSpy.Events.on('router:classbrowser', function() {
@@ -20,6 +25,11 @@ iSpy.Events.on('router:classbrowser', function() {
     $("#context-menu").html(Handlebars.templates.ObjcClassBrowserContextMenu());
 
     var objc_classes = new iSpy.Collections.ObjcClasses();
+
     var view = new iSpy.Views.ObjcClassBrowserView({collection: objc_classes});
+    $("#page-content-wrapper").addClass('fadeIn');
     $("#page-content-wrapper").html(view.render().el);
+    setTimeout(function() {
+        $("#page-content-wrapper").removeClass('fadeIn');
+    }, 500);
 });

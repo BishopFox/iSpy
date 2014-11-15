@@ -1,19 +1,21 @@
 /*
- *  iSpy Main Entry Point
+ *  iSpy Application
  */
 
 iSpy.Events.on("ispy:connection-opened", function() {
-
-    console.log("[iSpy] Connection opened; creating views and models");
-
-    var ios_app = new iSpy.Models.iOSApp();
-    var objc_classes = new iSpy.Collections.ObjcClasses();
-
-    /* Create the main views */
-    var appIndex = new iSpy.Views.iOSAppIndex({model: ios_app});
-    var classBrowserIndex = new iSpy.Views.ClassBrowserIndex({model: objc_classes});
-
-    var router = new iSpy.Router();
+    console.log("[iSpy] Connection opened, starting router");
+    new iSpy.Router();
     Backbone.history.start();
+});
 
+iSpy.Events.on('router:index', function() {
+    var ios_app = new iSpy.Models.iOSApp();
+    var view = new iSpy.Views.iOSAppView({model: ios_app});
+    $("#page-content-wrapper").html(view.render().el);
+});
+
+iSpy.Events.on('router:classbrowser', function() {
+    var objc_classes = new iSpy.Collections.ObjcClasses();
+    var view = new iSpy.Views.ObjcClassBrowserView({collection: objc_classes});
+    $("#page-content-wrapper").html(view.render().el);
 });

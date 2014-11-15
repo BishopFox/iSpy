@@ -1,26 +1,17 @@
 // The iOSApp Index View
 // -----------------------
-iSpy.Views.iOSAppIndex = Backbone.View.extend({
+iSpy.Views.iOSAppView = Backbone.View.extend({
 
-    el: '#page-wrapper',
+    tagName: 'div',
 
-    template: Handlebars.templates.iosapp,
+    template: Handlebars.templates.iOSApp,
 
     initialize: function() {
-        console.log("[Views|iOSAppIndex] initialize");
-        iSpy.Events.on('iosapp:index', this.indexEvent, this);
+        this.model.fetch();
         this.model.on('change', this.render, this);
     },
 
-    indexEvent: function() {
-        console.log("[Views|iOSAppIndex] indexEvent fired, fecthing data for model");
-        this.render();
-        this.model.fetch();
-    },
-
     render: function() {
-        console.log("[Views|iOSAppIndex] Rendering template to page");
-        console.log(this.model.toJSON());
         var template = this.template(this.model.toJSON());
         this.$el.html(template);
         return this;

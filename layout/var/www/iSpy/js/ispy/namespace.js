@@ -70,7 +70,7 @@ Handlebars.registerHelper('toHex', function(number) {
  *   the server, which may or may not have been triggered by a request sent from here.
  */
 Backbone.sync = function(method, model, options) {
-
+    console.log("[Backbone|Sync] " + method + "|" + model + "|" + options);
     if (method === "read") {
         for (var index = 0; index < model.rpcRead.length; ++index) {
             var readMessage = model.rpcRead[index];

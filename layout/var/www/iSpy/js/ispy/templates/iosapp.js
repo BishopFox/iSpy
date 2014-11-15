@@ -1,6 +1,6 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['iosapp'] = template({"1":function(depth0,helpers,partials,data) {
+templates['iOSApp'] = template({"1":function(depth0,helpers,partials,data) {
   var helper, functionType="function", helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
   return "        <img src=\""
     + escapeExpression(((helper = (helper = helpers.imageURI || (depth0 != null ? depth0.imageURI : depth0)) != null ? helper : helperMissing),(typeof helper === functionType ? helper.call(depth0, {"name":"imageURI","hash":{},"data":data}) : helper)))

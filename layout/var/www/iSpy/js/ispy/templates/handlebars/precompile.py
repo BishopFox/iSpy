@@ -14,7 +14,7 @@ def precompile(compiler='handlebars'):
     files = filter(lambda f: f.endswith('.handlebars'), os.listdir('.'))
     for hb in files:
         output = ''.join(hb.split('.')[:-1]) + '.js'
-        exit_status = os.system('%s %s -f ../%s' % (
+        exit_status = os.system('%s %s -f ../js/%s' % (
             compiler, hb, output
         ))
         if exit_status == EXIT_SUCCESS:

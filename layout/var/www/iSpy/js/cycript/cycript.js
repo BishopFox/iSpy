@@ -1,4 +1,9 @@
-/* Cycript Modal and hotkey */
+/*
+ * Cycript Modal and hotkey bindings
+ *
+ *  This executes in the parent frame's context
+ *
+ */
 $(document).ready(function() {
 
     /* Lazy load the console */

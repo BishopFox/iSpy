@@ -11,9 +11,6 @@ iSpy.Events.on("ispy:connection-opened", function() {
 /* Index Page */
 iSpy.Events.on('router:index', function() {
     $("#context-menu").html("");
-    if (window.iSpy.instances.ios_app === undefined) {
-        window.iSpy.instances.ios_app = new iSpy.Models.iOSApp();
-    }
     var view = new iSpy.Views.iOSAppView({model: window.iSpy.instances.ios_app});
     $("#page-content-wrapper").addClass('fadeIn');
     $("#page-content-wrapper").html(view.render().el);
@@ -24,7 +21,7 @@ iSpy.Events.on('router:index', function() {
 });
 
 /* Class Browser */
-iSpy.Events.on('router:classbrowser', function() {
+iSpy.Events.on('router:classbrowser', function(className) {
 
     /* Bind search to context menu */
     $("#context-menu").html(Handlebars.templates.ObjcClassBrowserContextMenu());
@@ -39,12 +36,6 @@ iSpy.Events.on('router:classbrowser', function() {
         $("#page-content-wrapper").removeClass('fadeIn');
     }, 500);
 
-    /* Render the list view */
-    if (window.iSpy.instances.objc_classes === undefined) {
-        window.iSpy.instances.objc_classes = new iSpy.Collections.ObjcClasses();
-        window.iSpy.instances.objc_classes.fetchAll();
-    }
-
     var view = new iSpy.Views.ObjcClassList({collection: window.iSpy.instances.objc_classes});
     view.render();
 
@@ -52,6 +43,7 @@ iSpy.Events.on('router:classbrowser', function() {
 
 /* Fuzzy search via fuse.js */
 iSpy.Events.on('classbrowser:search', function(needle) {
+
     if ( !needle ) {
         var view = new iSpy.Views.ObjcClassList({collection: window.iSpy.instances.objc_classes});
         view.render();
@@ -60,21 +52,41 @@ iSpy.Events.on('classbrowser:search', function(needle) {
             caseSensitive: false,
             includeScore: false,
             shouldSort: true,
-            threshold: 0.6,
+            threshold: 0.4,
             location: 0,
             distance: 100,
             maxPatternLength: 32,
             keys: ["attributes.name",]
         };
-        var objc_classes = window.iSpy.instances.objc_classes;
-        var fuse = new Fuse(objc_classes.models, options);
+        var fuse = new Fuse(window.iSpy.instances.objc_classes.models, options);
         var result_collection = new iSpy.Collections.ObjcClasses(fuse.search(needle));
         console.log(result_collection);
-        var view = new iSpy.Views.ObjcClassList({collection: result_collection});
-        view.render();
+        if (0 < result_collection.length) {
+            var view = new iSpy.Views.ObjcClassList({collection: result_collection});
+            view.render();
+        } else {
+            $("#objc-class-list").html(Handlebars.templates.SearchNoResults());
+        }
     }
 });
 
+/* View class */
+iSpy.Events.on('classbrowser:viewclass', function(classId) {
+
+    var objc_class = window.iSpy.instances.objc_classes.get(classId);
+    console.log(objc_class);
+    if (objc_class !== undefined) {
+        objc_class.fetchAll();
+
+
+
+
+    } else {
+        console.log("Cannot find class id: " + classId);
+    }
+
+
+});
 
 /* 404 - Default if no route exists */
 iSpy.Events.on('router:notfound', function() {

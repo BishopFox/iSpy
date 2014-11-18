@@ -9,33 +9,35 @@ iSpy.Models.ObjcClass = Backbone.Model.extend({
         "properties": [],
     },
 
+    validate: function(attrs) {
+        if ( !attrs.name ) {
+            return "ObjcClass 'name' cannot be falsey";
+        }
+    },
 
     initialize: function() {
         console.log("[Models|ObjcClass] initialize");
+        iSpy.Events.on("sync:" + this.attributes.name, this.set, this);
+
     },
 
-    rpcRead: [
-    ],
-
-});
-
-
-// ObjcMethod Model
-// -------------------
-iSpy.Models.ObjcMethod = Backbone.Model.extend({
-
-    defaults: {
-        "name": "",
-        "arguments": [],
-        "returnType": null,
-        "instanceMethod": true,
+    fetchAll: function() {
+        this.createClassRpcRead("iVarsForClass");
+        this.createClassRpcRead("methodsForClass");
+        this.createClassRpcRead("propertiesForClass");
+        this.fetch();
     },
 
-
-    initialize: function() {
-        console.log("[Models|ObjcMethod] initialize");
+    createClassRpcRead: function(messageType) {
+        this.rpcRead.push({
+            "messageType": messageType,
+            "messageData": {
+                "class": this.attributes.name,
+            }
+        });
     },
 
+    /* Created when the object is init'd */
     rpcRead: [
     ],
 

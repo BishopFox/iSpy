@@ -7,7 +7,6 @@ iSpy.Views.iOSAppView = Backbone.View.extend({
     template: Handlebars.templates.iOSApp,
 
     initialize: function() {
-        this.model.fetch();
         this.model.on('change', this.render, this);
     },
 

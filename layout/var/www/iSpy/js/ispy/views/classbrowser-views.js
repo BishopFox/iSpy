@@ -1,26 +1,45 @@
 
 
 
-iSpy.Views.ObjcClassBrowserView = Backbone.View.extend({
+iSpy.Views.ObjcClassList = Backbone.View.extend({
 
-    tagName: 'div',
-
-    template: Handlebars.templates.ObjcClassBrowser,
+    el: '#objc-class-list',
 
     initialize: function() {
         this.collection.on('classListChange', this.render, this);
     },
 
     render: function() {
-        /*
-        this.collection.each(function(objcClass) {
-            var objcClassView = new iSpy.Views.ObjcClassListView({model: objcClass});
-            this.$el.append(objcClassView.render().el);
+
+        this.collection.each(function(objcClass, index) {
+            var objcClassView = new iSpy.Views.ObjcClassListItem({model: objcClass});
+            if (index === 0) {
+                this.$el.html(objcClassView.render().el);
+            } else {
+                this.$el.append(objcClassView.render().el);
+            }
         }, this);
-        */
-        var template = this.template({'objc_classes': this.collection.toJSON()});
+
+        return this;
+    },
+
+});
+
+iSpy.Views.ObjcClassListItem = Backbone.View.extend({
+
+    tagName: 'a',
+
+    template: Handlebars.templates.ObjcClassListItem,
+
+    model: iSpy.Models.ObjcClass,
+
+    render: function() {
+        this.$el.addClass("list-group-item animated fadeIn");
+        this.$el.attr('href', "#");
+        var template = this.template(this.model.toJSON());
         this.$el.html(template);
         return this;
     },
 
 });
+

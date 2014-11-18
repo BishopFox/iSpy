@@ -7,6 +7,7 @@ window.iSpy = {
     Views: {},
     Router: {},
     Events: _.extend({}, Backbone.Events),
+    instances: {},
 };
 
 /* Template Helper Functions */

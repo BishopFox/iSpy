@@ -10,6 +10,7 @@ def precompile(compiler='handlebars'):
     Quick hack to precompile all templates
     '''
     success = 0
+    os.system("rm ../js/*.js")
     print("[*] Precompiling templates, please wait ...")
     files = filter(lambda f: f.endswith('.handlebars'), os.listdir('.'))
     for hb in files:

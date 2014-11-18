@@ -36,6 +36,7 @@ iSpy.Models.iOSApp = Backbone.Model.extend({
         iSpy.Events.on('sync:ASLR', this.set, this);
         iSpy.Events.on('sync:classList', this.set, this);
         iSpy.Events.on('sync:applicationIcon', this.set, this);
+        this.fetch();
     },
 
     rpcRead: [

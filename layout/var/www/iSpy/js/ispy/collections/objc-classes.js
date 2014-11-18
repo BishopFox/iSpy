@@ -4,14 +4,17 @@ iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
     initialize: function() {
         console.log("[Collections|ObjcClasses] initialize");
-        iSpy.Events.on('sync:classList', this.addClassList, this);
-        this.fetch();
     },
 
     model: iSpy.Models.ObjcClass,
 
     comparator: function(model) {
         return model.get('name');
+    },
+
+    fetchAll: function() {
+        iSpy.Events.on('sync:classList', this.addClassList, this);
+        this.fetch();
     },
 
     addClassList: function(classList) {

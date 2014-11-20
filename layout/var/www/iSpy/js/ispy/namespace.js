@@ -23,6 +23,7 @@ Handlebars.registerHelper('toHex', function(number) {
     /* WebSocket Setup within the iSpy namespace */
     var sync_url = "ws://" + window.location.host + "/jsonrpc";
     console.log("[*] Connecting to sync url -> " + sync_url);
+
     iSpy.SyncSocket = new WebSocket(sync_url);
 
     iSpy.SyncSocket.onopen = function() {

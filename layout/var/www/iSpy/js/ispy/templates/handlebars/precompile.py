@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+'''
+This will eventually get replaced with Require.js
+but until then it's a quick hack to save time.
+'''
 
 import os
 
@@ -10,7 +14,6 @@ def precompile(compiler='handlebars'):
     Quick hack to precompile all templates
     '''
     success = 0
-    os.system("rm ../js/*.js")
     print("[*] Precompiling templates, please wait ...")
     files = filter(lambda f: f.endswith('.handlebars'), os.listdir('.'))
     for hb in files:
@@ -26,6 +29,17 @@ def precompile(compiler='handlebars'):
     print("[*] Successfully compiled %d of %d templates" % (
         success, len(files)
     ))
+    if success == len(files):
+        minify()
+
+
+def minify(minifier='minify', output='templates.min.js'):
+    print("[*] Minifying JavaScript files ...")
+    os.chdir("../js")
+    files = filter(lambda f: f.endswith('.js'), os.listdir('.'))
+    os.system("%s %s > ./%s" % (minifier, " ".join(files), output))
+    os.system("rm %s" % " ".join(files))
+
 
 if __name__ == '__main__':
     precompile()

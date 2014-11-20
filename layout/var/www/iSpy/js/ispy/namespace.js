@@ -41,7 +41,9 @@ Handlebars.registerHelper('toHex', function(number) {
         } else if (message['status'] === "OK") {
             console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
             console.log(message["JSON"]);
+
             iSpy.Events.trigger("sync:" + message["messageType"], message["JSON"]);
+
         } else if (message['status'] === "error") {
             console.log("[SyncSocket] Recieved an error: " + message["error"]);
             $("#activity-monitor-log").prepend(new Date() + " - " + $('<div/>').text(message["error"]).html() + "\n");
@@ -63,6 +65,20 @@ Handlebars.registerHelper('toHex', function(number) {
     }
 
 })(jQuery);
+
+/* Some events require a sub-route to maintain the 'messageType' protocol */
+iSpy.Events.on("sync:methodsForClass", function(message) {
+    iSpy.Events.trigger(messsage["name"] + ":methods", message["methods"]);
+});
+iSpy.Events.on("sync:protocolsForClass", function(message) {
+    iSpy.Events.trigger(messsage["name"] + ":protocols", message["protocols"]);
+});
+iSpy.Events.on("sync:propertiesForClass", function(message) {
+    iSpy.Events.trigger(messsage["name"] + ":properties", message["properties"]);
+});
+iSpy.Events.on("sync:iVarsForClass", function(message) {
+    iSpy.Events.trigger(messsage["name"] + ":iVars", message["iVars"]);
+});
 
 
 /*

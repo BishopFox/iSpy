@@ -34,7 +34,7 @@ iSpy.Views.ObjcClassListItem = Backbone.View.extend({
     model: iSpy.Models.ObjcClass,
 
     render: function() {
-        this.$el.addClass("list-group-item animated fadeIn");
+        this.$el.addClass("list-group-item");
         this.$el.attr('href', "#classbrowser/" + this.model.cid);
         var template = this.template(this.model.toJSON());
         this.$el.html(template);

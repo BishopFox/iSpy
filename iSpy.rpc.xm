@@ -224,6 +224,7 @@ If "methods" is nil, assume all methods in class.
     return @{
     	@"status": @"OK",
     	@"JSON": @{
+            @"name": className,
             @"methods": methods,
         },
     };
@@ -249,6 +250,7 @@ If "methods" is nil, assume all methods in class.
     return @{
     	@"status": @"OK",
     	@"JSON": @{
+            @"name": className,
             @"properties": properties,
         },
     };
@@ -274,6 +276,7 @@ If "methods" is nil, assume all methods in class.
     return @{
     	@"status": @"OK",
     	@"JSON": @{
+            @"name": className,
             @"protocols": protocols,
         },
     };
@@ -296,9 +299,11 @@ If "methods" is nil, assume all methods in class.
     	};
     }
 
+
     return @{
     	@"status": @"OK",
     	@"JSON": @{
+            @"name": className,
             @"iVars": iVars,
         },
     };

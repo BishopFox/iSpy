@@ -3,7 +3,7 @@
 iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
     initialize: function() {
-        console.log("[Collections|ObjcClasses] initialize");
+        //console.log("[Collections|ObjcClasses] initialize");
     },
 
     model: iSpy.Models.ObjcClass,
@@ -19,7 +19,7 @@ iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
     addClassList: function(classList) {
         this.reset();
-        for(index = 0; index < classList['classes'].length; ++index) {
+        for (var index = 0; index < classList['classes'].length; ++index) {
             this.add({name: classList['classes'][index]});
         }
         this.sort();
@@ -36,3 +36,18 @@ iSpy.Collections.ObjcClasses = Backbone.Collection.extend({
 
 });
 
+
+/* A list of methods owned by a class */
+iSpy.Collections.ObjcMethods = Backbone.Collection.extend({
+
+    initialize: function() {
+        //console.log("[Collections|ObjcMethods] initialize");
+    },
+
+    model: iSpy.Models.ObjcMethod,
+
+    comparator: function(model) {
+        return model.get('name');
+    },
+
+});

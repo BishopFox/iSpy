@@ -26,13 +26,12 @@ iSpy.Models.ObjcClass = Backbone.Model.extend({
         iSpy.Events.on(this.attributes.name + ":properties", this.setProperties, this);
 
         /* Create sync messages */
-        this.createClassRpcRead("iVarsForClass");
-        this.createClassRpcRead("methodsForClass");
-        this.createClassRpcRead("propertiesForClass");
-
+        this.createRpcRead("iVarsForClass");
+        this.createRpcRead("methodsForClass");
+        this.createRpcRead("propertiesForClass");
     },
 
-    createClassRpcRead: function(messageType) {
+    createRpcRead: function(messageType) {
         this.rpcRead.push({
             "messageType": messageType,
             "messageData": {

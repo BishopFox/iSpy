@@ -149,7 +149,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
-            <string>Bypass SSL Certificate Pinning</string>
+            <string>SSL Certificate Pinning</string>
          </dict>
          <dict>
             <key>cell</key>
@@ -159,9 +159,9 @@
             <key>defaults</key>
             <string>com.bishopfox.iSpy.Settings</string>
             <key>key</key>
-            <string>settings_TrustMeBypass</string>
+            <string>settings_SSLPinningBypass</string>
             <key>label</key>
-            <string>TrustMe Bypass (SecTrustEvaluate)</string>
+            <string>Disable SSL Certificate Pinning</string>
          </dict><!-- End Network Attacks -->
 
          <!-- Runtime monitoring -->

@@ -19,66 +19,68 @@ Handlebars.registerHelper('toHex', function(number) {
     WebSockets
 */
 (function($) {
+    $(document).ready(function() {
 
-    /* WebSocket Setup within the iSpy namespace */
-    var sync_url = "ws://" + window.location.host + "/jsonrpc";
-    console.log("[*] Connecting to sync url -> " + sync_url);
+        /* WebSocket Setup within the iSpy namespace */
+        var sync_url = "ws://" + window.location.host + "/jsonrpc";
+        console.log("[*] Connecting to sync url -> " + sync_url);
 
-    iSpy.SyncSocket = new WebSocket(sync_url);
+        iSpy.SyncSocket = new WebSocket(sync_url);
 
-    iSpy.SyncSocket.onopen = function() {
-        console.log("[*] Successfully connected to remote rpc server!");
-        $("#activity-monitor-log").prepend(new Date() + " - Connection established\n");
-        $("#activity-monitor").removeClass("fa-eye-slash");
-        $("#activity-monitor").addClass("fa-eye");
-        iSpy.Events.trigger("ispy:connection-opened");
-    }
-
-    iSpy.SyncSocket.onmessage = function(emit) {
-        console.log(emit);
-        var message = $.parseJSON(emit.data);
-        if ( ! ('status' in message)) {
-            console.log("[SyncSocket] Malformed JSON message from server; no status.");
-        } else if (message['status'] === "OK") {
-            console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
-            console.log(message["JSON"]);
-
-            iSpy.Events.trigger("sync:" + message["messageType"], message["JSON"]);
-
-        } else if (message['status'] === "error") {
-            console.log("[SyncSocket] Recieved an error: " + message["error"]);
-            $("#activity-monitor-log").prepend(new Date() + " - " + $('<div/>').text(message["error"]).html() + "\n");
-            iSpy.Events.trigger("ispy:error", message["error"]);
-        } else {
-            console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
+        iSpy.SyncSocket.onopen = function() {
+            console.log("[*] Successfully connected to remote rpc server!");
+            $("#activity-monitor-log").prepend(new Date() + " - Connection established\n");
+            $("#activity-monitor").removeClass("fa-eye-slash");
+            $("#activity-monitor").addClass("fa-eye");
+            iSpy.Events.trigger("ispy:connection-opened");
         }
-    }
 
-    iSpy.SyncSocket.onclose = function() {
-        console.log("[!] Connection to server lost");
-        $("#activity-monitor").removeClass("fa-plug");
-        $("#activity-monitor-title").removeClass("fa-circle-o-notch fa-spin");
-        $("#activity-monitor").addClass("fa-eye-slash");
-        $("#activity-monitor-title").addClass("fa-warning");
-        $("#activity-monitor-log").prepend(new Date() + " - Connection lost\n");
-        iSpy.Events.trigger("ispy:connection-lost");
-        $("#activity-monitor-modal").modal('show');
-    }
+        iSpy.SyncSocket.onmessage = function(emit) {
+            console.log(emit);
+            var message = $.parseJSON(emit.data);
+            if ( ! ('status' in message)) {
+                console.log("[SyncSocket] Malformed JSON message from server; no status.");
+            } else if (message['status'] === "OK") {
+                console.log("[SyncSocket] Trigger event 'ispy:" + message["messageType"] + "' with");
+                console.log(message["JSON"]);
 
+                iSpy.Events.trigger("sync:" + message["messageType"], message["JSON"]);
+
+            } else if (message['status'] === "error") {
+                console.log("[SyncSocket] Recieved an error: " + message["error"]);
+                $("#activity-monitor-log").prepend(new Date() + " - " + $('<div/>').text(message["error"]).html() + "\n");
+                iSpy.Events.trigger("ispy:error", message["error"]);
+            } else {
+                console.log("[SyncSocket] Malformed JSON message from server; invalid status.");
+            }
+        }
+
+        iSpy.SyncSocket.onclose = function() {
+            console.log("[!] Connection to server lost");
+            $("#activity-monitor").removeClass("fa-plug");
+            $("#activity-monitor-title").removeClass("fa-circle-o-notch fa-spin");
+            $("#activity-monitor").addClass("fa-eye-slash");
+            $("#activity-monitor-title").addClass("fa-warning");
+            $("#activity-monitor-log").prepend(new Date() + " - Connection lost\n");
+            iSpy.Events.trigger("ispy:connection-lost");
+            $("#activity-monitor-modal").modal('show');
+        }
+
+    });
 })(jQuery);
 
 /* Some events require a sub-route to maintain the 'messageType' protocol */
 iSpy.Events.on("sync:methodsForClass", function(message) {
-    iSpy.Events.trigger(messsage["name"] + ":methods", message["methods"]);
+    iSpy.Events.trigger(message["name"] + ":methods", message["methods"]);
 });
 iSpy.Events.on("sync:protocolsForClass", function(message) {
-    iSpy.Events.trigger(messsage["name"] + ":protocols", message["protocols"]);
+    iSpy.Events.trigger(message["name"] + ":protocols", message["protocols"]);
 });
 iSpy.Events.on("sync:propertiesForClass", function(message) {
-    iSpy.Events.trigger(messsage["name"] + ":properties", message["properties"]);
+    iSpy.Events.trigger(message["name"] + ":properties", message["properties"]);
 });
 iSpy.Events.on("sync:iVarsForClass", function(message) {
-    iSpy.Events.trigger(messsage["name"] + ":iVars", message["iVars"]);
+    iSpy.Events.trigger(message["name"] + ":iVars", message["iVars"]);
 });
 
 

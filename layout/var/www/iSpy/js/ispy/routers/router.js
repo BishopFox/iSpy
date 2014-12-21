@@ -7,6 +7,7 @@ iSpy.Router = Backbone.Router.extend({
         'iosapp': 'iosApp',
         'classbrowser': 'classBrowser',
         'classbrowser/:className': 'viewClass',
+        'filebrowser': 'fileBrowser',
         '*other': 'notfound',
     },
 
@@ -38,6 +39,11 @@ iSpy.Router = Backbone.Router.extend({
         }
         console.log("[Router] -> View Class");
         iSpy.Events.trigger('classbrowser:viewclass', className);
+    },
+
+    fileBrowser: function() {
+        console.log("[Router] -> FileBrowser");
+        iSpy.Events.trigger('router:filebrowser');
     },
 
     notfound: function(other) {

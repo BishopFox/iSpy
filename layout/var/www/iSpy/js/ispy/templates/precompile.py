@@ -15,10 +15,11 @@ def precompile(compiler='handlebars'):
     '''
     success = 0
     print("[*] Precompiling templates, please wait ...")
-    files = filter(lambda f: f.endswith('.handlebars'), os.listdir('.'))
+    files = filter(
+        lambda f: f.endswith('.handlebars'), os.listdir('./handlebars'))
     for hb in files:
         output = ''.join(hb.split('.')[:-1]) + '.js'
-        exit_status = os.system('%s %s -f ../js/%s' % (
+        exit_status = os.system('%s ./handlebars/%s -f ./js/%s' % (
             compiler, hb, output
         ))
         if exit_status == EXIT_SUCCESS:
@@ -35,10 +36,13 @@ def precompile(compiler='handlebars'):
 
 def minify(minifier='minify', output='templates.min.js'):
     print("[*] Minifying JavaScript files ...")
-    os.chdir("../js")
-    files = filter(lambda f: f.endswith('.js'), os.listdir('.'))
-    os.system("%s %s > ./%s" % (minifier, " ".join(files), output))
-    os.system("rm %s" % " ".join(files))
+    files = filter(lambda f: f.endswith('.js'), os.listdir('./js'))
+    if output in files:
+        files.remove(output)
+    os.system("%s ./js/%s > %s" % (
+        minifier, " ./js/".join(files), './js/' + output,
+    ))
+    os.system("rm ./js/%s" % " ./js/".join(files))
 
 
 if __name__ == '__main__':

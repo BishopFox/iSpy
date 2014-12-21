@@ -34,6 +34,24 @@
                         <i class="fa fa-terminal fa-stack-1x fa-inverse"></i>
                     </span>
                     Cycript Console
+                    <span class="btn-group pull-right">
+                        <a class="btn btn-primary" href="/cycript.html" target="_blank">
+                            <i class="fa fa-fw fa-arrows-alt"></i>
+                            Full Screen
+                        </a>
+                        <button class="btn btn-primary">Helper Functions</button>
+                        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a type="button">
+                                    <i class="fa fa-fw fa-arrows-alt"></i>
+                                    Weak Class Dump
+                                </a>
+                            </li>
+                        </ul>
+                    </span>
                 </h4>
             </div>
             <iframe id="cycript-frame" width="100%" height="650" frameborder="0"></iframe>
@@ -131,15 +149,21 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#msgsend">
-                            <i class="fa fa-fw fa-cubes"></i>
-                            objc_msgSend Logging
+                        <a href="#classbrowser">
+                            <i class="fa fa-fw fa-folder-open"></i>
+                            File Browser
                         </a>
                     </li>
                     <li>
                         <a href="#keychain">
                             <i class="fa fa-fw fa-key"></i>
                             Keychain
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#msgsend">
+                            <i class="fa fa-fw fa-cubes"></i>
+                            objc_msgSend Logging
                         </a>
                     </li>
                 </ul>
@@ -156,17 +180,19 @@
 <!-- iSpy Templates -->
 <script type="text/javascript" src="/js/ispy/templates/js/templates.min.js"></script>
 
-
 <!-- iSpy Models -->
 <script type="text/javascript" src="/js/ispy/models/objc.js"></script>
 <script type="text/javascript" src="/js/ispy/models/ios-app.js"></script>
+<script type="text/javascript" src="/js/ispy/models/filebrowser.js"></script>
 
 <!-- iSpy Collections -->
 <script type="text/javascript" src="/js/ispy/collections/objc.js"></script>
+<script type="text/javascript" src="/js/ispy/collections/filebrowser.js"></script>
 
 <!-- iSpy Views -->
 <script type="text/javascript" src="/js/ispy/views/ios-app-views.js"></script>
 <script type="text/javascript" src="/js/ispy/views/classbrowser-views.js"></script>
+<script type="text/javascript" src="/js/ispy/views/filebrowser-views.js"></script>
 
 <!-- iSpy Router -->
 <script type="text/javascript" src="/js/ispy/routers/router.js"></script>

@@ -2,6 +2,25 @@
  *  iSpy Application
  */
 
+
+// Helper function to add a pretty CSS3 fade
+function renderViewWithFade(view) {
+    $("#page-content-wrapper").addClass('fadeIn');
+    $("#page-content-wrapper").html(view.render().el);
+    setTimeout(function() {
+        $("#page-content-wrapper").removeClass('fadeIn');
+    }, 500);
+}
+
+function renderTemplateWithFade(template) {
+    $("#page-content-wrapper").addClass('fadeIn');
+    $("#page-content-wrapper").html(template());
+    setTimeout(function() {
+        $("#page-content-wrapper").removeClass('fadeIn');
+    }, 500);
+}
+
+
 iSpy.Events.on("ispy:connection-opened", function() {
     console.log("[iSpy] Connection opened, starting router");
     new iSpy.Router();
@@ -12,30 +31,19 @@ iSpy.Events.on("ispy:connection-opened", function() {
 iSpy.Events.on('router:index', function() {
     $("#context-menu").html("");
     var view = new iSpy.Views.iOSAppView({model: window.iSpy.instances.ios_app});
-    $("#page-content-wrapper").addClass('fadeIn');
-    $("#page-content-wrapper").html(view.render().el);
-    setTimeout(function() {
-        $("#page-content-wrapper").removeClass('fadeIn');
-    }, 500);
-
+    renderViewWithFade(view);
 });
 
 /* Class Browser */
-iSpy.Events.on('router:classbrowser', function(className) {
-
+iSpy.Events.on('router:classbrowser', function() {
     /* Bind search to context menu */
     $("#context-menu").html(Handlebars.templates.ObjcClassBrowserContextMenu());
     $("#objc-class-search").on('input', function(evt) {
         iSpy.Events.trigger('classbrowser:search', $("#objc-class-search").val());
     });
 
-    /* Render the outer page */
-    $("#page-content-wrapper").addClass('fadeIn');
-    $("#page-content-wrapper").html(Handlebars.templates.ObjcClassBrowser());
-    setTimeout(function() {
-        $("#page-content-wrapper").removeClass('fadeIn');
-    }, 500);
-
+    /* Render the outer template and the ClassList view */
+    renderTemplateWithFade(Handlebars.templates.ObjcClassBrowser);
     var view = new iSpy.Views.ObjcClassList({collection: window.iSpy.instances.objc_classes});
     view.render();
 
@@ -60,7 +68,6 @@ iSpy.Events.on('classbrowser:search', function(needle) {
         };
         var fuse = new Fuse(window.iSpy.instances.objc_classes.models, options);
         var result_collection = new iSpy.Collections.ObjcClasses(fuse.search(needle));
-        console.log(result_collection);
         if (0 < result_collection.length) {
             var view = new iSpy.Views.ObjcClassList({collection: result_collection});
             view.render();
@@ -71,33 +78,25 @@ iSpy.Events.on('classbrowser:search', function(needle) {
 });
 
 /* View class */
-iSpy.Events.on('classbrowser:viewclass', function(classId) {
+iSpy.Events.on('classbrowser:viewclass', function(class_name) {
+    $("#context-menu").html("");
+    var model = new iSpy.Models.ObjcClass({name: class_name});
+    model.fetch();
 
-    var objc_class = window.iSpy.instances.objc_classes.get(classId);
-    console.log(objc_class);
-    if (objc_class !== undefined) {
-        objc_class.fetchAll();
-
-
-
-
-    } else {
-        console.log("Cannot find class id: " + classId);
-    }
+    renderViewWithFade(view);
+});
 
 
+/* File Browser */
+iSpy.Events.on('router:filebrowser', function() {
+    $("#context-menu").html("");
+    var view = new iSpy.Views.FileBrowserView();
+    renderViewWithFade(view);
 });
 
 /* 404 - Default if no route exists */
 iSpy.Events.on('router:notfound', function() {
-    $("#context-menu").html("");
-
-    $("#page-content-wrapper").addClass('fadeIn');
-    $("#page-content-wrapper").html(Handlebars.templates.NotFound());
-    setTimeout(function() {
-        $("#page-content-wrapper").removeClass('fadeIn');
-    }, 500);
-
+    renderTemplateWithFade(Handlebars.templates.NotFound);
 });
 
 /*

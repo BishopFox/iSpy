@@ -383,7 +383,13 @@ id *appClassWhiteList = NULL;
 }
 
 -(unsigned int)ASLR {
-	return (unsigned int)_dyld_get_image_vmaddr_slide(0);
+	unsigned int slide = (unsigned int)_dyld_get_image_vmaddr_slide(0);
+	
+	// security check - log all instances of non-ASLR apps
+	if(slide == 0)
+		ispy_log_debug(LOG_REPORT, "[Insecure ASLR]: ASLR is disabled for this app. Slide = 0.");
+
+	return slide; 
 }
 
 

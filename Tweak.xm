@@ -675,6 +675,11 @@ void hook_keychain() {
 		// Hook keychain functions
 		hook_keychain();
 
+		// Run security checks at least once
+		// This will force iSpy to log insecure behaviors, such as poor keychain security or missing ASLR.
+		[mySpy keyChainItems];
+		[mySpy ASLR];
+
 		// Start the iSpy web server
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");
 	}

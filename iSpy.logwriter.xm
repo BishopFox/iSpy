@@ -54,9 +54,7 @@ static const char* LEVELS[] = {"[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]", "[WT
     static const unsigned int LOG_HTTP     = 3;
     static const unsigned int LOG_TCPIP    = 4;
 */
-static const unsigned int LOG_GLOBAL   = 5;
-static const unsigned int MAX_LOG      = LOG_GLOBAL;    // this must be equal to the last number in the list of LOG_* numbers, above.
-static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log"};
+static const char* FACILITY_FILES[] = {"strace.log", "msgsend.log", "general.log", "http.log", "tcpip.log", "global.log", "report.log"};
 static const int LOG_UMASK = 0644;
 static int logFiles[MAX_LOG + 1];
 static BOOL logIsInitialized = NO;

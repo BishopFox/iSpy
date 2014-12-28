@@ -355,6 +355,22 @@ id *appClassWhiteList = NULL;
 
 					// add a human-readable kSecAttr value to the "v_pdmn" key. It's only for UI purposes.
 					[[keychainItems objectAtIndex:j] setObject:[kSecAttrs objectForKey:[[keychainItems objectAtIndex:j] objectForKey:@"pdmn"]] forKey:@"v_pdmn"];
+
+					// Security check. Report any occurences of insecure storage.
+					NSString *attr = [kSecAttrs objectForKey:[[keychainItems objectAtIndex:j] objectForKey:@"pdmn"]];
+					if([attr isEqual:@"kSecAttrAccessibleAlways"] || [attr isEqual:@"kSecAttrAccessibleAlwaysThisDeviceOnly"]) {
+				   		NSString *strName;
+				   		if([[[keychainItems objectAtIndex:j] objectForKey:@"acct"] respondsToSelector:@selector(bytes)]) {
+							NSString *str = [[NSString alloc] initWithData:[[keychainItems objectAtIndex:j] objectForKey:@"acct"] encoding:NSUTF8StringEncoding];
+							if(str == nil)
+								str = @"";
+							strName = str;
+						} else {
+							strName = [NSString stringWithFormat:@"%@", [[keychainItems objectAtIndex:j] objectForKey:@"acct"]];
+						}
+
+						ispy_log_debug(LOG_REPORT, "[Insecure Keychain Storage] Key \"%s\" has attribute \"%s\" on item \"%s\"", [key UTF8String], [attr UTF8String], [strName UTF8String]);
+					}
 				}
 			}
 		} else {
@@ -367,7 +383,13 @@ id *appClassWhiteList = NULL;
 }
 
 -(unsigned int)ASLR {
-	return (unsigned int)_dyld_get_image_vmaddr_slide(0);
+	unsigned int slide = (unsigned int)_dyld_get_image_vmaddr_slide(0);
+	
+	// security check - log all instances of non-ASLR apps
+	if(slide == 0)
+		ispy_log_debug(LOG_REPORT, "[Insecure ASLR] ASLR is disabled for this app. Slide = 0.");
+
+	return slide; 
 }
 
 

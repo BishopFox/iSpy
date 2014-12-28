@@ -39,6 +39,7 @@
 #import  <Foundation/NSJSONSerialization.h>
 #import  <MobileCoreServices/MobileCoreServices.h>
 #import  <QuartzCore/QuartzCore.h>
+#import <CoreData/CoreData.h>
 #include "iSpy.common.h"
 #include "iSpy.instance.h"
 #include "iSpy.class.h"
@@ -479,6 +480,14 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 -(BOOL) writeToURL:(NSURL *)aURL atomically:(BOOL)flag {
 	ispy_log_debug(LOG_REPORT, "[Insecure plist storage] NSDictionary writeToURL:\"%s\"", [[aURL path] UTF8String]);
 	return %orig;
+}
+%end
+
+
+%hook NSPersistentStoreCoordinator
+- (NSPersistentStore *)addPersistentStoreWithType:(NSString *)storeType configuration:(NSString *)configuration URL:(NSURL *)storeURL options:(NSDictionary *)options error:(NSError **)error {
+	ispy_log_debug(LOG_REPORT, "[Insecure Core Data storage] %s", [[storeURL path] UTF8String]);
+	return %orig;	
 }
 %end
 

@@ -461,6 +461,27 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 }
 %end
 
+
+%hook NSUserDefaults
+-(BOOL) synchronize {
+	ispy_log_debug(LOG_REPORT, "[Insecure NSUserDefaults] NSUserDefaults is being used to store data. Check \"Library/Preferences/*.plist\" for files with cleartext data in them.");
+	return %orig;
+}
+%end
+
+
+%hook NSDictionary
+-(BOOL) writeToFile:(NSString *)path atomically:(BOOL)flag {
+	ispy_log_debug(LOG_REPORT, "[Insecure plist storage] NSDictionary writeToFile:\"%s\"", [path UTF8String]);
+	return %orig;
+}
+
+-(BOOL) writeToURL:(NSURL *)aURL atomically:(BOOL)flag {
+	ispy_log_debug(LOG_REPORT, "[Insecure plist storage] NSDictionary writeToURL:\"%s\"", [[aURL path] UTF8String]);
+	return %orig;
+}
+%end
+
 %end // %group bf_group
 
 

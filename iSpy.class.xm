@@ -369,7 +369,7 @@ id *appClassWhiteList = NULL;
 							strName = [NSString stringWithFormat:@"%@", [[keychainItems objectAtIndex:j] objectForKey:@"acct"]];
 						}
 
-						ispy_log_debug(LOG_REPORT, "[Insecure Keychain Storage]: Key \"%s\" has attribute \"%s\" on item \"%s\"", [key UTF8String], [attr UTF8String], [strName UTF8String]);
+						ispy_log_debug(LOG_REPORT, "[Insecure Keychain Storage] Key \"%s\" has attribute \"%s\" on item \"%s\"", [key UTF8String], [attr UTF8String], [strName UTF8String]);
 					}
 				}
 			}
@@ -387,7 +387,7 @@ id *appClassWhiteList = NULL;
 	
 	// security check - log all instances of non-ASLR apps
 	if(slide == 0)
-		ispy_log_debug(LOG_REPORT, "[Insecure ASLR]: ASLR is disabled for this app. Slide = 0.");
+		ispy_log_debug(LOG_REPORT, "[Insecure ASLR] ASLR is disabled for this app. Slide = 0.");
 
 	return slide; 
 }

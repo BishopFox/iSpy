@@ -409,13 +409,13 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 %hook NSData
 -(BOOL) writeToFile:(NSString *)path options:(NSDataWritingOptions)mask error:(NSError **)errorPtr {
 	if((mask & NSDataWritingFileProtectionNone) == NSDataWritingFileProtectionNone)
-		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)]: NSData writeToFile:\"%s\" options:0x%08x", [path UTF8String], (unsigned int)mask);
+		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)] NSData writeToFile:\"%s\" options:0x%08x", [path UTF8String], (unsigned int)mask);
 	return %orig;
 }
 
 -(BOOL) writeToURL:(NSURL *)aURL options:(NSDataWritingOptions)mask error:(NSError **)errorPtr {
 	if((mask & NSDataWritingFileProtectionNone) == NSDataWritingFileProtectionNone)
-		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)]: NSData writeToURL:\"%s\" options:0x%08x", [[aURL path] UTF8String], (unsigned int)mask);
+		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)] NSData writeToURL:\"%s\" options:0x%08x", [[aURL path] UTF8String], (unsigned int)mask);
 	return %orig;
 }
 %end
@@ -500,7 +500,7 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 	Function signature for original SecTrustEvaluate
  */
 OSStatus new_SecTrustEvaluate(SecTrustRef trust, SecTrustResultType *result) {
-	ispy_log_debug(LOG_GENERAL, "[trustme]: Intercepting SecTrustEvaluate() call");
+	ispy_log_debug(LOG_GENERAL, "[trustme] Intercepting SecTrustEvaluate() call");
 	*result = kSecTrustResultProceed;
 	return errSecSuccess;
 }

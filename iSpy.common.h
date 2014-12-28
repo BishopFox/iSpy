@@ -61,6 +61,10 @@ static const unsigned int LOG_MSGSEND  = 1;
 static const unsigned int LOG_GENERAL  = 2;
 static const unsigned int LOG_HTTP     = 3;
 static const unsigned int LOG_TCPIP    = 4;
+static const unsigned int LOG_GLOBAL   = 5;
+static const unsigned int LOG_REPORT   = 6;
+static const unsigned int MAX_LOG      = LOG_REPORT;    // this must be equal to the last number in the list of LOG_* numbers, above.
+
 EXPORT void ispy_init_logwriter(NSString *documents);
 EXPORT void ispy_log_debug(unsigned int facility, const char *msg, ...);
 EXPORT void ispy_log_info(unsigned int facility, const char *msg, ...);

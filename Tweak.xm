@@ -225,25 +225,16 @@ void launch_cycript();
  *** right here between these enormous comment sections.   ***
  *************************************************************/
 
-%group bf_group // Don't change this %group unless you know what you're doing: your hooks won't load.
+%group bf_group // Don't change this %group name unless you know what you're doing: your hooks won't load.
 				// Don't close this %group with a %end, either - it comes later in the code.
 
+/* SOME EXAMPLES OF USEFUL HOOKS /*
 /*
-// An example of simple hooked method:
-%hook FooBarBozClassXYZZY // An example...
-- (id)someMethodOrOther {
-	%log;
-	return %orig;
-}
-%end
-*/
-
 %hook UIDevice
 -(NSString *) systemVersion {
 	return @"7.1";
 }
 %end
-
 
 %hook NSMutableURLRequest
 -(void) setHTTPBody:(NSData *) data {
@@ -253,6 +244,7 @@ void launch_cycript();
 	%orig;
 }
 %end
+*/
 
 
 /********************************************
@@ -413,6 +405,21 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 %end // end of UIApplication class extension.
 
 
+/* This makes a log of any insecure file writes via NSData */
+%hook NSData
+-(BOOL) writeToFile:(NSString *)path options:(NSDataWritingOptions)mask error:(NSError **)errorPtr {
+	if((mask & NSDataWritingFileProtectionNone) == NSDataWritingFileProtectionNone)
+		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)]: NSData writeToFile:\"%s\" options:0x%08x", [path UTF8String], (unsigned int)mask);
+	return %orig;
+}
+
+-(BOOL) writeToURL:(NSURL *)aURL options:(NSDataWritingOptions)mask error:(NSError **)errorPtr {
+	if((mask & NSDataWritingFileProtectionNone) == NSDataWritingFileProtectionNone)
+		ispy_log_debug(LOG_REPORT, "[Insecure Data Storage (NSDataWritingFileProtectionNone)]: NSData writeToURL:\"%s\" options:0x%08x", [[aURL path] UTF8String], (unsigned int)mask);
+	return %orig;
+}
+%end
+
 
 /*
  By hooking UIControl's sendAction* methods we can trace exactly which methods respond
@@ -507,6 +514,36 @@ EXPORT int return_false() {
 
 EXPORT int return_true() {
 	return 1;
+}
+
+
+/* Detect insecure use of the keychain */
+OSStatus (*orig_SecItemAdd)(CFDictionaryRef attributes, CFTypeRef *result);
+OSStatus (*orig_SecItemUpdate)(CFDictionaryRef query, CFDictionaryRef attributes);
+
+OSStatus iSpy_SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
+	// Add the item to the keychain
+	OSStatus retVal = orig_SecItemAdd(attributes, result);
+
+	// Force a security check of the keychain; report findings in "report.log"
+	[[iSpy sharedInstance] keyChainItems];
+	
+	return retVal;
+}
+
+OSStatus iSpy_SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributes) {
+	// Update the keychain
+	OSStatus retVal = orig_SecItemUpdate(query, attributes);
+	
+	// Force a security check of the keychain; report findings in "report.log"
+	[[iSpy sharedInstance] keyChainItems];
+	
+	return retVal;
+}
+
+void hook_keychain() {
+	MSHookFunction((void *)SecItemAdd, (void *)iSpy_SecItemAdd, (void **)&orig_SecItemAdd);
+	MSHookFunction((void *)SecItemUpdate, (void *)iSpy_SecItemUpdate, (void **)&orig_SecItemUpdate);
 }
 
 
@@ -634,6 +671,9 @@ EXPORT int return_true() {
 
 		// Initialize Cycript
 		CYListenServer(12345);
+
+		// Hook keychain functions
+		hook_keychain();
 
 		// Start the iSpy web server
 		ispy_log_debug(LOG_GENERAL, "[iSpy] Setup complete, passing control to the target app.");

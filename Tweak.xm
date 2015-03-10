@@ -493,7 +493,7 @@ void bf_unHookFunction(void *func, void *repl, void *orig) {
 %hook NSPersistentStoreCoordinator
 - (NSPersistentStore *)addPersistentStoreWithType:(NSString *)storeType configuration:(NSString *)configuration URL:(NSURL *)storeURL options:(NSDictionary *)options error:(NSError **)error {
 	ispy_log_debug(LOG_REPORT, "[Insecure Core Data storage] %s", [[storeURL path] UTF8String]);
-	return %orig;	
+	return %orig;
 }
 %end
 
@@ -562,17 +562,17 @@ OSStatus iSpy_SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
 
 	// Force a security check of the keychain; report findings in "report.log"
 	[[iSpy sharedInstance] keyChainItems];
-	
+
 	return retVal;
 }
 
 OSStatus iSpy_SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributes) {
 	// Update the keychain
 	OSStatus retVal = orig_SecItemUpdate(query, attributes);
-	
+
 	// Force a security check of the keychain; report findings in "report.log"
 	[[iSpy sharedInstance] keyChainItems];
-	
+
 	return retVal;
 }
 
@@ -619,7 +619,7 @@ void hook_keychain() {
 	} else {
 
 		/* Green light to inject - Init all the things */
-		heh();
+		ispy_splash_logo();
 		NSLog(@"[iSpy] This app (%@) is enabled for iSpy. To change this, disable it in the iSpy preferences panel.", bundleId);
 		iSpy *mySpy = [iSpy sharedInstance];
 		[mySpy initializeAllTheThings];
@@ -649,9 +649,9 @@ void hook_keychain() {
 //		dispatch_queue_t initQ = dispatch_queue_create("com.bishopfox.ispy.ctor", DISPATCH_QUEUE_SERIAL);
 //		dispatch_sync(initQ, ^{
 		NSLog(@"Whitelist stuff");
-			whitelist_startup();
-			whitelist_add_hardcoded_interesting_calls();
-			bf_init_msgSend_logging();
+		whitelist_startup();
+		whitelist_add_hardcoded_interesting_calls();
+		bf_init_msgSend_logging();
 //		});
 
 		// Ok, this needs some explanation.
@@ -729,7 +729,8 @@ void hook_keychain() {
 	return;
 }
 
-void heh() {
+void ispy_splash_logo()
+{
 	NSLog(@" 777777777777777777777777777777777777              ,77777777777777777777777777+ ");
 	NSLog(@"  777777777777777777777777777777777777            777777777777777777777777777   ");
 	NSLog(@"   777777777777777777777777777777777777:         777777777777777777777777777    ");

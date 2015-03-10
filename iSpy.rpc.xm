@@ -135,8 +135,8 @@ If "methods" is nil, assume all methods in class.
 	numClasses = [classes count];
 
     // Iterate through all the class names, adding each one to our lookup table
-    for(i = 0; i < numClasses; i++) {
-    	NSDictionary *itemToAdd = [classes objectAtIndex:i];
+    for(index = 0; index < numClasses; index++) {
+    	NSDictionary *itemToAdd = [classes objectAtIndex:index];
     	NSString *name = [itemToAdd objectForKey:@"class"];
     	if(!name) {
     		continue;
@@ -460,7 +460,7 @@ If "methods" is nil, assume all methods in class.
 			}
 		}
 	}
-	
+
 	//NSLog(@"Icon files: %@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIconFiles"]);
 	NSLog(@"appIcon: %@", appIcon);
 	NSData *PNG = UIImagePNGRepresentation(appIcon);
@@ -480,8 +480,8 @@ If "methods" is nil, assume all methods in class.
 	NSArray *keys = [infoDict allKeys];
 	NSMutableDictionary *interestingProperties = [[NSMutableDictionary alloc] init];
 
-	for(int i=0; i < [keys count]; i++) {
-		id obj = [keys objectAtIndex:i];
+	for(int index = 0; index < [keys count]; index++) {
+		id obj = [keys objectAtIndex:index];
 		if([[infoDict objectForKey:obj] class] == objc_getClass("__NSCFString")) {
 			[interestingProperties setObject:[NSString stringWithString:[infoDict objectForKey:obj]] forKey:obj];
 		}
@@ -508,7 +508,7 @@ If "methods" is nil, assume all methods in class.
     return @{
         @"status":@"OK",
         @"JSON": @"Released."
-    };   
+    };
 }
 
 @end

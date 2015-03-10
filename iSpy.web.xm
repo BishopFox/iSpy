@@ -61,7 +61,8 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
 @implementation iSpyServer
 
--(void)configureWebServer {
+-(void)configureWebServer
+{
 
     int attempts = 0;
     BOOL successful = NO;
@@ -101,7 +102,8 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
         }
 
 
-    } while ( ! successful && attempts < MAX_ATTEMPTS);
+    }
+    while ( ! successful && attempts < MAX_ATTEMPTS);
 
     if (successful)
     {
@@ -114,12 +116,14 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 
 }
 
--(id)init {
+-(id)init
+{
     [super init];
     return self;
 }
 
--(void)bounceWebServer {
+-(void)bounceWebServer
+{
     ispy_log_debug(LOG_HTTP, "bounceWebServer...");
 }
 
@@ -191,8 +195,10 @@ static dispatch_queue_t wsQueue = dispatch_queue_create(WS_QUEUE, NULL);
 // pure C all the way down, so it's safe to call it inside the msgSend logging routines.
 // NOT thread safe. Handle locking yourself.
 // Requires C linkage for the msgSend stuff.
-extern "C" {
-    void bf_websocket_write(const char *msg) {
+extern "C"
+{
+    void bf_websocket_write(const char *msg)
+    {
         static iSpyWebSocket *syncSocket = [[[iSpy sharedInstance] webServer] iSpyWebSocket]; // static for speed/cache
         NSString *json = orig_objc_msgSend(objc_getClass("NSString"), @selector(stringWithUTF8String:), msg);
 

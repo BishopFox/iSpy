@@ -102,7 +102,7 @@ extern void whitelist_startup() {
 
     ispy_log_debug(LOG_GENERAL, "[Whitelist] initializing the pointers and whatnot.");
 
-    // Set the singleton pointers to the hashmaps. 
+    // Set the singleton pointers to the hashmaps.
     [[iSpy sharedInstance] setClassWhitelist:&WhitelistClassMap];
     [iSpy sharedInstance]->breakpoints = &Breakpoints;
 }
@@ -129,7 +129,7 @@ void whitelist_add_app_classes() {
     // Get a list of all the classes in the app
     NSArray *classes = [[iSpy sharedInstance] classes];
 	numClasses = [classes count];
-    
+
     ispy_log_debug(LOG_GENERAL, "[Whitelist] adding %d classes...", numClasses);
 
     // Iterate through all the class names, adding each one to our lookup table

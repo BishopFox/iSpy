@@ -1,6 +1,9 @@
+iSpy v1.0 is now obsolete
+=========================
+v2.0 will be released shortly and contains many, many enhancements.
+
 iSpy Assessment Framework
 =========================
-
 iSpy aims to be your one-stop-shop for reverse engineering and dynamic analysis of iOS applications.
 
 Current Release
